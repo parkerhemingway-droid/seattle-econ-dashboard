@@ -1,0 +1,651 @@
+// Mock data — Seattle-localized where applicable, national where metro data unavailable.
+// Replace sparkline arrays with real API calls to wire up live data.
+
+const TODAY = '2026-06-18';
+
+function sparkline(base, count = 24, volatility = 0.02, trend = 0) {
+  const arr = [];
+  let val = base;
+  for (let i = 0; i < count; i++) {
+    val = val * (1 + (Math.random() - 0.5) * volatility + trend / count);
+    arr.push(+val.toFixed(4));
+  }
+  return arr;
+}
+
+// ── Financial Markets ───────────────────────────────────────────────────────
+const MARKETS = {
+  treasury10y: {
+    id: 'treasury10y', name: '10-Year Treasury Yield', section: 'today',
+    value: 4.38, unit: '%', date: '2026-06-18',
+    periodChange: +0.04, yoyChange: -0.41,
+    release: 'Daily — Treasury Dept.',
+    sparkline: sparkline(4.38, 24, 0.02),
+    category: 'Financial Markets',
+  },
+  treasury2y: {
+    id: 'treasury2y', name: '2-Year Treasury Yield', section: 'today',
+    value: 4.12, unit: '%', date: '2026-06-18',
+    periodChange: +0.02, yoyChange: -0.58,
+    release: 'Daily — Treasury Dept.',
+    sparkline: sparkline(4.12, 24, 0.02),
+    category: 'Financial Markets',
+  },
+  sp500: {
+    id: 'sp500', name: 'S&P 500', section: 'today',
+    value: 5482, unit: '', date: '2026-06-18',
+    periodChange: +23, yoyChange: +312,
+    release: 'Daily — NYSE',
+    sparkline: sparkline(5482, 24, 0.012),
+    category: 'Financial Markets',
+  },
+  oil: {
+    id: 'oil', name: 'WTI Crude Oil', section: 'today',
+    value: 72.40, unit: '$/bbl', date: '2026-06-18',
+    periodChange: -1.20, yoyChange: -8.30,
+    release: 'Daily — EIA',
+    sparkline: sparkline(72.40, 24, 0.025),
+    category: 'Financial Markets',
+  },
+  mortgageRate: {
+    id: 'mortgageRate', name: 'Mortgage Rate (30-yr)', section: 'today',
+    value: 6.82, unit: '%', date: '2026-06-13',
+    periodChange: -0.05, yoyChange: -0.22,
+    release: 'Weekly — Freddie Mac',
+    sparkline: sparkline(6.82, 24, 0.01),
+    category: 'Financial Markets',
+  },
+  mortgageSpread: {
+    id: 'mortgageSpread', name: 'Mortgage Spread (vs 10yr)', section: 'today',
+    value: 2.44, unit: '%', date: '2026-06-13',
+    periodChange: -0.09, yoyChange: +0.19,
+    release: 'Weekly — Freddie Mac',
+    sparkline: sparkline(2.44, 24, 0.015),
+    category: 'Financial Markets',
+  },
+};
+
+// ── Seattle Housing ─────────────────────────────────────────────────────────
+const HOUSING = {
+  seaMedianPrice: {
+    id: 'seaMedianPrice', name: 'Seattle Median Sale Price', section: 'housing',
+    value: 875000, unit: '$', date: '2026-06-01',
+    periodChange: +12000, yoyChange: +38000,
+    release: 'Monthly — Redfin/NWMLS',
+    sparkline: sparkline(875000, 24, 0.015, 0.003),
+    category: 'Housing',
+    local: true,
+  },
+  seaMedianListPrice: {
+    id: 'seaMedianListPrice', name: 'Seattle Median List Price', section: 'housing',
+    value: 899000, unit: '$', date: '2026-06-13',
+    periodChange: +5000, yoyChange: +42000,
+    release: 'Weekly — Altos/Redfin',
+    sparkline: sparkline(899000, 24, 0.012, 0.002),
+    category: 'Housing',
+    local: true,
+  },
+  seaActiveInventory: {
+    id: 'seaActiveInventory', name: 'Seattle Active Inventory', section: 'housing',
+    value: 3241, unit: ' homes', date: '2026-06-13',
+    periodChange: +187, yoyChange: +621,
+    release: 'Weekly — Altos Research',
+    sparkline: sparkline(3241, 24, 0.03, 0.005),
+    category: 'Housing',
+    local: true,
+  },
+  seaWeeksSupply: {
+    id: 'seaWeeksSupply', name: 'Seattle Weeks of Supply', section: 'housing',
+    value: 5.2, unit: ' wks', date: '2026-06-13',
+    periodChange: +0.3, yoyChange: +1.1,
+    release: 'Weekly — Altos Research',
+    sparkline: sparkline(5.2, 24, 0.04),
+    category: 'Housing',
+    local: true,
+  },
+  seaNewListings: {
+    id: 'seaNewListings', name: 'Seattle New Listings', section: 'housing',
+    value: 892, unit: '/wk', date: '2026-06-13',
+    periodChange: +42, yoyChange: +118,
+    release: 'Weekly — Altos Research',
+    sparkline: sparkline(892, 24, 0.05),
+    category: 'Housing',
+    local: true,
+  },
+  seaPendingSales: {
+    id: 'seaPendingSales', name: 'Seattle Pending Sales', section: 'housing',
+    value: 1104, unit: '/wk', date: '2026-06-13',
+    periodChange: -28, yoyChange: +94,
+    release: 'Weekly — Altos/Redfin',
+    sparkline: sparkline(1104, 24, 0.04),
+    category: 'Housing',
+    local: true,
+  },
+  seaDaysOnMarket: {
+    id: 'seaDaysOnMarket', name: 'Seattle Days on Market', section: 'housing',
+    value: 18, unit: ' days', date: '2026-06-13',
+    periodChange: +2, yoyChange: +5,
+    release: 'Weekly — Altos/Redfin',
+    sparkline: sparkline(18, 24, 0.08),
+    category: 'Housing',
+    local: true,
+  },
+  seaPriceReductions: {
+    id: 'seaPriceReductions', name: 'Seattle Price Reductions', section: 'housing',
+    value: 18.4, unit: '%', date: '2026-06-13',
+    periodChange: +0.8, yoyChange: +3.2,
+    release: 'Weekly — Altos Research',
+    sparkline: sparkline(18.4, 24, 0.03),
+    category: 'Housing',
+    local: true,
+  },
+  seaSaleTListRatio: {
+    id: 'seaSaleTListRatio', name: 'Sale-to-List Ratio', section: 'housing',
+    value: 101.2, unit: '%', date: '2026-05-31',
+    periodChange: -0.4, yoyChange: -1.8,
+    release: 'Monthly — Redfin',
+    sparkline: sparkline(101.2, 24, 0.005),
+    category: 'Housing',
+    local: true,
+  },
+  seaCaseShiller: {
+    id: 'seaCaseShiller', name: 'Case-Shiller Seattle HPI', section: 'housing',
+    value: 402.1, unit: '', date: '2026-04-30',
+    periodChange: +3.2, yoyChange: +18.4,
+    release: 'Monthly (2mo lag) — S&P/CS',
+    sparkline: sparkline(402.1, 24, 0.008, 0.002),
+    category: 'Housing',
+    local: true,
+  },
+  kingCountyHomeowners: {
+    id: 'kingCountyHomeowners', name: 'King Co. Homeownership Rate', section: 'housing',
+    value: 51.2, unit: '%', date: '2026-01-01',
+    periodChange: +0.3, yoyChange: -0.8,
+    release: 'Annual — Census ACS',
+    sparkline: sparkline(51.2, 10, 0.01),
+    category: 'Housing',
+    local: true,
+  },
+  seaAffordabilityRatio: {
+    id: 'seaAffordabilityRatio', name: 'Price-to-Income Ratio (Seattle)', section: 'housing',
+    value: 10.4, unit: 'x', date: '2026-01-01',
+    periodChange: +0.2, yoyChange: +0.4,
+    release: 'Annual — Census/Redfin',
+    sparkline: sparkline(10.4, 10, 0.02),
+    category: 'Housing',
+    local: true,
+  },
+  // National housing data
+  existingHomeSales: {
+    id: 'existingHomeSales', name: 'Existing Home Sales (Natl)', section: 'housing',
+    value: 4.03, unit: 'M SAAR', date: '2026-05-22',
+    periodChange: -0.08, yoyChange: +0.24,
+    release: 'Monthly — NAR',
+    sparkline: sparkline(4.03, 24, 0.03),
+    category: 'Housing',
+  },
+  newHomeSales: {
+    id: 'newHomeSales', name: 'New Home Sales (Natl)', section: 'housing',
+    value: 683, unit: 'K SAAR', date: '2026-05-23',
+    periodChange: +12, yoyChange: +54,
+    release: 'Monthly — Census/HUD',
+    sparkline: sparkline(683, 24, 0.04),
+    category: 'Housing',
+  },
+  housingStarts: {
+    id: 'housingStarts', name: 'Housing Starts (Natl)', section: 'housing',
+    value: 1.361, unit: 'M SAAR', date: '2026-05-20',
+    periodChange: +0.043, yoyChange: -0.082,
+    release: 'Monthly — Census/HUD',
+    sparkline: sparkline(1.361, 24, 0.04),
+    category: 'Construction',
+  },
+  buildingPermits: {
+    id: 'buildingPermits', name: 'Building Permits (Natl)', section: 'housing',
+    value: 1.412, unit: 'M SAAR', date: '2026-05-20',
+    periodChange: +0.018, yoyChange: -0.061,
+    release: 'Monthly — Census/HUD',
+    sparkline: sparkline(1.412, 24, 0.035),
+    category: 'Construction',
+  },
+  seaPermits: {
+    id: 'seaPermits', name: 'Seattle MSA Permits', section: 'housing',
+    value: 3842, unit: '/mo', date: '2026-04-30',
+    periodChange: +204, yoyChange: -318,
+    release: 'Monthly — Census',
+    sparkline: sparkline(3842, 24, 0.06),
+    category: 'Construction',
+    local: true,
+  },
+  housingCompletions: {
+    id: 'housingCompletions', name: 'Housing Completions', section: 'housing',
+    value: 1.621, unit: 'M SAAR', date: '2026-05-20',
+    periodChange: +0.091, yoyChange: +0.104,
+    release: 'Monthly — Census/HUD',
+    sparkline: sparkline(1.621, 24, 0.04),
+    category: 'Construction',
+  },
+  unitsUnderConstruction: {
+    id: 'unitsUnderConstruction', name: 'Units Under Construction', section: 'housing',
+    value: 1.432, unit: 'M', date: '2026-05-20',
+    periodChange: -0.021, yoyChange: -0.241,
+    release: 'Monthly — Census/HUD',
+    sparkline: sparkline(1.432, 24, 0.02),
+    category: 'Construction',
+  },
+};
+
+// ── Inflation ────────────────────────────────────────────────────────────────
+const INFLATION = {
+  cpiHeadline: {
+    id: 'cpiHeadline', name: 'CPI (Headline, YoY)', section: 'inflation',
+    value: 2.9, unit: '%', date: '2026-06-11',
+    periodChange: -0.1, yoyChange: -0.7,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(2.9, 24, 0.04),
+    category: 'Inflation',
+  },
+  cpiCore: {
+    id: 'cpiCore', name: 'Core CPI (YoY)', section: 'inflation',
+    value: 3.2, unit: '%', date: '2026-06-11',
+    periodChange: -0.1, yoyChange: -0.8,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(3.2, 24, 0.03),
+    category: 'Inflation',
+  },
+  pce: {
+    id: 'pce', name: 'PCE (YoY)', section: 'inflation',
+    value: 2.6, unit: '%', date: '2026-05-30',
+    periodChange: -0.1, yoyChange: -0.6,
+    release: 'Monthly — BEA',
+    sparkline: sparkline(2.6, 24, 0.03),
+    category: 'Inflation',
+  },
+  pceCore: {
+    id: 'pceCore', name: 'Core PCE (YoY)', section: 'inflation',
+    value: 2.8, unit: '%', date: '2026-05-30',
+    periodChange: -0.1, yoyChange: -0.4,
+    release: 'Monthly — BEA',
+    sparkline: sparkline(2.8, 24, 0.025),
+    category: 'Inflation',
+  },
+  trimmedMeanPce: {
+    id: 'trimmedMeanPce', name: 'Trimmed Mean PCE', section: 'inflation',
+    value: 2.9, unit: '%', date: '2026-05-30',
+    periodChange: -0.05, yoyChange: -0.5,
+    release: 'Monthly — Dallas Fed',
+    sparkline: sparkline(2.9, 24, 0.025),
+    category: 'Inflation',
+  },
+  breakeven5y: {
+    id: 'breakeven5y', name: '5-Year Breakeven', section: 'inflation',
+    value: 2.44, unit: '%', date: '2026-06-18',
+    periodChange: -0.02, yoyChange: -0.08,
+    release: 'Daily — Treasury',
+    sparkline: sparkline(2.44, 24, 0.015),
+    category: 'Inflation',
+  },
+  breakeven10y: {
+    id: 'breakeven10y', name: '10-Year Breakeven', section: 'inflation',
+    value: 2.38, unit: '%', date: '2026-06-18',
+    periodChange: -0.01, yoyChange: -0.06,
+    release: 'Daily — Treasury',
+    sparkline: sparkline(2.38, 24, 0.015),
+    category: 'Inflation',
+  },
+  clevelandFedInfExp: {
+    id: 'clevelandFedInfExp', name: 'Cleveland Fed Inf. Exp. (1yr)', section: 'inflation',
+    value: 3.1, unit: '%', date: '2026-06-01',
+    periodChange: -0.2, yoyChange: -0.4,
+    release: 'Monthly — Cleveland Fed',
+    sparkline: sparkline(3.1, 24, 0.02),
+    category: 'Inflation',
+  },
+  cpiShelter: {
+    id: 'cpiShelter', name: 'CPI Shelter (YoY)', section: 'inflation',
+    value: 4.8, unit: '%', date: '2026-06-11',
+    periodChange: -0.2, yoyChange: -1.4,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(4.8, 24, 0.025),
+    category: 'Inflation',
+  },
+  cpiEnergy: {
+    id: 'cpiEnergy', name: 'CPI Energy (YoY)', section: 'inflation',
+    value: -4.2, unit: '%', date: '2026-06-11',
+    periodChange: -0.8, yoyChange: -2.1,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(-4.2, 24, 0.05),
+    category: 'Inflation',
+  },
+  cpiFood: {
+    id: 'cpiFood', name: 'CPI Food & Beverage (YoY)', section: 'inflation',
+    value: 2.3, unit: '%', date: '2026-06-11',
+    periodChange: +0.1, yoyChange: -0.9,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(2.3, 24, 0.03),
+    category: 'Inflation',
+  },
+  cpiMedical: {
+    id: 'cpiMedical', name: 'CPI Medical (YoY)', section: 'inflation',
+    value: 2.8, unit: '%', date: '2026-06-11',
+    periodChange: +0.2, yoyChange: +0.6,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(2.8, 24, 0.025),
+    category: 'Inflation',
+  },
+  cpiTransport: {
+    id: 'cpiTransport', name: 'CPI Transportation (YoY)', section: 'inflation',
+    value: 3.8, unit: '%', date: '2026-06-11',
+    periodChange: +0.3, yoyChange: +0.4,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(3.8, 24, 0.04),
+    category: 'Inflation',
+  },
+  seaMetroCpi: {
+    id: 'seaMetroCpi', name: 'Seattle Metro CPI (YoY)', section: 'inflation',
+    value: 3.1, unit: '%', date: '2026-04-30',
+    periodChange: -0.2, yoyChange: -0.9,
+    release: 'Bimonthly — BLS',
+    sparkline: sparkline(3.1, 12, 0.035),
+    category: 'Inflation',
+    local: true,
+  },
+  ppi: {
+    id: 'ppi', name: 'PPI (YoY)', section: 'inflation',
+    value: 2.4, unit: '%', date: '2026-06-12',
+    periodChange: -0.3, yoyChange: -0.8,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(2.4, 24, 0.04),
+    category: 'Inflation',
+  },
+  ppiCore: {
+    id: 'ppiCore', name: 'Core PPI (YoY)', section: 'inflation',
+    value: 2.9, unit: '%', date: '2026-06-12',
+    periodChange: -0.1, yoyChange: -0.6,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(2.9, 24, 0.03),
+    category: 'Inflation',
+  },
+};
+
+// ── Employment ───────────────────────────────────────────────────────────────
+const EMPLOYMENT = {
+  initialClaims: {
+    id: 'initialClaims', name: 'Initial Claims', section: 'employment',
+    value: 218000, unit: '', date: '2026-06-14',
+    periodChange: -4000, yoyChange: +6000,
+    release: 'Weekly — DOL',
+    sparkline: sparkline(218000, 24, 0.03),
+    category: 'Labor',
+  },
+  continuingClaims: {
+    id: 'continuingClaims', name: 'Continuing Claims', section: 'employment',
+    value: 1871000, unit: '', date: '2026-06-07',
+    periodChange: +14000, yoyChange: +82000,
+    release: 'Weekly — DOL',
+    sparkline: sparkline(1871000, 24, 0.025),
+    category: 'Labor',
+  },
+  waStateInitialClaims: {
+    id: 'waStateInitialClaims', name: 'WA State Initial Claims', section: 'employment',
+    value: 9840, unit: '', date: '2026-06-14',
+    periodChange: -320, yoyChange: +480,
+    release: 'Weekly — WA ESD',
+    sparkline: sparkline(9840, 24, 0.04),
+    category: 'Labor',
+    local: true,
+  },
+  u3: {
+    id: 'u3', name: 'U-3 Unemployment Rate', section: 'employment',
+    value: 4.1, unit: '%', date: '2026-06-06',
+    periodChange: 0, yoyChange: +0.3,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(4.1, 24, 0.02),
+    category: 'Labor',
+  },
+  u6: {
+    id: 'u6', name: 'U-6 Unemployment Rate', section: 'employment',
+    value: 7.8, unit: '%', date: '2026-06-06',
+    periodChange: +0.1, yoyChange: +0.5,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(7.8, 24, 0.02),
+    category: 'Labor',
+  },
+  seaUnemployment: {
+    id: 'seaUnemployment', name: 'Seattle Metro Unemployment', section: 'employment',
+    value: 3.8, unit: '%', date: '2026-05-31',
+    periodChange: -0.1, yoyChange: +0.4,
+    release: 'Monthly — BLS/WA ESD',
+    sparkline: sparkline(3.8, 24, 0.025),
+    category: 'Labor',
+    local: true,
+  },
+  nfp: {
+    id: 'nfp', name: 'Nonfarm Payrolls (MoM)', section: 'employment',
+    value: 177000, unit: '', date: '2026-06-06',
+    periodChange: -12000, yoyChange: -34000,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(177000, 24, 0.06),
+    category: 'Labor',
+  },
+  seaPayrolls: {
+    id: 'seaPayrolls', name: 'Seattle MSA Payrolls (MoM)', section: 'employment',
+    value: 8400, unit: '', date: '2026-05-31',
+    periodChange: -1200, yoyChange: -2800,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(8400, 24, 0.08),
+    category: 'Labor',
+    local: true,
+  },
+  lfpr: {
+    id: 'lfpr', name: 'Labor Force Participation', section: 'employment',
+    value: 62.5, unit: '%', date: '2026-06-06',
+    periodChange: 0, yoyChange: -0.1,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(62.5, 24, 0.005),
+    category: 'Labor',
+  },
+  avgHourlyEarnings: {
+    id: 'avgHourlyEarnings', name: 'Avg Hourly Earnings (YoY)', section: 'employment',
+    value: 3.9, unit: '%', date: '2026-06-06',
+    periodChange: +0.1, yoyChange: -0.4,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(3.9, 24, 0.02),
+    category: 'Labor',
+  },
+  atlantaWageTracker: {
+    id: 'atlantaWageTracker', name: 'Atlanta Fed Wage Tracker (YoY)', section: 'employment',
+    value: 4.3, unit: '%', date: '2026-06-01',
+    periodChange: -0.2, yoyChange: -0.8,
+    release: 'Monthly — Atlanta Fed',
+    sparkline: sparkline(4.3, 24, 0.02),
+    category: 'Labor',
+  },
+  joltsOpenings: {
+    id: 'joltsOpenings', name: 'JOLTS Job Openings', section: 'employment',
+    value: 7.19, unit: 'M', date: '2026-05-31',
+    periodChange: -0.14, yoyChange: -0.82,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(7.19, 24, 0.04),
+    category: 'Labor',
+  },
+  joltsQuits: {
+    id: 'joltsQuits', name: 'JOLTS Quits', section: 'employment',
+    value: 3.31, unit: 'M', date: '2026-05-31',
+    periodChange: +0.08, yoyChange: -0.22,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(3.31, 24, 0.035),
+    category: 'Labor',
+  },
+  joltsLayoffs: {
+    id: 'joltsLayoffs', name: 'JOLTS Layoffs', section: 'employment',
+    value: 1.61, unit: 'M', date: '2026-05-31',
+    periodChange: -0.04, yoyChange: +0.18,
+    release: 'Monthly — BLS',
+    sparkline: sparkline(1.61, 24, 0.04),
+    category: 'Labor',
+  },
+  seaTechLayoffs: {
+    id: 'seaTechLayoffs', name: 'Seattle Tech Sector Emp.', section: 'employment',
+    value: 312400, unit: ' jobs', date: '2026-05-31',
+    periodChange: -2100, yoyChange: -8400,
+    release: 'Monthly — BLS/WA ESD',
+    sparkline: sparkline(312400, 24, 0.01),
+    category: 'Labor',
+    local: true,
+  },
+};
+
+// ── Federal Reserve ──────────────────────────────────────────────────────────
+const FED = {
+  effFedFunds: {
+    id: 'effFedFunds', name: 'Effective Fed Funds Rate', section: 'fed',
+    value: 4.33, unit: '%', date: '2026-06-18',
+    periodChange: 0, yoyChange: -0.92,
+    release: 'Daily — FRED',
+    sparkline: sparkline(4.33, 24, 0.003),
+    category: 'Federal Reserve',
+  },
+  fedTargetHigh: {
+    id: 'fedTargetHigh', name: 'Fed Target Range (Upper)', section: 'fed',
+    value: 4.50, unit: '%', date: '2026-06-18',
+    periodChange: 0, yoyChange: -1.0,
+    release: 'FOMC Decision',
+    sparkline: sparkline(4.5, 24, 0.001),
+    category: 'Federal Reserve',
+  },
+  // Cut probabilities for upcoming FOMC meetings
+  cutProbJul: {
+    id: 'cutProbJul', name: 'Jul FOMC Cut Prob.', section: 'fed',
+    value: 14, unit: '%', date: '2026-06-18',
+    periodChange: -2, yoyChange: null,
+    release: 'Daily — CME FedWatch',
+    sparkline: sparkline(14, 24, 0.1),
+    category: 'Federal Reserve',
+  },
+  cutProbSep: {
+    id: 'cutProbSep', name: 'Sep FOMC Cut Prob.', section: 'fed',
+    value: 68, unit: '%', date: '2026-06-18',
+    periodChange: +4, yoyChange: null,
+    release: 'Daily — CME FedWatch',
+    sparkline: sparkline(68, 24, 0.06),
+    category: 'Federal Reserve',
+  },
+  cutProbNov: {
+    id: 'cutProbNov', name: 'Nov FOMC Cut Prob.', section: 'fed',
+    value: 82, unit: '%', date: '2026-06-18',
+    periodChange: +2, yoyChange: null,
+    release: 'Daily — CME FedWatch',
+    sparkline: sparkline(82, 24, 0.04),
+    category: 'Federal Reserve',
+  },
+};
+
+// ── Upcoming Releases ────────────────────────────────────────────────────────
+const UPCOMING_RELEASES = [
+  { date: '2026-06-19', name: 'Initial Jobless Claims', prior: '222K', consensus: '218K', source: 'DOL' },
+  { date: '2026-06-20', name: 'Existing Home Sales', prior: '4.00M', consensus: '4.05M', source: 'NAR' },
+  { date: '2026-06-24', name: 'New Home Sales', prior: '683K', consensus: '690K', source: 'Census/HUD' },
+  { date: '2026-06-25', name: 'Consumer Confidence', prior: '98.0', consensus: '99.4', source: 'Conference Board' },
+  { date: '2026-06-26', name: 'GDP (Q1 Final)', prior: '+1.2%', consensus: '+1.3%', source: 'BEA' },
+  { date: '2026-06-27', name: 'PCE Inflation (May)', prior: '2.6%', consensus: '2.5%', source: 'BEA' },
+  { date: '2026-06-27', name: 'Personal Income (May)', prior: '+0.3%', consensus: '+0.4%', source: 'BEA' },
+  { date: '2026-07-01', name: 'ISM Manufacturing', prior: '48.5', consensus: '49.0', source: 'ISM' },
+  { date: '2026-07-04', name: 'Independence Day (Markets Closed)', prior: '', consensus: '', source: '' },
+  { date: '2026-07-10', name: 'CPI (June)', prior: '2.9%', consensus: '2.8%', source: 'BLS' },
+  { date: '2026-07-15', name: 'Housing Starts (June)', prior: '1.361M', consensus: '1.375M', source: 'Census/HUD' },
+  { date: '2026-07-16', name: 'Retail Sales (June)', prior: '+0.1%', consensus: '+0.3%', source: 'Census' },
+  { date: '2026-07-22', name: 'Existing Home Sales (June)', prior: '4.03M', consensus: '4.06M', source: 'NAR' },
+  { date: '2026-07-29', name: 'JOLTS (June)', prior: '7.19M', consensus: '7.22M', source: 'BLS' },
+  { date: '2026-07-30', name: 'FOMC Rate Decision', prior: '4.25–4.50%', consensus: 'No Change', source: 'Federal Reserve' },
+];
+
+// ── Recent Releases (grouped by source) ─────────────────────────────────────
+const RECENT_RELEASES = {
+  'Freddie Mac': [
+    { name: 'Mortgage Rates (30yr)', value: '6.82%', date: '2026-06-13' },
+  ],
+  'BLS / DOL': [
+    { name: 'Initial Claims', value: '222K', date: '2026-06-14' },
+    { name: 'CPI (May, YoY)', value: '2.9%', date: '2026-06-11' },
+    { name: 'PPI (May, YoY)', value: '2.4%', date: '2026-06-12' },
+    { name: 'Nonfarm Payrolls', value: '+177K', date: '2026-06-06' },
+  ],
+  'BEA': [
+    { name: 'PCE (Apr, YoY)', value: '2.6%', date: '2026-05-30' },
+    { name: 'GDP Q1 Advance', value: '+1.2%', date: '2026-04-30' },
+  ],
+  'NAR': [
+    { name: 'Existing Home Sales (Apr)', value: '4.00M', date: '2026-05-22' },
+  ],
+  'Altos Research': [
+    { name: 'Seattle Active Inventory', value: '3,241', date: '2026-06-13' },
+    { name: 'Seattle New Listings', value: '892/wk', date: '2026-06-13' },
+    { name: 'Seattle Pending Sales', value: '1,104/wk', date: '2026-06-13' },
+  ],
+  'Redfin': [
+    { name: 'Seattle Median Sale Price', value: '$875K', date: '2026-06-01' },
+    { name: 'Seattle Days on Market', value: '18 days', date: '2026-06-13' },
+  ],
+  'WA ESD': [
+    { name: 'WA Initial Claims', value: '9,840', date: '2026-06-14' },
+    { name: 'Seattle Metro Unemployment', value: '3.8%', date: '2026-05-31' },
+  ],
+};
+
+// ── All Data Master List ─────────────────────────────────────────────────────
+const ALL_METRICS = {
+  ...MARKETS,
+  ...HOUSING,
+  ...INFLATION,
+  ...EMPLOYMENT,
+  ...FED,
+};
+
+// Category grouping for All Data view
+const CATEGORIES = {
+  'Financial Markets': ['treasury10y', 'treasury2y', 'sp500', 'oil', 'mortgageRate', 'mortgageSpread'],
+  'Housing — Seattle': ['seaMedianPrice', 'seaMedianListPrice', 'seaActiveInventory', 'seaWeeksSupply',
+    'seaNewListings', 'seaPendingSales', 'seaDaysOnMarket', 'seaPriceReductions',
+    'seaSaleTListRatio', 'seaCaseShiller', 'kingCountyHomeowners', 'seaAffordabilityRatio'],
+  'Housing — National': ['existingHomeSales', 'newHomeSales'],
+  'Construction': ['housingStarts', 'buildingPermits', 'seaPermits', 'housingCompletions', 'unitsUnderConstruction'],
+  'Inflation': ['cpiHeadline', 'cpiCore', 'pce', 'pceCore', 'trimmedMeanPce',
+    'breakeven5y', 'breakeven10y', 'clevelandFedInfExp', 'seaMetroCpi'],
+  'CPI Components': ['cpiShelter', 'cpiEnergy', 'cpiFood', 'cpiMedical', 'cpiTransport'],
+  'Producer Prices': ['ppi', 'ppiCore'],
+  'Labor — Seattle / WA': ['waStateInitialClaims', 'seaUnemployment', 'seaPayrolls', 'seaTechLayoffs'],
+  'Labor — National': ['initialClaims', 'continuingClaims', 'u3', 'u6', 'nfp',
+    'lfpr', 'avgHourlyEarnings', 'atlantaWageTracker',
+    'joltsOpenings', 'joltsQuits', 'joltsLayoffs'],
+  'Federal Reserve': ['effFedFunds', 'fedTargetHigh', 'cutProbJul', 'cutProbSep', 'cutProbNov'],
+};
+
+// FOMC meeting schedule
+const FOMC_MEETINGS = [
+  { date: '2026-07-29', label: 'Jul 28–29', holdProb: 86, cutProb: 14, hikeProb: 0 },
+  { date: '2026-09-16', label: 'Sep 15–16', holdProb: 32, cutProb: 68, hikeProb: 0 },
+  { date: '2026-11-04', label: 'Nov 4–5', holdProb: 18, cutProb: 82, hikeProb: 0 },
+  { date: '2026-12-16', label: 'Dec 15–16', holdProb: 22, cutProb: 77, hikeProb: 1 },
+];
+
+// Today summary — used for narrative generation
+const TODAY_SUMMARY_CONTEXT = {
+  date: TODAY,
+  keyMetrics: [
+    { name: '10yr Treasury', value: '4.38%', change: '+4bps today' },
+    { name: 'Mortgage Rate', value: '6.82%', change: '-5bps WoW' },
+    { name: 'Seattle Median Price', value: '$875K', change: '+$12K MoM, +$38K YoY' },
+    { name: 'Seattle Inventory', value: '3,241 homes', change: '+187 WoW, +621 YoY' },
+    { name: 'CPI (May)', value: '2.9% YoY', change: '-0.1 from Apr' },
+    { name: 'Initial Claims', value: '222K', change: '-4K WoW' },
+    { name: 'Fed Funds', value: '4.25-4.50%', change: 'Unchanged; Sep cut at 68%' },
+  ],
+  narrative: `Seattle's housing market continues to show signs of normalization heading into summer 2026.
+Active inventory has climbed to 3,241 homes — the highest since early 2019 — giving buyers meaningfully more choice
+than the historic lows of 2021–2022. Despite rising supply, the median sale price held firm at $875K (+4.5% YoY),
+supported by resilient local employment in aerospace and healthcare. Mortgage rates edged down to 6.82%,
+a modest tailwind for affordability. Nationally, inflation continues its gradual descent with May CPI at 2.9%,
+keeping September Fed rate cut expectations elevated at 68%. The labor market remains solid but is softening
+at the margins — initial claims ticked down but continuing claims crept higher.`
+};
