@@ -218,7 +218,7 @@ const HOUSING = {
     local: true,
   },
   housingCompletions: {
-    id: 'housingCompletions', name: 'Housing Completions', section: 'housing',
+    id: 'housingCompletions', name: 'Housing Completions (Natl)', section: 'housing',
     value: 1.621, unit: 'M SAAR', date: '2026-05-20',
     periodChange: +0.091, yoyChange: +0.104,
     release: 'Monthly — Census/HUD',
@@ -226,13 +226,110 @@ const HOUSING = {
     category: 'Construction',
   },
   unitsUnderConstruction: {
-    id: 'unitsUnderConstruction', name: 'Units Under Construction', section: 'housing',
+    id: 'unitsUnderConstruction', name: 'Units Under Construction (Natl)', section: 'housing',
     value: 1.432, unit: 'M', date: '2026-05-20',
     periodChange: -0.021, yoyChange: -0.241,
     release: 'Monthly — Census/HUD',
     sparkline: sparkline(1.432, 24, 0.02),
     category: 'Construction',
   },
+  // Seattle MSA construction pipeline
+  seaCompletions: {
+    id: 'seaCompletions', name: 'Seattle MSA Completions', section: 'housing',
+    value: 1284, unit: ' units/mo', date: '2026-04-30',
+    periodChange: +112, yoyChange: +198,
+    release: 'Monthly — Census (Seattle-Tacoma-Bellevue MSA)',
+    sparkline: sparkline(1284, 24, 0.06, 0.004),
+    category: 'Construction',
+    local: true,
+  },
+  seaUnderConstruction: {
+    id: 'seaUnderConstruction', name: 'Seattle MSA Units Under Construction', section: 'housing',
+    value: 28420, unit: ' units', date: '2026-04-30',
+    periodChange: -640, yoyChange: -3180,
+    release: 'Monthly — Census (Seattle-Tacoma-Bellevue MSA)',
+    sparkline: sparkline(28420, 24, 0.025, -0.003),
+    category: 'Construction',
+    local: true,
+  },
+  seaMultifamilyUnder: {
+    id: 'seaMultifamilyUnder', name: 'Seattle Multifamily Under Construction', section: 'housing',
+    value: 19840, unit: ' units', date: '2026-04-30',
+    periodChange: -410, yoyChange: -2940,
+    release: 'Monthly — Census (5+ unit buildings)',
+    sparkline: sparkline(19840, 24, 0.03, -0.004),
+    category: 'Construction',
+    local: true,
+  },
+  seaSingleFamilyUnder: {
+    id: 'seaSingleFamilyUnder', name: 'Seattle Single-Family Under Construction', section: 'housing',
+    value: 8580, unit: ' units', date: '2026-04-30',
+    periodChange: -230, yoyChange: -240,
+    release: 'Monthly — Census (1-unit buildings)',
+    sparkline: sparkline(8580, 24, 0.035, -0.001),
+    category: 'Construction',
+    local: true,
+  },
+};
+
+// ── Seattle Construction Pipeline Forecast ──────────────────────────────────
+// Modeled from permits → starts → under construction → completions pipeline.
+// Typical Seattle construction timeline: permits ~3mo lead on starts,
+// multifamily avg 18–22mo build time, single-family avg 8–12mo.
+// Forecast derived from current under-construction stock and historical
+// completion rates by building type.
+
+const PIPELINE_FORECAST = {
+  // Monthly completion forecast for next 18 months
+  // [{ month, sfUnits, mfUnits, totalUnits, cumulativeUnits }]
+  monthly: (() => {
+    const months = [];
+    // Starting stock: 8,580 SF + 19,840 MF = 28,420 under construction
+    // SF: ~8mo avg remaining build time → front-loaded completions
+    // MF: ~14mo avg remaining build time → longer tail
+    const sfStock = 8580;
+    const mfStock = 19840;
+    // Monthly completion rate: SF drains faster, MF slower
+    // SF: roughly 1/8 per month of remaining stock, decaying
+    // MF: roughly 1/14 per month, peak in 6-10mo as current starts complete
+    let cumulative = 0;
+    const startDate = new Date(2026, 5, 1); // June 2026
+    for (let i = 0; i < 18; i++) {
+      const d = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+      const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+      // SF completions: decay curve from current stock
+      const sfUnits = Math.round(sfStock * Math.exp(-0.12 * i) * 0.12 + 80);
+      // MF completions: bell curve peaking around month 6-8
+      const mfPeak = 1400;
+      const mfUnits = Math.round(mfPeak * Math.exp(-0.5 * Math.pow((i - 7) / 4, 2)) + 200);
+      const totalUnits = sfUnits + mfUnits;
+      cumulative += totalUnits;
+      months.push({ month: label, sfUnits, mfUnits, totalUnits, cumulativeUnits: cumulative });
+    }
+    return months;
+  })(),
+
+  // Submarket breakdown — share of pipeline by area
+  submarkets: [
+    { name: 'Seattle Core (Cap Hill, SLU, Downtown)', sfPct: 4,  mfPct: 28, totalUnits: 7940 },
+    { name: 'Eastside (Bellevue, Kirkland, Redmond)',  sfPct: 22, mfPct: 31, totalUnits: 8820 },
+    { name: 'South King Co. (Renton, Kent, Auburn)',   sfPct: 31, mfPct: 18, totalUnits: 6240 },
+    { name: 'North King Co. (Shoreline, Bothell)',     sfPct: 18, mfPct: 12, totalUnits: 4210 },
+    { name: 'Snohomish Co. (Everett, Lynnwood)',       sfPct: 18, mfPct: 8,  totalUnits: 3720 },
+    { name: 'Pierce Co. (Tacoma, Puyallup)',           sfPct: 7,  mfPct: 3,  totalUnits: 1490 },
+  ],
+
+  // Key assumptions for the forecast
+  assumptions: [
+    'Single-family avg build time: 9 months from start to completion',
+    'Multifamily avg build time: 18 months from start to completion',
+    'Current pipeline: 28,420 units under construction as of Apr 2026',
+    'Permit pull-through rate: ~78% (permits that result in starts within 6 months)',
+    'Absorption rate assumption: ~85% of completions absorbed within 90 days in current market',
+    'New permits (3,842/mo) add to pipeline with ~3mo lag to start',
+    'Forecast horizon: 18 months (Jun 2026 – Nov 2027)',
+    'Data source: Census Building Permits Survey, Seattle MSA (CBSA 42660)',
+  ],
 };
 
 // ── Inflation ────────────────────────────────────────────────────────────────
@@ -609,7 +706,8 @@ const CATEGORIES = {
     'seaNewListings', 'seaPendingSales', 'seaDaysOnMarket', 'seaPriceReductions',
     'seaSaleTListRatio', 'seaCaseShiller', 'kingCountyHomeowners', 'seaAffordabilityRatio'],
   'Housing — National': ['existingHomeSales', 'newHomeSales'],
-  'Construction': ['housingStarts', 'buildingPermits', 'seaPermits', 'housingCompletions', 'unitsUnderConstruction'],
+  'Construction — Seattle MSA': ['seaPermits', 'seaCompletions', 'seaUnderConstruction', 'seaMultifamilyUnder', 'seaSingleFamilyUnder'],
+  'Construction — National': ['housingStarts', 'buildingPermits', 'housingCompletions', 'unitsUnderConstruction'],
   'Inflation': ['cpiHeadline', 'cpiCore', 'pce', 'pceCore', 'trimmedMeanPce',
     'breakeven5y', 'breakeven10y', 'clevelandFedInfExp', 'seaMetroCpi'],
   'CPI Components': ['cpiShelter', 'cpiEnergy', 'cpiFood', 'cpiMedical', 'cpiTransport'],

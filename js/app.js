@@ -214,6 +214,126 @@ function renderToday() {
   return el;
 }
 
+// ── Construction Pipeline Forecast ───────────────────────────────────────────
+
+function buildPipelineForecast() {
+  const wrap = document.createElement('div');
+
+  // Summary callout cards
+  const totalForecast = PIPELINE_FORECAST.monthly.reduce((s, m) => s + m.totalUnits, 0);
+  const next6mo = PIPELINE_FORECAST.monthly.slice(0, 6).reduce((s, m) => s + m.totalUnits, 0);
+  const next12mo = PIPELINE_FORECAST.monthly.slice(0, 12).reduce((s, m) => s + m.totalUnits, 0);
+  const peakMonth = PIPELINE_FORECAST.monthly.reduce((p, m) => m.totalUnits > p.totalUnits ? m : p);
+
+  const callouts = document.createElement('div');
+  callouts.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px;';
+  [
+    { label: 'Units Under Construction', value: (28420).toLocaleString(), sub: 'as of Apr 2026' },
+    { label: 'Forecast Next 6 Months', value: next6mo.toLocaleString(), sub: 'Jun–Nov 2026' },
+    { label: 'Forecast Next 12 Months', value: next12mo.toLocaleString(), sub: 'Jun 2026–May 2027' },
+    { label: 'Peak Completion Month', value: peakMonth.month, sub: `~${peakMonth.totalUnits.toLocaleString()} units` },
+    { label: '18-Month Total', value: totalForecast.toLocaleString(), sub: 'Jun 2026–Nov 2027' },
+  ].forEach(c => {
+    callouts.innerHTML += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center">
+      <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">${c.label}</div>
+      <div style="font-size:1.4rem;font-weight:800;color:var(--text)">${c.value}</div>
+      <div style="font-size:.72rem;color:var(--text-muted);margin-top:2px">${c.sub}</div>
+    </div>`;
+  });
+  wrap.appendChild(callouts);
+
+  // Stacked bar chart: SF vs MF completions by month
+  const chartWrap = document.createElement('div');
+  chartWrap.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;';
+  chartWrap.innerHTML = `<div style="font-size:.8rem;font-weight:600;color:var(--text-muted);margin-bottom:12px">Monthly Completion Forecast — Single-Family vs Multifamily (Units)</div>`;
+  const canvasWrap = document.createElement('div');
+  canvasWrap.style.cssText = 'position:relative;height:220px;';
+  const canvas = document.createElement('canvas');
+  canvas.id = 'pipeline-chart';
+  canvasWrap.appendChild(canvas);
+  chartWrap.appendChild(canvasWrap);
+  wrap.appendChild(chartWrap);
+
+  // Submarket table
+  const smTitle = document.createElement('div');
+  smTitle.className = 'subsection-title';
+  smTitle.textContent = 'Pipeline by Submarket';
+  wrap.appendChild(smTitle);
+
+  const smTable = document.createElement('div');
+  smTable.innerHTML = `<table class="data-table">
+    <thead><tr><th>Submarket</th><th>SF Share</th><th>Multifamily Share</th><th>Est. Units in Pipeline</th></tr></thead>
+    <tbody>${PIPELINE_FORECAST.submarkets.map(s => `
+      <tr>
+        <td>${s.name}</td>
+        <td style="color:var(--green)">${s.sfPct}%</td>
+        <td style="color:var(--accent)">${s.mfPct}%</td>
+        <td style="font-weight:600">${s.totalUnits.toLocaleString()}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+  wrap.appendChild(smTable);
+
+  // Assumptions box
+  const assumTitle = document.createElement('div');
+  assumTitle.className = 'subsection-title';
+  assumTitle.textContent = 'Forecast Assumptions';
+  wrap.appendChild(assumTitle);
+
+  const assumBox = document.createElement('div');
+  assumBox.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--yellow);border-radius:8px;padding:14px 16px;font-size:.8rem;color:var(--text-muted);line-height:1.7;';
+  assumBox.innerHTML = `<div style="font-size:.72rem;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">⚠ Mock Data — Model Assumptions</div>` +
+    PIPELINE_FORECAST.assumptions.map(a => `<div>• ${a}</div>`).join('');
+  wrap.appendChild(assumBox);
+
+  // Draw chart after DOM insertion
+  setTimeout(() => {
+    const labels = PIPELINE_FORECAST.monthly.map(m => m.month);
+    const sfData = PIPELINE_FORECAST.monthly.map(m => m.sfUnits);
+    const mfData = PIPELINE_FORECAST.monthly.map(m => m.mfUnits);
+    const ctx = document.getElementById('pipeline-chart');
+    if (!ctx) return;
+    destroyChart('pipeline-chart');
+    chartRegistry['pipeline-chart'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Single-Family', data: sfData, backgroundColor: '#34d399cc', borderRadius: 3 },
+          { label: 'Multifamily', data: mfData, backgroundColor: '#4f8ef7cc', borderRadius: 3 },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#8892aa', font: { size: 11 } } },
+          tooltip: {
+            backgroundColor: '#1a1d27',
+            borderColor: '#2e3250',
+            borderWidth: 1,
+            titleColor: '#e2e8f0',
+            bodyColor: '#8892aa',
+            callbacks: {
+              footer: (items) => {
+                const total = items.reduce((s, i) => s + i.raw, 0);
+                return `Total: ${total.toLocaleString()} units`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: { stacked: true, ticks: { color: '#8892aa', font: { size: 10 } }, grid: { color: '#2e3250' } },
+          y: { stacked: true, ticks: { color: '#8892aa', font: { size: 10 } }, grid: { color: '#2e3250' },
+            title: { display: true, text: 'Units', color: '#8892aa', font: { size: 10 } } },
+        },
+      },
+    });
+  }, 80);
+
+  return wrap;
+}
+
 // ── Section: Housing ─────────────────────────────────────────────────────────
 
 function renderHousing() {
@@ -230,7 +350,8 @@ function renderHousing() {
     { title: 'Seattle Market Pulse', ids: ['seaMedianPrice', 'seaMedianListPrice', 'seaActiveInventory', 'seaWeeksSupply', 'seaNewListings', 'seaPendingSales', 'seaDaysOnMarket', 'seaPriceReductions', 'seaSaleTListRatio'] },
     { title: 'Home Prices', ids: ['seaCaseShiller', 'seaMedianPrice', 'existingHomeSales', 'newHomeSales'] },
     { title: 'Affordability', ids: ['seaAffordabilityRatio', 'kingCountyHomeowners', 'mortgageRate', 'mortgageSpread'] },
-    { title: 'Construction', ids: ['housingStarts', 'buildingPermits', 'seaPermits', 'housingCompletions', 'unitsUnderConstruction'] },
+    { title: 'Seattle Construction Pipeline', ids: ['seaPermits', 'seaUnderConstruction', 'seaMultifamilyUnder', 'seaSingleFamilyUnder', 'seaCompletions'] },
+    { title: 'National Construction Context', ids: ['housingStarts', 'buildingPermits', 'housingCompletions', 'unitsUnderConstruction'] },
     { title: 'National Context', ids: ['existingHomeSales', 'newHomeSales'] },
   ];
 
@@ -245,6 +366,10 @@ function renderHousing() {
     });
     el.appendChild(grid);
   });
+
+  // ── Construction Pipeline Forecast ──
+  el.innerHTML += `<div class="subsection-title">Construction Completion Forecast — 18-Month Pipeline</div>`;
+  el.appendChild(buildPipelineForecast());
 
   setTimeout(() => {
     drawSparklines(allShown);
