@@ -109,12 +109,19 @@ function drawSparklines(metrics) {
 }
 
 // Populate AI signals for visible cards
-function populateSignals(metrics) {
+function populateSignals(metrics, containerEl) {
   if (!AI.hasKey()) {
     metrics.forEach(m => {
       const el = document.querySelector(`[data-signal-id="${m.id}"]`);
-      if (el) { el.textContent = 'Add Claude API key (sidebar) for AI signals.'; el.classList.remove('loading'); }
+      if (el) { el.textContent = ''; el.classList.remove('loading'); }
     });
+    if (containerEl && !containerEl.querySelector('.ai-key-banner')) {
+      const banner = document.createElement('div');
+      banner.className = 'ai-key-banner';
+      banner.innerHTML = `<span>✦ Add a <strong>Claude API key</strong> in the sidebar to get AI-generated signals on every card.</span>
+        <button onclick="document.getElementById('api-key-input').focus();document.getElementById('api-key-input').scrollIntoView({behavior:'smooth'})">Add key →</button>`;
+      containerEl.appendChild(banner);
+    }
     return;
   }
   AI.batchSignals(metrics, (id, signal) => {
@@ -201,7 +208,7 @@ function renderToday() {
 
   setTimeout(() => {
     drawSparklines(allMetricsShown);
-    populateSignals(allMetricsShown);
+    populateSignals(allMetricsShown, el);
   }, 50);
 
   return el;
@@ -241,7 +248,7 @@ function renderHousing() {
 
   setTimeout(() => {
     drawSparklines(allShown);
-    populateSignals(allShown);
+    populateSignals(allShown, el);
   }, 50);
 
   return el;
@@ -276,7 +283,7 @@ function renderInflation() {
 
   setTimeout(() => {
     drawSparklines(allShown);
-    populateSignals(allShown);
+    populateSignals(allShown, el);
   }, 50);
 
   return el;
@@ -324,7 +331,7 @@ function renderEmployment() {
 
   setTimeout(() => {
     drawSparklines(allShown);
-    populateSignals(allShown);
+    populateSignals(allShown, el);
   }, 50);
 
   return el;
@@ -381,7 +388,7 @@ function renderFed() {
   const shown = ['effFedFunds', 'fedTargetHigh', 'cutProbJul', 'cutProbSep', 'cutProbNov'].map(id => ALL_METRICS[id]);
   setTimeout(() => {
     drawSparklines(shown);
-    populateSignals(shown);
+    populateSignals(shown, el);
   }, 50);
 
   return el;
@@ -456,7 +463,7 @@ function renderFlagged() {
 
   setTimeout(() => {
     drawSparklines(flaggedMetrics);
-    populateSignals(flaggedMetrics);
+    populateSignals(flaggedMetrics, el);
   }, 50);
 
   return el;
@@ -486,7 +493,7 @@ function renderAllData() {
 
   setTimeout(() => {
     drawSparklines(allShown);
-    populateSignals(allShown);
+    populateSignals(allShown, el);
   }, 50);
 
   return el;

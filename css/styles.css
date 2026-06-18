@@ -374,6 +374,33 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
   border-bottom: 1px solid var(--border);
 }
 
+/* ── AI Key Banner ── */
+.ai-key-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 12px 16px;
+  background: rgba(79,142,247,0.07);
+  border: 1px dashed rgba(79,142,247,0.35);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.ai-key-banner strong { color: var(--accent); }
+.ai-key-banner button {
+  white-space: nowrap;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.ai-key-banner button:hover { opacity: 0.85; }
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
