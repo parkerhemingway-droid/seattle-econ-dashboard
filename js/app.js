@@ -492,6 +492,149 @@ function renderAllData() {
   return el;
 }
 
+// ── Section: Help / Sources ──────────────────────────────────────────────────
+
+function renderHelp() {
+  const el = document.createElement('div');
+  el.innerHTML = `<div class="section-title">Help & Data Sources</div>
+    <div class="section-subtitle">Metric definitions, data sources, and how to use this dashboard</div>`;
+
+  // ── How to use ──
+  el.innerHTML += `<div class="subsection-title">How to Use</div>`;
+  const howTo = document.createElement('div');
+  howTo.className = 'narrative-box';
+  howTo.innerHTML = `<h3>Dashboard Guide</h3>
+    <p><strong>Navigation:</strong> Use the left sidebar to jump between sections — Today, Housing, Inflation, Employment, Fed, and more.</p>
+    <br>
+    <p><strong>Metric Cards:</strong> Each card shows the metric name, a sparkline of recent history, the latest value, period change, and year-over-year change. Green = positive signal, red = negative signal (direction is context-aware — e.g. falling unemployment is green).</p>
+    <br>
+    <p><strong>★ Flag:</strong> Click the star on any card to save it to your Flagged section for quick daily reference. Flags persist across sessions.</p>
+    <br>
+    <p><strong>CSV Export:</strong> Click CSV on any card to download the latest reading as a spreadsheet.</p>
+    <br>
+    <p><strong>AI Signals:</strong> Enter a Claude API key (sidebar bottom) to get a one-line AI interpretation on every card and AI-generated narrative summaries at the top of each section. Uses claude-haiku-4-5 — very inexpensive. Key is stored only in your browser's localStorage.</p>
+    <br>
+    <p><strong>Search:</strong> The search bar at the top of the sidebar finds any metric by name or category.</p>
+    <br>
+    <p><strong>📍 Pin icon:</strong> Metrics marked with 📍 are localized to Seattle/King County/WA State. Unmarked metrics are national.</p>`;
+  el.appendChild(howTo);
+
+  // ── Data sources table ──
+  el.innerHTML += `<div class="subsection-title">Data Sources</div>`;
+  const sources = [
+    { name: 'Altos Research', type: 'Weekly housing', url: 'https://www.altosresearch.com', metrics: 'Active inventory, new listings, pending sales, price reductions, days on market, weeks of supply', access: 'Paid subscription', live: false },
+    { name: 'Redfin Data Center', type: 'Weekly/monthly housing', url: 'https://www.redfin.com/news/data-center/', metrics: 'Median sale price, sale-to-list ratio, days on market, pending sales', access: 'Free CSV download', live: false },
+    { name: 'NWMLS', type: 'Monthly housing', url: 'https://www.nwmls.com/market-statistics/', metrics: 'King/Snohomish County closed sales, median prices', access: 'Public stats page', live: false },
+    { name: 'FRED (St. Louis Fed)', type: 'Economic aggregator', url: 'https://fred.stlouisfed.org', metrics: 'Treasury yields, Fed funds rate, CPI, PCE, payrolls, claims — nearly everything national', access: 'Free API key at fred.stlouisfed.org/docs/api', live: true },
+    { name: 'BLS (Bureau of Labor Statistics)', type: 'Monthly/weekly labor', url: 'https://www.bls.gov/developers/', metrics: 'CPI, PPI, nonfarm payrolls, unemployment rates, JOLTS, hourly earnings', access: 'Free API key', live: true },
+    { name: 'BEA (Bureau of Economic Analysis)', type: 'Monthly macro', url: 'https://apps.bea.gov/API/signup/', metrics: 'PCE, GDP, personal income', access: 'Free API key', live: true },
+    { name: 'Freddie Mac', type: 'Weekly mortgage', url: 'https://www.freddiemac.com/pmms', metrics: '30-year and 15-year fixed mortgage rates', access: 'Free CSV download (FRED also has this)', live: false },
+    { name: 'NAR (National Assoc. of Realtors)', type: 'Monthly housing', url: 'https://www.nar.realtor/research-and-statistics', metrics: 'Existing home sales, pending home sales index', access: 'Public press releases; paid for full data', live: false },
+    { name: 'Census / HUD', type: 'Monthly construction', url: 'https://www.census.gov/construction/nrc/', metrics: 'Housing starts, building permits, completions, units under construction, new home sales', access: 'Free — FRED carries it all', live: true },
+    { name: 'S&P / Case-Shiller', type: 'Monthly home prices', url: 'https://fred.stlouisfed.org/series/SEXRNSA', metrics: 'Seattle Home Price Index (2-month lag)', access: 'Free via FRED (series SEXRNSA)', live: true },
+    { name: 'WA Employment Security Dept.', type: 'Weekly/monthly labor', url: 'https://esd.wa.gov/labormarketinfo', metrics: 'WA initial claims, Seattle metro unemployment, WA payrolls by sector', access: 'Free download / public data', live: false },
+    { name: 'CME FedWatch', type: 'Daily Fed expectations', url: 'https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html', metrics: 'Cut/hold/hike probabilities by FOMC meeting', access: 'Free web scrape or paid API', live: false },
+    { name: 'Atlanta Fed Wage Tracker', type: 'Monthly wages', url: 'https://www.atlantafed.org/chcs/wage-growth-tracker', metrics: 'Median wage growth YoY', access: 'Free CSV download', live: false },
+    { name: 'Cleveland Fed', type: 'Monthly expectations', url: 'https://www.clevelandfed.org/indicators-and-data/inflation-expectations', metrics: '1-year inflation expectations', access: 'Free CSV download', live: false },
+    { name: 'Dallas Fed', type: 'Monthly inflation', url: 'https://www.dallasfed.org/research/pce', metrics: 'Trimmed Mean PCE', access: 'Free CSV download', live: false },
+    { name: 'Treasury Dept.', type: 'Daily yields', url: 'https://home.treasury.gov/resource-center/data-chart-center/interest-rates/', metrics: '2-year, 10-year Treasury yields, TIPS breakevens', access: 'Free CSV / FRED API', live: true },
+  ];
+
+  const table = document.createElement('div');
+  table.innerHTML = `<table class="data-table">
+    <thead><tr><th>Source</th><th>Covers</th><th>Metrics Used Here</th><th>Access</th><th>Live API?</th></tr></thead>
+    <tbody>${sources.map(s => `
+      <tr>
+        <td><a href="${s.url}" target="_blank" style="color:var(--accent);text-decoration:none">${s.name}</a></td>
+        <td style="color:var(--text-muted)">${s.type}</td>
+        <td>${s.metrics}</td>
+        <td style="color:var(--text-muted)">${s.access}</td>
+        <td style="text-align:center">${s.live ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--text-muted)">—</span>'}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+  el.appendChild(table);
+
+  // ── Metric definitions ──
+  el.innerHTML += `<div class="subsection-title" style="margin-top:32px">Metric Definitions</div>`;
+
+  const defs = [
+    { term: 'Active Inventory', def: 'The number of homes listed for sale at a given point in time. Rising inventory favors buyers; falling inventory favors sellers.' },
+    { term: 'Weeks of Supply', def: 'Active inventory divided by the weekly sales pace. Under 3 weeks = strong seller\'s market; 4–6 weeks = balanced; 6+ weeks = buyer\'s market.' },
+    { term: 'Days on Market (DOM)', def: 'Median number of days from listing to accepted offer. A rising DOM signals softening demand.' },
+    { term: 'Sale-to-List Ratio', def: 'Final sale price divided by the original list price. Above 100% means homes are selling above asking (bidding wars); below 100% means sellers are accepting discounts.' },
+    { term: 'Price Reductions', def: 'Share of active listings that have had at least one price cut. Rising reductions = sellers losing pricing power.' },
+    { term: 'Case-Shiller HPI', def: 'The S&P/Case-Shiller Home Price Index for Seattle. Tracks repeat-sale price changes on the same properties. Published with a ~2 month lag.' },
+    { term: 'Price-to-Income Ratio', def: 'Median home price divided by median household income. A ratio above 5x is considered stretched; Seattle\'s 10.4x is among the highest in the US.' },
+    { term: 'Mortgage Spread', def: 'The difference between the 30-year mortgage rate and the 10-year Treasury yield. Historically ~1.7%; elevated spreads (2.4%+) indicate lender risk aversion.' },
+    { term: 'Treasury Breakeven', def: 'The difference between nominal Treasury yields and TIPS yields of the same maturity. Represents the market\'s implied inflation expectation over that horizon.' },
+    { term: 'CPI vs PCE', def: 'Both measure inflation but differ in scope. PCE (the Fed\'s preferred measure) is broader, includes more healthcare, and weights categories by actual spending patterns rather than a fixed basket.' },
+    { term: 'Core Inflation', def: 'CPI or PCE excluding food and energy, which are volatile. Core is used to gauge underlying inflation trend.' },
+    { term: 'Trimmed Mean PCE', def: 'A Dallas Fed measure that strips out the highest and lowest price changes each month, leaving the middle of the distribution. Considered a clean signal of underlying inflation.' },
+    { term: 'U-3 vs U-6', def: 'U-3 is the official unemployment rate (jobless and actively seeking work). U-6 adds discouraged workers and those working part-time who want full-time work — a broader measure of labor underutilization.' },
+    { term: 'JOLTS', def: 'Job Openings and Labor Turnover Survey. Tracks openings, hires, quits, and layoffs. The quits rate ("Great Resignation" metric) reflects worker confidence in finding better jobs.' },
+    { term: 'Labor Force Participation Rate (LFPR)', def: 'Share of the civilian non-institutional population that is working or actively looking for work. Declining LFPR can mask true unemployment.' },
+    { term: 'Nonfarm Payrolls (NFP)', def: 'Monthly change in the number of employed workers, excluding farm workers and private household employees. The most-watched labor market release.' },
+    { term: 'Initial Claims', def: 'New unemployment insurance filings in the most recent week. A leading indicator of layoffs. 4-week moving average smooths volatility.' },
+    { term: 'Continuing Claims', def: 'The total number of people currently receiving unemployment benefits. A lagging indicator of labor market health.' },
+    { term: 'Effective Fed Funds Rate', def: 'The actual overnight rate at which banks lend to each other, which the Fed steers toward its target range via open market operations.' },
+    { term: 'FOMC Cut Probability', def: 'Derived from Fed Funds futures prices (CME FedWatch). Reflects market consensus on whether the Fed will cut, hold, or hike at the next meeting.' },
+    { term: 'PPI (Producer Price Index)', def: 'Measures inflation at the wholesale/producer level — what businesses pay for inputs. Often leads CPI by 1–3 months as cost pressures pass through to consumers.' },
+    { term: 'SAAR (Seasonally Adjusted Annual Rate)', def: 'A statistical adjustment that removes seasonal patterns and annualizes the monthly pace. Allows apples-to-apples comparisons across months.' },
+  ];
+
+  const defsEl = document.createElement('div');
+  defsEl.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;';
+  defs.forEach(d => {
+    defsEl.innerHTML += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;">
+      <div style="font-weight:700;font-size:.83rem;color:var(--accent);margin-bottom:6px">${d.term}</div>
+      <div style="font-size:.8rem;color:var(--text-muted);line-height:1.5">${d.def}</div>
+    </div>`;
+  });
+  el.appendChild(defsEl);
+
+  // ── Wiring up live data ──
+  el.innerHTML += `<div class="subsection-title" style="margin-top:32px">Wiring Up Live Data</div>`;
+  const liveBox = document.createElement('div');
+  liveBox.className = 'narrative-box';
+  liveBox.innerHTML = `<h3>How to Replace Mock Data with Real Feeds</h3>
+    <p>All data currently lives in <code style="color:var(--accent)">js/data.js</code>. Each metric has a <code style="color:var(--accent)">sparkline</code> array and scalar values you can replace with API responses.</p>
+    <br>
+    <p><strong>Easiest starting point — FRED API (free):</strong><br>
+    1. Get a free key at <a href="https://fred.stlouisfed.org/docs/api/api_key.html" target="_blank" style="color:var(--accent)">fred.stlouisfed.org</a><br>
+    2. Fetch any series: <code style="color:var(--accent)">https://api.stlouisfed.org/fred/series/observations?series_id=MORTGAGE30US&api_key=YOUR_KEY&file_type=json</code><br>
+    3. Replace the <code>sparkline</code> array and <code>value</code> fields in data.js with the response data.</p>
+    <br>
+    <p><strong>Key FRED series IDs used here:</strong></p>
+    <table class="data-table" style="margin-top:8px">
+      <thead><tr><th>Metric</th><th>FRED Series ID</th></tr></thead>
+      <tbody>
+        <tr><td>30-yr Mortgage Rate</td><td>MORTGAGE30US</td></tr>
+        <tr><td>10-yr Treasury</td><td>DGS10</td></tr>
+        <tr><td>2-yr Treasury</td><td>DGS2</td></tr>
+        <tr><td>Effective Fed Funds</td><td>EFFR</td></tr>
+        <tr><td>CPI YoY</td><td>CPIAUCSL (compute YoY)</td></tr>
+        <tr><td>Core CPI YoY</td><td>CPILFESL</td></tr>
+        <tr><td>PCE YoY</td><td>PCEPI</td></tr>
+        <tr><td>Core PCE</td><td>PCEPILFE</td></tr>
+        <tr><td>Initial Claims</td><td>ICSA</td></tr>
+        <tr><td>Continuing Claims</td><td>CCSA</td></tr>
+        <tr><td>Nonfarm Payrolls</td><td>PAYEMS</td></tr>
+        <tr><td>U-3 Unemployment</td><td>UNRATE</td></tr>
+        <tr><td>U-6 Unemployment</td><td>U6RATE</td></tr>
+        <tr><td>Housing Starts</td><td>HOUST</td></tr>
+        <tr><td>Building Permits</td><td>PERMIT</td></tr>
+        <tr><td>Seattle Case-Shiller</td><td>SEXRNSA</td></tr>
+        <tr><td>Seattle Unemployment</td><td>SEAT453URN</td></tr>
+        <tr><td>5-yr Breakeven</td><td>T5YIE</td></tr>
+        <tr><td>10-yr Breakeven</td><td>T10YIE</td></tr>
+      </tbody>
+    </table>`;
+  el.appendChild(liveBox);
+
+  return el;
+}
+
 // ── Routing ──────────────────────────────────────────────────────────────────
 
 let currentSection = 'today';
@@ -506,6 +649,7 @@ const RENDERERS = {
   recent: renderRecent,
   flagged: renderFlagged,
   alldata: renderAllData,
+  help: renderHelp,
 };
 
 function navigate(section) {
