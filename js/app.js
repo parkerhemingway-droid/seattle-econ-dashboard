@@ -219,35 +219,71 @@ function renderToday() {
 function buildPipelineForecast() {
   const wrap = document.createElement('div');
 
-  // Summary callout cards
-  const totalForecast = PIPELINE_FORECAST.monthly.reduce((s, m) => s + m.totalUnits, 0);
-  const next6mo = PIPELINE_FORECAST.monthly.slice(0, 6).reduce((s, m) => s + m.totalUnits, 0);
-  const next12mo = PIPELINE_FORECAST.monthly.slice(0, 12).reduce((s, m) => s + m.totalUnits, 0);
-  const peakMonth = PIPELINE_FORECAST.monthly.reduce((p, m) => m.totalUnits > p.totalUnits ? m : p);
+  const hist = PIPELINE_FORECAST.historical;
+  const fcast = PIPELINE_FORECAST.monthly;
+  const todayIdx = hist.length - 1; // last historical point = divider
+
+  // Build unified label + data arrays: history then forecast
+  const allLabels = [...hist.map(h => h.month), ...fcast.map(f => f.month)];
+  const totalLen = allLabels.length;
+
+  // Stacked bars: SF historical, MF historical, SF forecast, MF forecast
+  const sfHist  = [...hist.map(h => h.sf),       ...Array(fcast.length).fill(null)];
+  const mfHist  = [...hist.map(h => h.mf),       ...Array(fcast.length).fill(null)];
+  const sfFcast = [...Array(hist.length).fill(null), ...fcast.map(f => f.sfUnits)];
+  const mfFcast = [...Array(hist.length).fill(null), ...fcast.map(f => f.mfUnits)];
+
+  // 12-month rolling average across the full series
+  const allTotals = [
+    ...hist.map(h => h.sf + h.mf),
+    ...fcast.map(f => f.totalUnits),
+  ];
+  const rollingAvg = allTotals.map((_, i) => {
+    const window = allTotals.slice(Math.max(0, i - 11), i + 1);
+    return Math.round(window.reduce((s, v) => s + v, 0) / window.length);
+  });
+
+  // Summary callouts
+  const totalForecast = fcast.reduce((s, m) => s + m.totalUnits, 0);
+  const next6mo  = fcast.slice(0,  6).reduce((s, m) => s + m.totalUnits, 0);
+  const next12mo = fcast.slice(0, 12).reduce((s, m) => s + m.totalUnits, 0);
+  const peakMonth = fcast.reduce((p, m) => m.totalUnits > p.totalUnits ? m : p);
+  const histAvgMonthly = Math.round(allTotals.slice(0, hist.length).reduce((s,v)=>s+v,0) / hist.length);
 
   const callouts = document.createElement('div');
-  callouts.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px;';
+  callouts.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:20px;';
   [
     { label: 'Units Under Construction', value: (28420).toLocaleString(), sub: 'as of Apr 2026' },
+    { label: '5-Yr Avg Monthly Completions', value: histAvgMonthly.toLocaleString(), sub: 'Jan 2021–May 2026' },
     { label: 'Forecast Next 6 Months', value: next6mo.toLocaleString(), sub: 'Jun–Nov 2026' },
     { label: 'Forecast Next 12 Months', value: next12mo.toLocaleString(), sub: 'Jun 2026–May 2027' },
-    { label: 'Peak Completion Month', value: peakMonth.month, sub: `~${peakMonth.totalUnits.toLocaleString()} units` },
-    { label: '18-Month Total', value: totalForecast.toLocaleString(), sub: 'Jun 2026–Nov 2027' },
+    { label: 'Peak Forecast Month', value: peakMonth.month, sub: `~${peakMonth.totalUnits.toLocaleString()} units` },
+    { label: '18-Month Forecast Total', value: totalForecast.toLocaleString(), sub: 'Jun 2026–Nov 2027' },
   ].forEach(c => {
     callouts.innerHTML += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center">
       <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">${c.label}</div>
-      <div style="font-size:1.4rem;font-weight:800;color:var(--text)">${c.value}</div>
+      <div style="font-size:1.3rem;font-weight:800;color:var(--text)">${c.value}</div>
       <div style="font-size:.72rem;color:var(--text-muted);margin-top:2px">${c.sub}</div>
     </div>`;
   });
   wrap.appendChild(callouts);
 
-  // Stacked bar chart: SF vs MF completions by month
+  // Chart container
   const chartWrap = document.createElement('div');
   chartWrap.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;';
-  chartWrap.innerHTML = `<div style="font-size:.8rem;font-weight:600;color:var(--text-muted);margin-bottom:12px">Monthly Completion Forecast — Single-Family vs Multifamily (Units)</div>`;
+  chartWrap.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:.85rem;font-weight:600;color:var(--text)">Seattle MSA Housing Completions — 5-Year History + 18-Month Forecast</div>
+      <div style="display:flex;gap:14px;font-size:.72rem;color:var(--text-muted);align-items:center">
+        <span><span style="display:inline-block;width:10px;height:10px;background:#34d399;border-radius:2px;margin-right:4px"></span>SF Historical</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:#4f8ef7;border-radius:2px;margin-right:4px"></span>MF Historical</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:#34d39966;border-radius:2px;margin-right:4px"></span>SF Forecast</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:#4f8ef766;border-radius:2px;margin-right:4px"></span>MF Forecast</span>
+        <span><span style="display:inline-block;width:18px;height:2px;background:#fbbf24;margin-right:4px;vertical-align:middle"></span>12-mo Avg</span>
+      </div>
+    </div>`;
   const canvasWrap = document.createElement('div');
-  canvasWrap.style.cssText = 'position:relative;height:220px;';
+  canvasWrap.style.cssText = 'position:relative;height:300px;';
   const canvas = document.createElement('canvas');
   canvas.id = 'pipeline-chart';
   canvasWrap.appendChild(canvas);
@@ -259,7 +295,6 @@ function buildPipelineForecast() {
   smTitle.className = 'subsection-title';
   smTitle.textContent = 'Pipeline by Submarket';
   wrap.appendChild(smTitle);
-
   const smTable = document.createElement('div');
   smTable.innerHTML = `<table class="data-table">
     <thead><tr><th>Submarket</th><th>SF Share</th><th>Multifamily Share</th><th>Est. Units in Pipeline</th></tr></thead>
@@ -279,35 +314,82 @@ function buildPipelineForecast() {
   assumTitle.className = 'subsection-title';
   assumTitle.textContent = 'Forecast Assumptions';
   wrap.appendChild(assumTitle);
-
   const assumBox = document.createElement('div');
   assumBox.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--yellow);border-radius:8px;padding:14px 16px;font-size:.8rem;color:var(--text-muted);line-height:1.7;';
   assumBox.innerHTML = `<div style="font-size:.72rem;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">⚠ Mock Data — Model Assumptions</div>` +
     PIPELINE_FORECAST.assumptions.map(a => `<div>• ${a}</div>`).join('');
   wrap.appendChild(assumBox);
 
-  // Draw chart after DOM insertion
+  // Draw combo chart
   setTimeout(() => {
-    const labels = PIPELINE_FORECAST.monthly.map(m => m.month);
-    const sfData = PIPELINE_FORECAST.monthly.map(m => m.sfUnits);
-    const mfData = PIPELINE_FORECAST.monthly.map(m => m.mfUnits);
     const ctx = document.getElementById('pipeline-chart');
     if (!ctx) return;
     destroyChart('pipeline-chart');
+
+    // Vertical annotation line plugin (draws "Today" divider)
+    const todayLinePlugin = {
+      id: 'todayLine',
+      afterDraw(chart) {
+        const { ctx: c, scales: { x, y } } = chart;
+        const xPos = x.getPixelForValue(todayIdx);
+        c.save();
+        c.beginPath();
+        c.strokeStyle = '#fbbf2488';
+        c.lineWidth = 1.5;
+        c.setLineDash([5, 4]);
+        c.moveTo(xPos, y.top);
+        c.lineTo(xPos, y.bottom);
+        c.stroke();
+        c.fillStyle = '#fbbf24';
+        c.font = '10px sans-serif';
+        c.fillText('Today', xPos + 4, y.top + 12);
+        c.restore();
+      },
+    };
+
     chartRegistry['pipeline-chart'] = new Chart(ctx, {
-      type: 'bar',
+      plugins: [todayLinePlugin],
       data: {
-        labels,
+        labels: allLabels,
         datasets: [
-          { label: 'Single-Family', data: sfData, backgroundColor: '#34d399cc', borderRadius: 3 },
-          { label: 'Multifamily', data: mfData, backgroundColor: '#4f8ef7cc', borderRadius: 3 },
+          {
+            type: 'bar', label: 'SF Historical',
+            data: sfHist, backgroundColor: '#34d399cc',
+            stack: 'completions', borderRadius: 2,
+          },
+          {
+            type: 'bar', label: 'MF Historical',
+            data: mfHist, backgroundColor: '#4f8ef7cc',
+            stack: 'completions', borderRadius: 2,
+          },
+          {
+            type: 'bar', label: 'SF Forecast',
+            data: sfFcast, backgroundColor: '#34d39944',
+            stack: 'completions', borderRadius: 2,
+            borderColor: '#34d399', borderWidth: 1, borderDash: [3, 3],
+          },
+          {
+            type: 'bar', label: 'MF Forecast',
+            data: mfFcast, backgroundColor: '#4f8ef744',
+            stack: 'completions', borderRadius: 2,
+            borderColor: '#4f8ef7', borderWidth: 1,
+          },
+          {
+            type: 'line', label: '12-mo Rolling Avg',
+            data: rollingAvg,
+            borderColor: '#fbbf24', borderWidth: 2,
+            pointRadius: 0, tension: 0.4,
+            yAxisID: 'y', fill: false,
+            order: 0,
+          },
         ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { labels: { color: '#8892aa', font: { size: 11 } } },
+          legend: { display: false },
           tooltip: {
             backgroundColor: '#1a1d27',
             borderColor: '#2e3250',
@@ -315,17 +397,36 @@ function buildPipelineForecast() {
             titleColor: '#e2e8f0',
             bodyColor: '#8892aa',
             callbacks: {
-              footer: (items) => {
-                const total = items.reduce((s, i) => s + i.raw, 0);
-                return `Total: ${total.toLocaleString()} units`;
+              afterBody(items) {
+                const sf = items.find(i => i.dataset.label.includes('SF'));
+                const mf = items.find(i => i.dataset.label.includes('MF'));
+                if (sf && mf && sf.raw !== null && mf.raw !== null) {
+                  return [`Total: ${(sf.raw + mf.raw).toLocaleString()} units`];
+                }
+                return [];
               },
             },
           },
         },
         scales: {
-          x: { stacked: true, ticks: { color: '#8892aa', font: { size: 10 } }, grid: { color: '#2e3250' } },
-          y: { stacked: true, ticks: { color: '#8892aa', font: { size: 10 } }, grid: { color: '#2e3250' },
-            title: { display: true, text: 'Units', color: '#8892aa', font: { size: 10 } } },
+          x: {
+            stacked: true,
+            ticks: {
+              color: '#8892aa', font: { size: 9 },
+              maxTicksLimit: 18,
+              callback(val, i) {
+                // Show every 6th label to avoid crowding
+                return i % 6 === 0 ? allLabels[i] : '';
+              },
+            },
+            grid: { color: '#2e3250' },
+          },
+          y: {
+            stacked: true,
+            ticks: { color: '#8892aa', font: { size: 10 } },
+            grid: { color: '#2e3250' },
+            title: { display: true, text: 'Units Completed', color: '#8892aa', font: { size: 10 } },
+          },
         },
       },
     });

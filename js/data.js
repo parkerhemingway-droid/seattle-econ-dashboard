@@ -280,26 +280,60 @@ const HOUSING = {
 // completion rates by building type.
 
 const PIPELINE_FORECAST = {
-  // Monthly completion forecast for next 18 months
-  // [{ month, sfUnits, mfUnits, totalUnits, cumulativeUnits }]
+  // 5 years of historical monthly completions (Jan 2021 – May 2026)
+  // Seattle-Tacoma-Bellevue MSA — mock data modeled on Census CBSA 42660 patterns
+  historical: [
+    // 2021 — post-COVID construction ramp, MF surge beginning
+    { month: 'Jan 21', sf: 310, mf: 520 }, { month: 'Feb 21', sf: 285, mf: 490 },
+    { month: 'Mar 21', sf: 340, mf: 610 }, { month: 'Apr 21', sf: 380, mf: 680 },
+    { month: 'May 21', sf: 420, mf: 740 }, { month: 'Jun 21', sf: 460, mf: 810 },
+    { month: 'Jul 21', sf: 490, mf: 870 }, { month: 'Aug 21', sf: 510, mf: 920 },
+    { month: 'Sep 21', sf: 480, mf: 890 }, { month: 'Oct 21', sf: 440, mf: 850 },
+    { month: 'Nov 21', sf: 390, mf: 780 }, { month: 'Dec 21', sf: 360, mf: 720 },
+    // 2022 — peak construction boom, supply chain delays easing
+    { month: 'Jan 22', sf: 370, mf: 780 }, { month: 'Feb 22', sf: 350, mf: 820 },
+    { month: 'Mar 22', sf: 410, mf: 910 }, { month: 'Apr 22', sf: 460, mf: 980 },
+    { month: 'May 22', sf: 510, mf: 1060 }, { month: 'Jun 22', sf: 560, mf: 1140 },
+    { month: 'Jul 22', sf: 590, mf: 1220 }, { month: 'Aug 22', sf: 620, mf: 1310 },
+    { month: 'Sep 22', sf: 580, mf: 1270 }, { month: 'Oct 22', sf: 540, mf: 1190 },
+    { month: 'Nov 22', sf: 490, mf: 1080 }, { month: 'Dec 22', sf: 450, mf: 1020 },
+    // 2023 — rate shock slows SF starts; MF pipeline still delivering
+    { month: 'Jan 23', sf: 420, mf: 1050 }, { month: 'Feb 23', sf: 390, mf: 1090 },
+    { month: 'Mar 23', sf: 430, mf: 1180 }, { month: 'Apr 23', sf: 410, mf: 1240 },
+    { month: 'May 23', sf: 440, mf: 1320 }, { month: 'Jun 23', sf: 470, mf: 1410 },
+    { month: 'Jul 23', sf: 500, mf: 1490 }, { month: 'Aug 23', sf: 520, mf: 1560 },
+    { month: 'Sep 23', sf: 490, mf: 1510 }, { month: 'Oct 23', sf: 460, mf: 1440 },
+    { month: 'Nov 23', sf: 420, mf: 1360 }, { month: 'Dec 23', sf: 390, mf: 1290 },
+    // 2024 — MF completions peak as 2022 starts deliver, SF recovering
+    { month: 'Jan 24', sf: 380, mf: 1340 }, { month: 'Feb 24', sf: 360, mf: 1380 },
+    { month: 'Mar 24', sf: 400, mf: 1460 }, { month: 'Apr 24', sf: 440, mf: 1540 },
+    { month: 'May 24', sf: 490, mf: 1620 }, { month: 'Jun 24', sf: 530, mf: 1680 },
+    { month: 'Jul 24', sf: 560, mf: 1720 }, { month: 'Aug 24', sf: 580, mf: 1750 },
+    { month: 'Sep 24', sf: 550, mf: 1700 }, { month: 'Oct 24', sf: 510, mf: 1630 },
+    { month: 'Nov 24', sf: 470, mf: 1550 }, { month: 'Dec 24', sf: 430, mf: 1470 },
+    // 2025 — MF wave cresting, pipeline thinning
+    { month: 'Jan 25', sf: 410, mf: 1490 }, { month: 'Feb 25', sf: 390, mf: 1510 },
+    { month: 'Mar 25', sf: 430, mf: 1560 }, { month: 'Apr 25', sf: 460, mf: 1590 },
+    { month: 'May 25', sf: 490, mf: 1610 }, { month: 'Jun 25', sf: 510, mf: 1580 },
+    { month: 'Jul 25', sf: 530, mf: 1540 }, { month: 'Aug 25', sf: 520, mf: 1490 },
+    { month: 'Sep 25', sf: 500, mf: 1440 }, { month: 'Oct 25', sf: 470, mf: 1390 },
+    { month: 'Nov 25', sf: 440, mf: 1340 }, { month: 'Dec 25', sf: 410, mf: 1280 },
+    // 2026 Jan–May actual
+    { month: 'Jan 26', sf: 390, mf: 1220 }, { month: 'Feb 26', sf: 370, mf: 1190 },
+    { month: 'Mar 26', sf: 410, mf: 1210 }, { month: 'Apr 26', sf: 450, mf: 834 },
+    { month: 'May 26', sf: 430, mf: 1180 },
+  ],
+
+  // Forecast: Jun 2026 – Nov 2027
   monthly: (() => {
     const months = [];
-    // Starting stock: 8,580 SF + 19,840 MF = 28,420 under construction
-    // SF: ~8mo avg remaining build time → front-loaded completions
-    // MF: ~14mo avg remaining build time → longer tail
     const sfStock = 8580;
-    const mfStock = 19840;
-    // Monthly completion rate: SF drains faster, MF slower
-    // SF: roughly 1/8 per month of remaining stock, decaying
-    // MF: roughly 1/14 per month, peak in 6-10mo as current starts complete
     let cumulative = 0;
-    const startDate = new Date(2026, 5, 1); // June 2026
+    const startDate = new Date(2026, 5, 1);
     for (let i = 0; i < 18; i++) {
       const d = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
       const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-      // SF completions: decay curve from current stock
       const sfUnits = Math.round(sfStock * Math.exp(-0.12 * i) * 0.12 + 80);
-      // MF completions: bell curve peaking around month 6-8
       const mfPeak = 1400;
       const mfUnits = Math.round(mfPeak * Math.exp(-0.5 * Math.pow((i - 7) / 4, 2)) + 200);
       const totalUnits = sfUnits + mfUnits;
@@ -309,7 +343,7 @@ const PIPELINE_FORECAST = {
     return months;
   })(),
 
-  // Submarket breakdown — share of pipeline by area
+  // Submarket breakdown
   submarkets: [
     { name: 'Seattle Core (Cap Hill, SLU, Downtown)', sfPct: 4,  mfPct: 28, totalUnits: 7940 },
     { name: 'Eastside (Bellevue, Kirkland, Redmond)',  sfPct: 22, mfPct: 31, totalUnits: 8820 },
@@ -319,7 +353,6 @@ const PIPELINE_FORECAST = {
     { name: 'Pierce Co. (Tacoma, Puyallup)',           sfPct: 7,  mfPct: 3,  totalUnits: 1490 },
   ],
 
-  // Key assumptions for the forecast
   assumptions: [
     'Single-family avg build time: 9 months from start to completion',
     'Multifamily avg build time: 18 months from start to completion',
