@@ -29,10 +29,17 @@
       </ul>
     </nav>
     <div class="sidebar-footer">
-      <label>Claude API Key
-        <input type="password" id="api-key-input" placeholder="sk-ant-...">
+      <label>Databricks Workspace URL
+        <input type="text" id="db-workspace-input" placeholder="https://xyz.cloud.databricks.com">
+      </label>
+      <label>Serving Endpoint Name
+        <input type="text" id="db-endpoint-input" placeholder="e.g. claude-haiku">
+      </label>
+      <label>Databricks Token
+        <input type="password" id="api-key-input" placeholder="dapi...">
       </label>
       <button id="save-key-btn">Save</button>
+      <div id="db-status" style="font-size:0.7rem;margin-top:6px;color:var(--text-muted)"></div>
     </div>
   </aside>
 

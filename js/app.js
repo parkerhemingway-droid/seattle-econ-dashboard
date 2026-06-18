@@ -118,8 +118,8 @@ function populateSignals(metrics, containerEl) {
     if (containerEl && !containerEl.querySelector('.ai-key-banner')) {
       const banner = document.createElement('div');
       banner.className = 'ai-key-banner';
-      banner.innerHTML = `<span>✦ Add a <strong>Claude API key</strong> in the sidebar to get AI-generated signals on every card.</span>
-        <button onclick="document.getElementById('api-key-input').focus();document.getElementById('api-key-input').scrollIntoView({behavior:'smooth'})">Add key →</button>`;
+      banner.innerHTML = `<span>✦ Connect your <strong>Databricks</strong> workspace in the sidebar to get AI-generated signals on every card.</span>
+        <button onclick="document.getElementById('db-workspace-input').focus();document.getElementById('db-workspace-input').scrollIntoView({behavior:'smooth'})">Connect →</button>`;
       containerEl.appendChild(banner);
     }
     return;
@@ -519,7 +519,7 @@ function renderHelp() {
     <br>
     <p><strong>CSV Export:</strong> Click CSV on any card to download the latest reading as a spreadsheet.</p>
     <br>
-    <p><strong>AI Signals:</strong> Enter a Claude API key (sidebar bottom) to get a one-line AI interpretation on every card and AI-generated narrative summaries at the top of each section. Uses claude-haiku-4-5 — very inexpensive. Key is stored only in your browser's localStorage.</p>
+    <p><strong>AI Signals:</strong> Enter your Databricks workspace URL, serving endpoint name, and a personal access token (or OAuth token) in the sidebar to get a one-line AI interpretation on every card and AI-generated narrative summaries at the top of each section. All credentials are stored only in your browser's localStorage.</p>
     <br>
     <p><strong>Search:</strong> The search bar at the top of the sidebar finds any metric by name or category.</p>
     <br>
@@ -736,12 +736,36 @@ document.addEventListener('click', e => {
   }
 });
 
-document.getElementById('save-key-btn').addEventListener('click', () => {
-  const key = document.getElementById('api-key-input').value;
-  AI.setKey(key);
+document.getElementById('save-key-btn').addEventListener('click', async () => {
+  const workspace = document.getElementById('db-workspace-input').value;
+  const endpoint  = document.getElementById('db-endpoint-input').value;
+  const token     = document.getElementById('api-key-input').value;
+  const status    = document.getElementById('db-status');
+
+  if (!workspace || !endpoint || !token) {
+    status.textContent = 'Fill in all three fields.';
+    status.style.color = 'var(--yellow)';
+    return;
+  }
+
+  AI.setConfig({ workspace, endpoint, token });
   document.getElementById('api-key-input').value = '';
-  navigate(currentSection); // re-render to trigger AI signals
+  status.textContent = 'Testing connection…';
+  status.style.color = 'var(--text-muted)';
+
+  const ok = await AI.testConnection();
+  if (ok) {
+    status.textContent = '✓ Connected';
+    status.style.color = 'var(--green)';
+    navigate(currentSection);
+  } else {
+    status.textContent = '✗ Connection failed — check URL, endpoint, and token';
+    status.style.color = 'var(--red)';
+  }
 });
+
+// Restore saved Databricks config into sidebar inputs
+AI.restoreInputs();
 
 // Handle hash navigation on load
 const hash = window.location.hash.replace('#', '') || 'today';
