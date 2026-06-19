@@ -1011,9 +1011,133 @@ function renderHelp() {
   };
 })();
 
+// ── Section: Zip Code ────────────────────────────────────────────────────────
+
+function renderZip(zip) {
+  const el = document.createElement('div');
+  const d = ZIP_DATA[zip];
+
+  if (!d) {
+    el.innerHTML = `<div class="section-title">Zip Code: ${zip}</div>
+      <div class="zip-not-found">
+        <strong style="color:var(--yellow)">No data for zip code ${zip}.</strong><br><br>
+        Coverage includes ~40 Seattle-area zip codes across King, Pierce, and Snohomish counties.
+        Try one of the featured zips in the sidebar, or check the Housing section for county-level data.
+      </div>`;
+    return el;
+  }
+
+  const priceCls  = d.yoyPricePct >= 0 ? 'up' : 'down';
+  const domCls    = d.daysOnMarket <= 10 ? 'up' : d.daysOnMarket >= 20 ? 'down' : '';
+  const s2lCls    = d.saleToList >= 101 ? 'up' : d.saleToList < 99 ? 'down' : '';
+  const reduxCls  = d.priceReductions <= 8 ? 'up' : d.priceReductions >= 16 ? 'down' : '';
+  const sign      = v => v >= 0 ? `+${v}` : `${v}`;
+
+  el.innerHTML = `
+    <div class="section-title">Zip ${zip}</div>
+    <div class="section-subtitle">${d.name} · ${d.county} County · Data as of Apr 2026</div>
+    <div class="zip-neighborhood-badge">📍 ${d.name}, ${d.county} County</div>
+  `;
+
+  // Hero stats
+  const hero = document.createElement('div');
+  hero.className = 'zip-hero';
+  [
+    { label: 'Median Sale Price',  value: '$' + (d.medianPrice/1000).toFixed(0) + 'K',   cls: priceCls },
+    { label: 'Median List Price',  value: '$' + (d.medianListPrice/1000).toFixed(0) + 'K', cls: '' },
+    { label: 'Days on Market',     value: d.daysOnMarket + ' days',  cls: domCls },
+    { label: 'Sale-to-List',       value: d.saleToList + '%',        cls: s2lCls },
+    { label: 'Active Listings',    value: d.inventory.toLocaleString(), cls: '' },
+    { label: 'Price YoY',          value: sign(d.yoyPricePct) + '%', cls: priceCls },
+  ].forEach(s => {
+    hero.innerHTML += `<div class="zip-stat">
+      <div class="zip-stat-label">${s.label}</div>
+      <div class="zip-stat-value ${s.cls}">${s.value}</div>
+    </div>`;
+  });
+  el.appendChild(hero);
+
+  // Detail table
+  el.innerHTML += `<div class="subsection-title">Full Market Snapshot</div>`;
+  const tbl = document.createElement('div');
+  tbl.innerHTML = `<table class="data-table">
+    <thead><tr><th>Metric</th><th>Value</th><th>Signal</th></tr></thead>
+    <tbody>
+      <tr><td>Median Sale Price</td><td>$${d.medianPrice.toLocaleString()}</td>
+          <td class="${priceCls}">${sign(d.yoyPricePct)}% YoY</td></tr>
+      <tr><td>Median List Price</td><td>$${d.medianListPrice.toLocaleString()}</td><td>—</td></tr>
+      <tr><td>Days on Market</td><td>${d.daysOnMarket} days</td>
+          <td class="${domCls}">${d.daysOnMarket <= 10 ? 'Hot — seller market' : d.daysOnMarket >= 20 ? 'Cooling' : 'Balanced'}</td></tr>
+      <tr><td>Sale-to-List Ratio</td><td>${d.saleToList}%</td>
+          <td class="${s2lCls}">${d.saleToList >= 101 ? 'Selling above ask' : d.saleToList < 99 ? 'Below ask' : 'At ask'}</td></tr>
+      <tr><td>Active Listings</td><td>${d.inventory.toLocaleString()}</td><td>—</td></tr>
+      <tr><td>New Listings (mo)</td><td>${d.newListings}</td><td>—</td></tr>
+      <tr><td>Pending Sales (mo)</td><td>${d.pendingSales}</td>
+          <td>${d.pendingSales > d.newListings * 0.75 ? 'Strong absorption' : 'Moderate demand'}</td></tr>
+      <tr><td>Price Reductions</td><td>${d.priceReductions}% of listings</td>
+          <td class="${reduxCls}">${d.priceReductions <= 8 ? 'Sellers hold firm' : d.priceReductions >= 16 ? 'Sellers cutting prices' : 'Normal'}</td></tr>
+    </tbody>
+  </table>`;
+  el.appendChild(tbl);
+
+  // Context vs county / MSA
+  el.innerHTML += `<div class="subsection-title" style="margin-top:28px">Context — vs County & MSA</div>`;
+  const seaMedian = ALL_METRICS['seaMedianPrice'] ? ALL_METRICS['seaMedianPrice'].value : 825000;
+  const vsRegion = ((d.medianPrice - seaMedian) / seaMedian * 100).toFixed(1);
+  const ctx = document.createElement('div');
+  ctx.className = 'narrative-box';
+  ctx.innerHTML = `<h3>How ${zip} Compares</h3>
+    <p><strong>${d.name}</strong> has a median sale price of <strong>$${d.medianPrice.toLocaleString()}</strong>,
+    which is <strong class="${vsRegion >= 0 ? 'up' : 'down'}" style="color:var(--${vsRegion >= 0 ? 'green' : 'red'})">${vsRegion >= 0 ? '+' : ''}${vsRegion}%</strong>
+    vs the Seattle MSA median of $${seaMedian.toLocaleString()}.</p>
+    <br>
+    <p>At <strong>${d.daysOnMarket} days on market</strong> and a <strong>${d.saleToList}% sale-to-list ratio</strong>,
+    this zip is a <strong>${d.saleToList >= 102 ? 'strong seller' : d.saleToList < 99 ? 'buyer-leaning' : 'balanced'} market</strong>.
+    ${d.priceReductions}% of listings have seen price reductions,
+    ${d.priceReductions <= 8 ? 'indicating sellers have significant pricing power.' :
+      d.priceReductions >= 16 ? 'suggesting sellers are having to adjust expectations.' :
+      'a normal level for the current market.'}</p>`;
+  el.appendChild(ctx);
+
+  // Nearby zips
+  const nearby = Object.entries(ZIP_DATA)
+    .filter(([z, zd]) => z !== zip && zd.county === d.county)
+    .sort((a, b) => Math.abs(a[1].medianPrice - d.medianPrice) - Math.abs(b[1].medianPrice - d.medianPrice))
+    .slice(0, 5);
+
+  if (nearby.length) {
+    el.innerHTML += `<div class="subsection-title">Nearby Zips — ${d.county} County</div>`;
+    const nearbyTbl = document.createElement('div');
+    nearbyTbl.innerHTML = `<table class="data-table">
+      <thead><tr><th>Zip</th><th>Neighborhood</th><th>Median Price</th><th>DOM</th><th>Sale-to-List</th><th>YoY</th></tr></thead>
+      <tbody>${nearby.map(([z, zd]) => `
+        <tr style="cursor:pointer" onclick="navigateZip('${z}')">
+          <td style="color:var(--accent);font-weight:600">${z}</td>
+          <td>${zd.name}</td>
+          <td>$${zd.medianPrice.toLocaleString()}</td>
+          <td>${zd.daysOnMarket} days</td>
+          <td class="${zd.saleToList >= 101 ? 'up' : zd.saleToList < 99 ? 'down' : ''}">${zd.saleToList}%</td>
+          <td class="${zd.yoyPricePct >= 0 ? 'up' : 'down'}">${sign(zd.yoyPricePct)}%</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+    el.appendChild(nearbyTbl);
+  }
+
+  el.innerHTML += `<div class="section-divider"></div>
+    <p style="font-size:.72rem;color:var(--text-muted)">
+      ⚠ Zip code data is modeled from Zillow Research / Redfin estimates (Apr 2026).
+      For authoritative figures use <a href="https://www.redfin.com/zipcode/${zip}" target="_blank" style="color:var(--accent)">Redfin</a>
+      or <a href="https://www.zillow.com/homes/${zip}_rb/" target="_blank" style="color:var(--accent)">Zillow</a> directly.
+    </p>`;
+
+  return el;
+}
+
 // ── Routing ──────────────────────────────────────────────────────────────────
 
 let currentSection = 'today';
+let currentZip = null;
 
 const RENDERERS = {
   today: renderToday,
@@ -1030,13 +1154,27 @@ const RENDERERS = {
 
 function navigate(section) {
   currentSection = section;
+  currentZip = null;
   document.querySelectorAll('.nav-link').forEach(a => {
     a.classList.toggle('active', a.dataset.section === section);
   });
+  document.getElementById('zip-input').value = '';
   const main = document.getElementById('main-content');
   main.innerHTML = '';
   const renderer = RENDERERS[section] || renderToday;
   main.appendChild(renderer());
+  window.scrollTo(0, 0);
+}
+
+function navigateZip(zip) {
+  zip = zip.trim();
+  if (!/^\d{5}$/.test(zip)) return;
+  currentZip = zip;
+  document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+  document.getElementById('zip-input').value = zip;
+  const main = document.getElementById('main-content');
+  main.innerHTML = '';
+  main.appendChild(renderZip(zip));
   window.scrollTo(0, 0);
 }
 
@@ -1131,6 +1269,26 @@ document.getElementById('save-key-btn').addEventListener('click', async () => {
     status.textContent = '✗ Connection failed — check URL, endpoint, and token';
     status.style.color = 'var(--red)';
   }
+});
+
+// ── Zip code input wiring ─────────────────────────────────────────────────────
+
+// Populate featured zip chips
+const chipsEl = document.getElementById('zip-chips');
+ZIP_FEATURED.forEach(z => {
+  const chip = document.createElement('span');
+  chip.className = 'zip-chip';
+  chip.textContent = z;
+  chip.title = ZIP_DATA[z] ? ZIP_DATA[z].name : z;
+  chip.addEventListener('click', () => navigateZip(z));
+  chipsEl.appendChild(chip);
+});
+
+document.getElementById('zip-go-btn').addEventListener('click', () => {
+  navigateZip(document.getElementById('zip-input').value);
+});
+document.getElementById('zip-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') navigateZip(e.target.value);
 });
 
 // Restore saved Databricks config into sidebar inputs

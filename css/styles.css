@@ -36,23 +36,25 @@ body {
   overflow-y: auto;
 }
 .sidebar-header {
-  padding: 18px 16px 10px;
+  padding: 22px 18px 14px;
   border-bottom: 1px solid var(--border);
 }
 .logo {
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1.35rem;
+  font-weight: 800;
   color: var(--accent);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   display: block;
+  line-height: 1.1;
 }
 .logo-research {
   display: block;
-  font-size: 1.05rem;
+  font-size: 1.25rem;
   font-weight: 300;
   color: #7ab8f5;
   letter-spacing: 0.01em;
-  margin-top: 1px;
+  margin-top: 2px;
+  line-height: 1.1;
 }
 #global-search {
   margin: 12px 12px 6px;
@@ -478,6 +480,100 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
   cursor: pointer;
 }
 .ai-key-banner button:hover { opacity: 0.85; }
+
+/* ── Zip Code Drill-down ── */
+.zip-search-wrap {
+  padding: 8px 12px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.zip-search-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 5px;
+  display: block;
+}
+.zip-search-row {
+  display: flex;
+  gap: 6px;
+}
+#zip-input {
+  flex: 1;
+  padding: 6px 9px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.85rem;
+  min-width: 0;
+}
+#zip-input:focus { outline: none; border-color: var(--accent); }
+#zip-go-btn {
+  padding: 6px 10px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#zip-go-btn:hover { opacity: 0.85; }
+.zip-suggestions {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.zip-chip {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 7px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.zip-chip:hover { border-color: var(--accent); color: var(--accent); }
+.zip-hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.zip-stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  padding: 14px 16px;
+  text-align: center;
+}
+.zip-stat-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.zip-stat-value { font-size: 1.5rem; font-weight: 800; margin: 2px 0; }
+.zip-stat-change { font-size: 0.78rem; }
+.zip-neighborhood-badge {
+  display: inline-block;
+  background: rgba(79,142,247,0.12);
+  border: 1px solid rgba(79,142,247,0.3);
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 0.78rem;
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+.zip-not-found {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--yellow);
+  border-radius: 8px;
+  padding: 16px 20px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  margin-top: 16px;
+}
 
 /* ── Metric Expand Modal ── */
 #metric-modal-overlay {

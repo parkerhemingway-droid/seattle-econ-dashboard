@@ -14,6 +14,16 @@
       <span class="logo-research">Research</span>
     </div>
     <input type="text" id="global-search" placeholder="Search metrics..." autocomplete="off">
+
+    <div class="zip-search-wrap">
+      <span class="zip-search-label">Zip Code Drill-down</span>
+      <div class="zip-search-row">
+        <input type="text" id="zip-input" placeholder="e.g. 98103" maxlength="5" inputmode="numeric">
+        <button id="zip-go-btn">Go</button>
+      </div>
+      <div class="zip-suggestions" id="zip-chips"></div>
+    </div>
+
     <nav>
       <ul>
         <li><a href="#today" class="nav-link active" data-section="today">Today</a></li>
@@ -72,6 +82,7 @@
     </div>
   </div>
 
+  <script src="js/zipdata.js"></script>
   <script src="js/data.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/ai.js"></script>
