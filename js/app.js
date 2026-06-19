@@ -23,21 +23,24 @@ function fmtChange(val, unit) {
   return sign + val + (u === ' homes' || u === '/wk' ? '' : u);
 }
 
-// Append YoY % in parentheses for non-percentage metrics where it adds context.
-// Skip for metrics whose value IS already a percentage (%, unit ends with %).
-function fmtYoyPct(metric) {
-  const yoy = metric.yoyChange;
-  const val = metric.value;
-  const u   = metric.unit || '';
-  // Don't add % to metrics that are already in % terms, or where yoy is null/zero
-  if (!yoy || u === '%' || u.endsWith('%')) return '';
-  // Prior value = current - yoyChange
-  const prior = val - yoy;
+// Append % in parentheses for non-percentage metrics where it adds context.
+function fmtChangePct(change, currentValue, unit) {
+  const u = unit || '';
+  if (!change || u === '%' || u.endsWith('%')) return '';
+  const prior = currentValue - change;
   if (!prior || prior === 0) return '';
-  const pct = (yoy / Math.abs(prior)) * 100;
+  const pct = (change / Math.abs(prior)) * 100;
   if (!isFinite(pct)) return '';
   const sign = pct > 0 ? '+' : '';
   return ` <span style="opacity:0.7;font-size:.7rem">(${sign}${pct.toFixed(1)}%)</span>`;
+}
+
+function fmtYoyPct(metric) {
+  return fmtChangePct(metric.yoyChange, metric.value, metric.unit);
+}
+
+function fmtPeriodPct(metric) {
+  return fmtChangePct(metric.periodChange, metric.value, metric.unit);
 }
 
 function changeClass(val, invertedMetrics = false) {
@@ -83,7 +86,7 @@ function buildMetricCard(metric) {
     <div class="metric-date">${metric.date}</div>
     <div class="metric-value">${fmt(metric)}</div>
     <div class="metric-changes">
-      <span class="metric-change ${pcClass}" title="Period change">${fmtChange(metric.periodChange, metric.unit)} period</span>
+      <span class="metric-change ${pcClass}" title="Period change">${fmtChange(metric.periodChange, metric.unit)}${fmtPeriodPct(metric)} period</span>
       <span class="metric-change ${yoyClass}" title="Year-over-year">${fmtChange(metric.yoyChange, metric.unit)} YoY${fmtYoyPct(metric)}</span>
     </div>
     <div class="metric-release">${metric.release}</div>
