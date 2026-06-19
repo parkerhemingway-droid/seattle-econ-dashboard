@@ -695,6 +695,40 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
   color: var(--text-muted);
   margin-top: 8px;
 }
+.modal-monthly-wrap {
+  margin-bottom: 20px;
+}
+.modal-monthly-title {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-monthly-badge {
+  background: rgba(251,191,36,0.15);
+  border: 1px solid rgba(251,191,36,0.35);
+  color: var(--yellow);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.modal-monthly-scroll {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.modal-monthly-table th:not(:first-child),
+.modal-monthly-table td:not(:first-child) {
+  text-align: right;
+}
 .metric-card { cursor: pointer; }
 
 /* ── Scrollbar ── */

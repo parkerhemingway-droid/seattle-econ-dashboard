@@ -995,6 +995,50 @@ function renderHelp() {
       }
     });
 
+    // Monthly breakdown table (housing metrics with monthlyHistory)
+    const existingTable = document.getElementById('modal-monthly-table');
+    if (existingTable) existingTable.remove();
+
+    const history = metric.monthlyHistory;
+    if (history && history.length) {
+      const tableWrap = document.createElement('div');
+      tableWrap.id = 'modal-monthly-table';
+      tableWrap.className = 'modal-monthly-wrap';
+      tableWrap.innerHTML = `
+        <div class="modal-monthly-title">Monthly Breakdown — Altos Research / Redfin <span class="modal-monthly-badge">Mock</span></div>
+        <div class="modal-monthly-scroll">
+          <table class="data-table modal-monthly-table">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>MDN Sale Price</th>
+                <th>Avg DOM</th>
+                <th>Sold/List %</th>
+                <th>Price Reductions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${history.slice().reverse().map((row, i, arr) => {
+                const prev = arr[i + 1];
+                const priceDir = prev ? (row.medianPrice > prev.medianPrice ? 'up' : row.medianPrice < prev.medianPrice ? 'down' : '') : '';
+                const domDir   = prev ? (row.dom < prev.dom ? 'up' : row.dom > prev.dom ? 'down' : '') : '';
+                const s2lDir   = prev ? (row.saleToList > prev.saleToList ? 'up' : row.saleToList < prev.saleToList ? 'down' : '') : '';
+                const prDir    = prev ? (row.priceReductions < prev.priceReductions ? 'up' : row.priceReductions > prev.priceReductions ? 'down' : '') : '';
+                return `<tr>
+                  <td>${row.month}</td>
+                  <td class="${priceDir}">$${row.medianPrice.toLocaleString()}</td>
+                  <td class="${domDir}">${row.dom}</td>
+                  <td class="${s2lDir}">${row.saleToList.toFixed(1)}%</td>
+                  <td class="${prDir}">${row.priceReductions.toFixed(1)}%</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      // Insert before signal
+      document.getElementById('modal-signal').before(tableWrap);
+    }
+
     // AI signal
     const signalEl = document.getElementById('modal-signal');
     if (AI.hasKey()) {
