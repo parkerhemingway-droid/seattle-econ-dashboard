@@ -44,6 +44,15 @@ body {
   font-weight: 700;
   color: var(--accent);
   letter-spacing: 0.02em;
+  display: block;
+}
+.logo-research {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 300;
+  color: #7ab8f5;
+  letter-spacing: 0.01em;
+  margin-top: 1px;
 }
 #global-search {
   margin: 12px 12px 6px;
