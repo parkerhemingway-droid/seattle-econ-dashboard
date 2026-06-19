@@ -231,6 +231,33 @@ const HOUSING = {
     category: 'Construction',
     local: true,
   },
+  kingPermits: {
+    id: 'kingPermits', name: 'King County Permits', section: 'housing',
+    value: 953, unit: ' units', date: '2026-04-30',
+    periodChange: +434, yoyChange: +232,
+    release: 'Monthly — Census BPS (FIPS 53033)',
+    sparkline: [929,592,821,670,542,887,681,1704,605,452,483,721,380,570,451,607,1041,1224,605,1366,458,1486,519,953],
+    category: 'Construction',
+    local: true,
+  },
+  piercePermits: {
+    id: 'piercePermits', name: 'Pierce County Permits', section: 'housing',
+    value: 952, unit: ' units', date: '2026-04-30',
+    periodChange: +533, yoyChange: +563,
+    release: 'Monthly — Census BPS (FIPS 53053)',
+    sparkline: [306,125,249,166,191,657,359,168,397,276,206,389,185,179,302,667,183,339,508,231,654,173,419,952],
+    category: 'Construction',
+    local: true,
+  },
+  snohomishPermits: {
+    id: 'snohomishPermits', name: 'Snohomish County Permits', section: 'housing',
+    value: 296, unit: ' units', date: '2026-04-30',
+    periodChange: +42, yoyChange: -90,
+    release: 'Monthly — Census BPS (FIPS 53061)',
+    sparkline: [386,197,238,223,780,220,214,224,201,350,237,206,283,443,255,276,201,220,269,283,147,469,254,296],
+    category: 'Construction',
+    local: true,
+  },
   housingCompletions: {
     id: 'housingCompletions', name: 'Housing Completions (Natl)', section: 'housing',
     value: 1.621, unit: 'M SAAR', date: '2026-05-20',
@@ -699,6 +726,7 @@ const FED = {
     seaPendingSales: 0.05, nfp: 0.08, seaPayrolls: 0.09, initialClaims: 0.04,
     continuingClaims: 0.03, joltsOpenings: 0.04, joltsQuits: 0.04,
     housingStarts: 0.05, buildingPermits: 0.04, seaPermits: 0.07,
+    kingPermits: 0.09, piercePermits: 0.10, snohomishPermits: 0.10,
   };
   const allMetrics = { ...MARKETS, ...HOUSING, ...INFLATION, ...EMPLOYMENT, ...FED };
   for (const [id, m] of Object.entries(allMetrics)) {
@@ -775,7 +803,7 @@ const CATEGORIES = {
     'seaNewListings', 'seaPendingSales', 'seaDaysOnMarket', 'seaPriceReductions',
     'seaSaleTListRatio', 'seaCaseShiller', 'kingCountyHomeowners', 'seaAffordabilityRatio'],
   'Housing — National': ['existingHomeSales', 'newHomeSales'],
-  'Construction — Seattle MSA': ['seaPermits', 'seaCompletions', 'seaUnderConstruction', 'seaMultifamilyUnder', 'seaSingleFamilyUnder'],
+  'Construction — Seattle MSA': ['seaPermits', 'kingPermits', 'piercePermits', 'snohomishPermits', 'seaCompletions', 'seaUnderConstruction', 'seaMultifamilyUnder', 'seaSingleFamilyUnder'],
   'Construction — National': ['housingStarts', 'buildingPermits', 'housingCompletions', 'unitsUnderConstruction'],
   'Inflation': ['cpiHeadline', 'cpiCore', 'pce', 'pceCore', 'trimmedMeanPce',
     'breakeven5y', 'breakeven10y', 'clevelandFedInfExp', 'seaMetroCpi'],

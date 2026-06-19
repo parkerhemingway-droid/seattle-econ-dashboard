@@ -198,9 +198,10 @@ function patchDataFile(updates) {
   console.log(`\nPatched ${patched} fields across ${updates.filter(Boolean).length} metrics.`);
 }
 
-// ── Census BPS — Seattle MSA permits ─────────────────────────────────────────
-// Fetches the monthly CBSA-level building permits XLS from Census and extracts
-// Seattle-Tacoma-Bellevue (CBSA 42660) total, SF (1-unit), and MF (5+ units).
+// ── Census BPS — Seattle MSA + county permits ────────────────────────────────
+// CBSA XLS  → seaPermits (CBSA 42660)
+// County TXT → kingPermits (53033), piercePermits (53053), snohomishPermits (53061)
+// No API key required for either source.
 
 function fetchBpsXls(yyyymm) {
   return new Promise((resolve, reject) => {
@@ -215,97 +216,70 @@ function fetchBpsXls(yyyymm) {
   });
 }
 
-async function fetchSeaPermits() {
-  try {
-    // Try current month, fall back up to 3 months if not yet published
-    const now = new Date();
-    for (let lag = 1; lag <= 4; lag++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - lag, 1);
-      const yyyymm = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const buf = await fetchBpsXls(yyyymm);
-      if (!buf) continue;
-
-      // Parse XLS with a minimal BIFF8 reader — just find the Seattle row
-      // xlrd not available in Node; use a regex scan on the raw buffer for the CBSA row
-      // The XLS text cells are stored as UTF-16LE or ASCII depending on BIFF version.
-      // Simpler: write to a temp file and use Node child_process to call python3
-      const tmpFile = `/tmp/bps_${yyyymm}.xls`;
-      fs.writeFileSync(tmpFile, buf);
-
-      const result = await new Promise((resolve) => {
-        const { exec } = require('child_process');
-        const script = `
-import xlrd, sys
-wb = xlrd.open_workbook('${tmpFile}')
-try:
-    ws = wb.sheet_by_name('MSA Units')
-except:
-    print('NO_SHEET'); sys.exit(0)
-for r in range(ws.nrows):
-    if str(ws.cell_value(r,1)).strip() == '42660.0':
-        print(int(ws.cell_value(r,4)), int(ws.cell_value(r,5)), int(ws.cell_value(r,8)))
-        sys.exit(0)
-print('NOT_FOUND')
-`;
-        exec(`python3 -c "${script.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`, (err, stdout) => {
-          if (err || !stdout.trim() || stdout.includes('NO_SHEET') || stdout.includes('NOT_FOUND')) {
-            resolve(null);
-          } else {
-            const [total, sf, mf] = stdout.trim().split(' ').map(Number);
-            resolve({ total, sf, mf, yyyymm });
-          }
-        });
-      });
-
-      try { fs.unlinkSync(tmpFile); } catch (_) {}
-
-      if (result) {
-        console.log(`  ✓ BPS Seattle MSA ${result.yyyymm}: total=${result.total} SF=${result.sf} MF5+=${result.mf}`);
-        return result;
-      }
-    }
-    console.warn('  ⚠ BPS Seattle MSA: no data found in last 4 months');
-    return null;
-  } catch (e) {
-    console.warn('  ⚠ BPS Seattle MSA:', e.message);
-    return null;
-  }
-}
-
-function patchSeaPermits(src, current, prior, priorYear) {
+// Patch value/periodChange/yoyChange/date for a permit metric by id
+function patchPermitMetric(src, metricId, current, prior, priorYear) {
   if (!current) return src;
   const value        = current.total;
   const periodChange = prior     ? current.total - prior.total     : 0;
   const yoyChange    = priorYear ? current.total - priorYear.total : 0;
-
-  // Build real 24-month sparkline from fetched history (most recent last)
-  // We have current + up to 3 prior months from the lag loop; for a full 24-month
-  // sparkline we patch only the scalar fields and leave the sparkline to accumulate
-  // over time — or rebuild it if we have enough data.
-  src = src.replace(
-    /(id: 'seaPermits'[\s\S]*?value:\s*)([^,\n]+)/,
-    (m, pre) => `${pre}${value}`
-  );
-  src = src.replace(
-    /(id: 'seaPermits'[\s\S]*?periodChange:\s*)([^,\n]+)/,
-    (m, pre) => `${pre}${periodChange >= 0 ? '+' : ''}${periodChange}`
-  );
-  src = src.replace(
-    /(id: 'seaPermits'[\s\S]*?yoyChange:\s*)([^,\n]+)/,
-    (m, pre) => `${pre}${yoyChange >= 0 ? '+' : ''}${yoyChange}`
-  );
-
-  // Update date to reflect data month
-  const yr  = current.yyyymm.slice(0, 4);
-  const mo  = current.yyyymm.slice(4, 6);
+  const yr      = current.yyyymm.slice(0, 4);
+  const mo      = current.yyyymm.slice(4, 6);
   const lastDay = new Date(parseInt(yr), parseInt(mo), 0).getDate();
   const newDate = `${yr}-${mo}-${lastDay}`;
-  src = src.replace(
-    /(id: 'seaPermits'[\s\S]*?date:\s*)('[^']+')/,
-    (m, pre) => `${pre}'${newDate}'`
-  );
+  const sign    = v => (v >= 0 ? `+${v}` : `${v}`);
+  const id      = metricId;
 
+  src = src.replace(new RegExp(`(id: '${id}'[\\s\\S]*?value:\\s*)([^,\\n]+)`),        (m, p) => `${p}${value}`);
+  src = src.replace(new RegExp(`(id: '${id}'[\\s\\S]*?periodChange:\\s*)([^,\\n]+)`), (m, p) => `${p}${sign(periodChange)}`);
+  src = src.replace(new RegExp(`(id: '${id}'[\\s\\S]*?yoyChange:\\s*)([^,\\n]+)`),   (m, p) => `${p}${sign(yoyChange)}`);
+  src = src.replace(new RegExp(`(id: '${id}'[\\s\\S]*?date:\\s*)('[^']+')`),          (m, p) => `${p}'${newDate}'`);
   return src;
+}
+
+// Fetch county BPS text file (www2.census.gov/econ/bps/County/co{YY}{MM}c.txt)
+function fetchCountyBpsTxt(yyyymm) {
+  return new Promise(resolve => {
+    const yy = yyyymm.slice(2, 4), mm = yyyymm.slice(4, 6);
+    const url = `https://www2.census.gov/econ/bps/County/co${yy}${mm}c.txt`;
+    const opts = { headers: { 'User-Agent': 'Mozilla/5.0 seattle-econ-updater/1.0' } };
+    https.get(url, opts, res => {
+      if (res.statusCode !== 200) { resolve(null); return; }
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks).toString('latin1')));
+    }).on('error', () => resolve(null));
+  });
+}
+
+// Parse county BPS txt: return {fips: {total, sf, mf5}}
+// Columns (0-based): 0=date,1=stateFIPS,2=countyFIPS,3=region,4=div,5=name,
+//   6=SF bldgs,7=SF units,8=SF val, 9=2u bldgs,10=2u units,11=2u val,
+//   12=3-4 bldgs,13=3-4 units,14=3-4 val, 15=5+ bldgs,16=5+ units,17=5+ val, ...
+function parseCountyBps(text, stateFips, countyFipsList) {
+  const results = {};
+  for (const line of text.split('\n')) {
+    const parts = line.split(',').map(s => s.trim());
+    if (parts[1] !== stateFips) continue;
+    if (!countyFipsList.includes(parts[2])) continue;
+    const sf   = parseInt(parts[7])  || 0;
+    const u2   = parseInt(parts[10]) || 0;
+    const u34  = parseInt(parts[13]) || 0;
+    const mf5  = parseInt(parts[16]) || 0;
+    results[parts[2]] = { total: sf + u2 + u34 + mf5, sf, mf5 };
+  }
+  return results;
+}
+
+// Find the most recent published month (try up to 4 months back)
+async function findLatestBpsMonth(fetchFn) {
+  const now = new Date();
+  for (let lag = 1; lag <= 4; lag++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - lag, 1);
+    const yyyymm = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const data = await fetchFn(yyyymm);
+    if (data) return { yyyymm, data };
+  }
+  return null;
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -323,42 +297,102 @@ async function main() {
     await new Promise(r => setTimeout(r, 550));
   }
 
-  // Fetch Seattle MSA permits from Census BPS (no API key required)
-  console.log('\nFetching Seattle MSA permits from Census BPS...');
-  const bpsCurrent   = await fetchSeaPermits();
-  // Fetch one month prior for period change
-  let bpsPrior = null, bpsPriorYear = null;
-  if (bpsCurrent) {
-    const d = new Date(parseInt(bpsCurrent.yyyymm.slice(0,4)), parseInt(bpsCurrent.yyyymm.slice(4,6)) - 2, 1);
-    const priorMm = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const buf = await fetchBpsXls(priorMm);
-    if (buf) {
-      fs.writeFileSync(`/tmp/bps_${priorMm}.xls`, buf);
-      // quick python parse
-      const { execSync } = require('child_process');
+  // ── Census BPS: MSA + county permits (no API key needed) ──────────────────
+  console.log('\nFetching Census BPS permit data...');
+
+  // Helper: prior and prior-year yyyymm strings
+  function priorMonth(yyyymm) {
+    const d = new Date(parseInt(yyyymm.slice(0,4)), parseInt(yyyymm.slice(4,6)) - 2, 1);
+    return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}`;
+  }
+  function priorYear(yyyymm) {
+    return `${parseInt(yyyymm.slice(0,4))-1}${yyyymm.slice(4,6)}`;
+  }
+
+  // ── MSA (CBSA XLS) ──
+  const msaLatest = await findLatestBpsMonth(async mm => {
+    const buf = await fetchBpsXls(mm);
+    if (!buf) return null;
+    const tmp = `/tmp/bps_msa_${mm}.xls`;
+    fs.writeFileSync(tmp, buf);
+    const { execSync } = require('child_process');
+    let result = null;
+    try {
+      const out = execSync(
+        `python3 -c "import xlrd; wb=xlrd.open_workbook('${tmp}'); ws=wb.sheet_by_name('MSA Units'); [print(int(ws.cell_value(r,4)),int(ws.cell_value(r,5)),int(ws.cell_value(r,8))) for r in range(ws.nrows) if str(ws.cell_value(r,1)).strip()=='42660.0']"`
+      ).toString().trim();
+      if (out) { const [t,s,m] = out.split(' ').map(Number); result = {total:t,sf:s,mf5:m,yyyymm:mm}; }
+    } catch(_) {}
+    try { fs.unlinkSync(tmp); } catch(_) {}
+    return result;
+  });
+
+  // ── County (TXT) ──
+  const WA = '53', COUNTIES = ['033','053','061'];
+  const COUNTY_IDS = { '033': 'kingPermits', '053': 'piercePermits', '061': 'snohomishPermits' };
+
+  const countyLatest = await findLatestBpsMonth(async mm => {
+    const txt = await fetchCountyBpsTxt(mm);
+    if (!txt) return null;
+    const parsed = parseCountyBps(txt, WA, COUNTIES);
+    if (!Object.keys(parsed).length) return null;
+    const out = {};
+    for (const [fips, d] of Object.entries(parsed)) out[fips] = { ...d, yyyymm: mm };
+    return out;
+  });
+
+  // Fetch prior/prior-year county data if we found a latest month
+  let countyPrior = null, countyPriorYear = null;
+  if (countyLatest) {
+    const mm = Object.values(countyLatest.data)[0].yyyymm;
+    const pmm = priorMonth(mm), pymm = priorYear(mm);
+    const ptxt  = await fetchCountyBpsTxt(pmm);
+    const pytxt = await fetchCountyBpsTxt(pymm);
+    if (ptxt)  countyPrior     = parseCountyBps(ptxt,  WA, COUNTIES);
+    if (pytxt) countyPriorYear = parseCountyBps(pytxt, WA, COUNTIES);
+  }
+
+  // Patch data.js
+  console.log('\nPatching data.js...');
+  let src = fs.readFileSync(DATA_FILE, 'utf8');
+
+  // MSA permits
+  if (msaLatest) {
+    const mm = msaLatest.data.yyyymm;
+    const pmm = priorMonth(mm), pymm = priorYear(mm);
+    let msaPrior = null, msaPriorYear = null;
+    const pbuf = await fetchBpsXls(pmm);
+    const pybuf = await fetchBpsXls(pymm);
+    const { execSync } = require('child_process');
+    for (const [buf, target, name] of [[pbuf, 'msaPrior', pmm],[pybuf, 'msaPriorYear', pymm]]) {
+      if (!buf) continue;
+      const tmp = `/tmp/bps_msa_${name}.xls`;
+      fs.writeFileSync(tmp, buf);
       try {
-        const out = execSync(`python3 -c "import xlrd; wb=xlrd.open_workbook('/tmp/bps_${priorMm}.xls'); ws=wb.sheet_by_name('MSA Units'); [print(int(ws.cell_value(r,4)),int(ws.cell_value(r,5)),int(ws.cell_value(r,8))) for r in range(ws.nrows) if str(ws.cell_value(r,1)).strip()=='42660.0']"`).toString().trim();
-        if (out) { const [t,s,m] = out.split(' ').map(Number); bpsPrior = {total:t,sf:s,mf:m,yyyymm:priorMm}; }
+        const out = execSync(`python3 -c "import xlrd; wb=xlrd.open_workbook('${tmp}'); ws=wb.sheet_by_name('MSA Units'); [print(int(ws.cell_value(r,4)),int(ws.cell_value(r,5)),int(ws.cell_value(r,8))) for r in range(ws.nrows) if str(ws.cell_value(r,1)).strip()=='42660.0']"`).toString().trim();
+        if (out) {
+          const [t,s,m] = out.split(' ').map(Number);
+          if (target === 'msaPrior') msaPrior = {total:t,sf:s,mf5:m,yyyymm:pmm};
+          else msaPriorYear = {total:t,sf:s,mf5:m,yyyymm:pymm};
+        }
       } catch(_) {}
-      try { fs.unlinkSync(`/tmp/bps_${priorMm}.xls`); } catch(_) {}
+      try { fs.unlinkSync(tmp); } catch(_) {}
     }
-    // Fetch same month prior year
-    const dy = new Date(parseInt(bpsCurrent.yyyymm.slice(0,4)) - 1, parseInt(bpsCurrent.yyyymm.slice(4,6)) - 1, 1);
-    const pyMm = `${dy.getFullYear()}${String(dy.getMonth() + 1).padStart(2, '0')}`;
-    const bufY = await fetchBpsXls(pyMm);
-    if (bufY) {
-      fs.writeFileSync(`/tmp/bps_${pyMm}.xls`, bufY);
-      try {
-        const out = execSync(`python3 -c "import xlrd; wb=xlrd.open_workbook('/tmp/bps_${pyMm}.xls'); ws=wb.sheet_by_name('MSA Units'); [print(int(ws.cell_value(r,4)),int(ws.cell_value(r,5)),int(ws.cell_value(r,8))) for r in range(ws.nrows) if str(ws.cell_value(r,1)).strip()=='42660.0']"`).toString().trim();
-        if (out) { const [t,s,m] = out.split(' ').map(Number); bpsPriorYear = {total:t,sf:s,mf:m,yyyymm:pyMm}; }
-      } catch(_) {}
-      try { fs.unlinkSync(`/tmp/bps_${pyMm}.xls`); } catch(_) {}
+    src = patchPermitMetric(src, 'seaPermits', msaLatest.data, msaPrior, msaPriorYear);
+    console.log(`  ✓ seaPermits: ${msaLatest.data.total} (${mm})`);
+  }
+
+  // County permits
+  if (countyLatest) {
+    for (const [fips, metricId] of Object.entries(COUNTY_IDS)) {
+      const curr = countyLatest.data[fips];
+      const prior = countyPrior ? { ...countyPrior[fips], yyyymm: priorMonth(curr.yyyymm) } : null;
+      const py    = countyPriorYear ? { ...countyPriorYear[fips], yyyymm: priorYear(curr.yyyymm) } : null;
+      src = patchPermitMetric(src, metricId, curr, prior, py);
+      console.log(`  ✓ ${metricId}: ${curr.total} (${curr.yyyymm})`);
     }
   }
 
-  console.log('\nPatching data.js...');
-  let src = fs.readFileSync(DATA_FILE, 'utf8');
-  if (bpsCurrent) src = patchSeaPermits(src, bpsCurrent, bpsPrior, bpsPriorYear);
   fs.writeFileSync(DATA_FILE, src, 'utf8');
 
   patchDataFile(results);
