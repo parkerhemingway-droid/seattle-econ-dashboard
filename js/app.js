@@ -924,73 +924,79 @@ function renderHelp() {
       ${metric.unit ? `<div class="modal-stat"><div class="modal-stat-label">Unit</div><div class="modal-stat-value" style="font-size:1rem">${metric.unit.trim() || '—'}</div></div>` : ''}
     `;
 
-    // Full chart from sparkline data
+    // Clear any previous chart
     destroyChart('modal-chart');
-    const canvas = document.getElementById('modal-chart');
-    if (canvas && metric.sparkline && metric.sparkline.length) {
-      const data = metric.sparkline;
-      const positiveTrend = inverted
-        ? data[data.length - 1] < data[0]
-        : data[data.length - 1] > data[0];
-      const color = positiveTrend ? '#34d399' : '#f87171';
-      const labels = Array.from({ length: data.length }, (_, i) => {
-        const d = new Date(metric.date);
-        d.setMonth(d.getMonth() - (data.length - 1 - i));
-        return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-      });
+    document.getElementById('modal-signal').textContent = 'Generating AI signal…';
+    document.getElementById('modal-signal').classList.add('loading');
+    document.getElementById('modal-source').textContent = `Source: ${metric.release || '—'}`;
 
-      chartRegistry['modal-chart'] = new Chart(canvas, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            data,
-            borderColor: color,
-            borderWidth: 2,
-            pointRadius: 0,
-            pointHoverRadius: 4,
-            tension: 0.35,
-            fill: true,
-            backgroundColor: ctx => {
-              const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, canvas.offsetHeight || 160);
-              g.addColorStop(0, color + '33');
-              g.addColorStop(1, color + '00');
-              return g;
-            },
-          }],
-        },
-        options: {
-          responsive: false,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: '#1a1d27', borderColor: '#2e3250', borderWidth: 1,
-              titleColor: '#e2e8f0', bodyColor: '#8892aa',
-            },
-          },
-          scales: {
-            x: {
-              ticks: {
-                color: '#8892aa', font: { size: 10 },
-                maxTicksLimit: 8,
+    // Open overlay FIRST so canvas has real dimensions when Chart.js measures it
+    overlay.classList.add('open');
+
+    // Draw chart after the browser has painted the visible canvas
+    requestAnimationFrame(() => {
+      const canvas = document.getElementById('modal-chart');
+      if (canvas && metric.sparkline && metric.sparkline.length) {
+        const data = metric.sparkline;
+        const positiveTrend = inverted
+          ? data[data.length - 1] < data[0]
+          : data[data.length - 1] > data[0];
+        const color = positiveTrend ? '#34d399' : '#f87171';
+        const labels = Array.from({ length: data.length }, (_, i) => {
+          const d = new Date(metric.date);
+          d.setMonth(d.getMonth() - (data.length - 1 - i));
+          return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        });
+
+        chartRegistry['modal-chart'] = new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              data,
+              borderColor: color,
+              borderWidth: 2,
+              pointRadius: 0,
+              pointHoverRadius: 4,
+              tension: 0.35,
+              fill: true,
+              backgroundColor: ctx => {
+                const h = canvas.offsetHeight || 160;
+                const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, h);
+                g.addColorStop(0, color + '33');
+                g.addColorStop(1, color + '00');
+                return g;
               },
-              grid: { color: '#2e3250' },
+            }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#1a1d27', borderColor: '#2e3250', borderWidth: 1,
+                titleColor: '#e2e8f0', bodyColor: '#8892aa',
+              },
             },
-            y: {
-              ticks: { color: '#8892aa', font: { size: 10 } },
-              grid: { color: '#2e3250' },
+            scales: {
+              x: {
+                ticks: { color: '#8892aa', font: { size: 10 }, maxTicksLimit: 8 },
+                grid: { color: '#2e3250' },
+              },
+              y: {
+                ticks: { color: '#8892aa', font: { size: 10 } },
+                grid: { color: '#2e3250' },
+              },
             },
           },
-        },
-      });
-    }
+        });
+      }
+    });
 
     // AI signal
     const signalEl = document.getElementById('modal-signal');
-    signalEl.textContent = 'Generating AI signal…';
-    signalEl.classList.add('loading');
     if (AI.hasKey()) {
       AI.metricSignal(metric).then(sig => {
         signalEl.textContent = sig || 'No signal available.';
@@ -1003,11 +1009,6 @@ function renderHelp() {
       signalEl.textContent = 'Connect Databricks in the sidebar to get AI signals.';
       signalEl.classList.remove('loading');
     }
-
-    // Source
-    document.getElementById('modal-source').textContent = `Source: ${metric.release || '—'}`;
-
-    overlay.classList.add('open');
   };
 })();
 
