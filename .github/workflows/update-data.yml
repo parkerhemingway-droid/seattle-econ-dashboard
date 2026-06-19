@@ -1,0 +1,43 @@
+name: Update Economic Data
+
+on:
+  schedule:
+    # Every 6 hours
+    - cron: '0 */6 * * *'
+  # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch FRED data and patch data.js
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: node scripts/update-data.js
+
+      - name: Commit updated data if changed
+        run: |
+          git config user.name  "seattle-econ-bot"
+          git config user.email "bot@seattle-econ-dashboard"
+          git diff --quiet js/data.js || (
+            git add js/data.js &&
+            git commit -m "chore: auto-update economic data $(date -u '+%Y-%m-%d %H:%M UTC')"
+          )
+
+      - name: Push changes
+        uses: ad-m/github-push-action@v0.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
