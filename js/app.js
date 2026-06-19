@@ -23,6 +23,23 @@ function fmtChange(val, unit) {
   return sign + val + (u === ' homes' || u === '/wk' ? '' : u);
 }
 
+// Append YoY % in parentheses for non-percentage metrics where it adds context.
+// Skip for metrics whose value IS already a percentage (%, unit ends with %).
+function fmtYoyPct(metric) {
+  const yoy = metric.yoyChange;
+  const val = metric.value;
+  const u   = metric.unit || '';
+  // Don't add % to metrics that are already in % terms, or where yoy is null/zero
+  if (!yoy || u === '%' || u.endsWith('%')) return '';
+  // Prior value = current - yoyChange
+  const prior = val - yoy;
+  if (!prior || prior === 0) return '';
+  const pct = (yoy / Math.abs(prior)) * 100;
+  if (!isFinite(pct)) return '';
+  const sign = pct > 0 ? '+' : '';
+  return ` <span style="opacity:0.7;font-size:.7rem">(${sign}${pct.toFixed(1)}%)</span>`;
+}
+
 function changeClass(val, invertedMetrics = false) {
   if (val === 0) return '';
   const up = val > 0;
@@ -67,7 +84,7 @@ function buildMetricCard(metric) {
     <div class="metric-value">${fmt(metric)}</div>
     <div class="metric-changes">
       <span class="metric-change ${pcClass}" title="Period change">${fmtChange(metric.periodChange, metric.unit)} period</span>
-      <span class="metric-change ${yoyClass}" title="Year-over-year">${fmtChange(metric.yoyChange, metric.unit)} YoY</span>
+      <span class="metric-change ${yoyClass}" title="Year-over-year">${fmtChange(metric.yoyChange, metric.unit)} YoY${fmtYoyPct(metric)}</span>
     </div>
     <div class="metric-release">${metric.release}</div>
     <div class="metric-signal loading" data-signal-id="${metric.id}">Generating signal…</div>
