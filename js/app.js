@@ -100,7 +100,11 @@ function buildMetricCard(metric) {
   // Open modal on card click (but not on action button clicks)
   card.addEventListener('click', e => {
     if (e.target.closest('.card-actions')) return;
-    openMetricModal(metric.id);
+    if (typeof window.openMetricModal !== 'function') {
+      console.error('[modal] openMetricModal not defined');
+      return;
+    }
+    window.openMetricModal(metric.id);
   });
 
   // Wire flag button
@@ -896,7 +900,10 @@ function renderHelp() {
 
   window.openMetricModal = function(metricId) {
     const metric = ALL_METRICS[metricId];
-    if (!metric) return;
+    if (!metric) { console.error('[modal] metric not found:', metricId); return; }
+    const overlayEl = document.getElementById('metric-modal-overlay');
+    if (!overlayEl) { console.error('[modal] overlay element missing'); return; }
+    console.log('[modal] opening', metricId, 'overlay found:', !!overlayEl);
 
     const inverted = INVERTED.has(metricId);
     const pcClass  = changeClass(metric.periodChange, inverted);
