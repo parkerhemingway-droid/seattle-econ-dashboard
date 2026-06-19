@@ -339,22 +339,24 @@ const PIPELINE_FORECAST = {
   ],
 
   // Forecast: Jun 2026 – Nov 2027
+  // Anchored to May 2026 run rates (SF=430, MF=1180) and declining based on
+  // the existing pipeline stock and permit trends. SF decays from ~450 to ~300
+  // as fewer new SF permits pull through. MF continues its established post-peak
+  // decline from ~1200 to ~760 as the 2022-24 multifamily start cohort completes.
   monthly: (() => {
-    const months = [];
-    const sfStock = 8580;
+    const LABELS = [
+      'Jun 26','Jul 26','Aug 26','Sep 26','Oct 26','Nov 26','Dec 26',
+      'Jan 27','Feb 27','Mar 27','Apr 27','May 27','Jun 27',
+      'Jul 27','Aug 27','Sep 27','Oct 27','Nov 27',
+    ];
     let cumulative = 0;
-    const startDate = new Date(2026, 5, 1);
-    for (let i = 0; i < 18; i++) {
-      const d = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
-      const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-      const sfUnits = Math.round(sfStock * Math.exp(-0.12 * i) * 0.12 + 80);
-      const mfPeak = 1400;
-      const mfUnits = Math.round(mfPeak * Math.exp(-0.5 * Math.pow((i - 7) / 4, 2)) + 200);
+    return LABELS.map((label, i) => {
+      const sfUnits   = Math.round(230 + 220 * Math.exp(-0.065 * i));
+      const mfUnits   = Math.round(550 + 660 * Math.exp(-0.068 * i));
       const totalUnits = sfUnits + mfUnits;
       cumulative += totalUnits;
-      months.push({ month: label, sfUnits, mfUnits, totalUnits, cumulativeUnits: cumulative });
-    }
-    return months;
+      return { month: label, sfUnits, mfUnits, totalUnits, cumulativeUnits: cumulative };
+    });
   })(),
 
   // Submarket breakdown
@@ -370,12 +372,14 @@ const PIPELINE_FORECAST = {
   assumptions: [
     'Single-family avg build time: 9 months from start to completion',
     'Multifamily avg build time: 18 months from start to completion',
-    'Current pipeline: 28,420 units under construction as of Apr 2026',
+    'Current pipeline: 28,420 units under construction as of Apr 2026 (19,840 MF + 8,580 SF)',
+    'Forecast anchored to May 2026 run rates: SF ~430/mo, MF ~1,180/mo',
+    'SF forecast: gradual decline from 450 to ~300/mo as low permit volume reduces starts',
+    'MF forecast: continuation of post-peak decline from ~1,200 to ~760/mo as 2022–24 starts deliver',
     'Permit pull-through rate: ~78% (permits that result in starts within 6 months)',
-    'Absorption rate assumption: ~85% of completions absorbed within 90 days in current market',
-    'New permits (3,842/mo) add to pipeline with ~3mo lag to start',
+    'New permits (3,842/mo) partially offset SF pipeline depletion with ~3mo lag',
     'Forecast horizon: 18 months (Jun 2026 – Nov 2027)',
-    'Data source: Census Building Permits Survey, Seattle MSA (CBSA 42660)',
+    'Data source: Census Building Permits Survey, Seattle MSA (CBSA 42660) — mock data',
   ],
 };
 
