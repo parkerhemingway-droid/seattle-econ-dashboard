@@ -3,14 +3,28 @@
 
 const TODAY = '2026-06-18';
 
+// trend: total fractional change over the full series (e.g. +0.15 = +15% over count periods)
+// The last value will land approximately at base*(1+trend) before noise.
 function sparkline(base, count = 24, volatility = 0.02, trend = 0) {
   const arr = [];
-  let val = base;
+  let val = base / (1 + trend); // start from back-calculated origin so end ≈ base
+  const stepTrend = trend / count;
   for (let i = 0; i < count; i++) {
-    val = val * (1 + (Math.random() - 0.5) * volatility + trend / count);
+    val = val * (1 + (Math.random() - 0.49) * volatility + stepTrend);
     arr.push(+val.toFixed(4));
   }
   return arr;
+}
+
+// Build a sparkline whose direction matches the metric's yoyChange
+function sparklineFromMetric(value, yoyChange, count = 24, volatility = 0.02) {
+  if (!yoyChange || !value) return sparkline(value, count, volatility, 0);
+  const prior = value - yoyChange;
+  if (!prior || prior <= 0) return sparkline(value, count, volatility, 0);
+  const trend = yoyChange / prior; // fractional YoY change drives the slope
+  // Cap trend to ±60% so extreme values don't produce crazy charts
+  const clampedTrend = Math.max(-0.6, Math.min(0.6, trend));
+  return sparkline(prior, count, volatility, clampedTrend);
 }
 
 // ── Financial Markets ───────────────────────────────────────────────────────
@@ -670,6 +684,24 @@ const FED = {
     category: 'Federal Reserve',
   },
 };
+
+// ── Recompute all sparklines so direction matches YoY change ─────────────────
+// This runs once after all metric objects are defined, so sparklines always
+// agree with the directional signal shown on the card.
+(function recomputeSparklines() {
+  const volatilityMap = {
+    // higher volatility for more noisy series
+    sp500: 0.018, oil: 0.03, seaActiveInventory: 0.05, seaNewListings: 0.06,
+    seaPendingSales: 0.05, nfp: 0.08, seaPayrolls: 0.09, initialClaims: 0.04,
+    continuingClaims: 0.03, joltsOpenings: 0.04, joltsQuits: 0.04,
+    housingStarts: 0.05, buildingPermits: 0.04, seaPermits: 0.07,
+  };
+  const allMetrics = { ...MARKETS, ...HOUSING, ...INFLATION, ...EMPLOYMENT, ...FED };
+  for (const [id, m] of Object.entries(allMetrics)) {
+    const vol = volatilityMap[id] || 0.02;
+    m.sparkline = sparklineFromMetric(m.value, m.yoyChange, 24, vol);
+  }
+})();
 
 // ── Upcoming Releases ────────────────────────────────────────────────────────
 const UPCOMING_RELEASES = [

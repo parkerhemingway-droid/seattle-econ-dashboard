@@ -97,6 +97,12 @@ function buildMetricCard(metric) {
     </div>
   `;
 
+  // Open modal on card click (but not on action button clicks)
+  card.addEventListener('click', e => {
+    if (e.target.closest('.card-actions')) return;
+    openMetricModal(metric.id);
+  });
+
   // Wire flag button
   card.querySelector('.flag-btn').addEventListener('click', e => {
     const id = e.currentTarget.dataset.id;
@@ -872,6 +878,138 @@ function renderHelp() {
 
   return el;
 }
+
+// ── Metric Expand Modal ──────────────────────────────────────────────────────
+
+(function initModal() {
+  const overlay = document.getElementById('metric-modal-overlay');
+  const closeBtn = document.getElementById('modal-close');
+
+  function closeModal() {
+    overlay.classList.remove('open');
+    destroyChart('modal-chart');
+  }
+
+  closeBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  window.openMetricModal = function(metricId) {
+    const metric = ALL_METRICS[metricId];
+    if (!metric) return;
+
+    const inverted = INVERTED.has(metricId);
+    const pcClass  = changeClass(metric.periodChange, inverted);
+    const yoyClass = changeClass(metric.yoyChange, inverted);
+
+    // Header
+    document.getElementById('modal-title').textContent = metric.name + (metric.local ? ' 📍' : '');
+    document.getElementById('modal-meta').textContent  = `${metric.date}  ·  ${metric.category || ''}`;
+
+    // Stat tiles
+    const statsEl = document.getElementById('modal-stats');
+    statsEl.innerHTML = `
+      <div class="modal-stat">
+        <div class="modal-stat-label">Current</div>
+        <div class="modal-stat-value">${fmt(metric)}</div>
+      </div>
+      <div class="modal-stat">
+        <div class="modal-stat-label">Period Change</div>
+        <div class="modal-stat-value ${pcClass}">${fmtChange(metric.periodChange, metric.unit)}${fmtPeriodPct(metric)}</div>
+      </div>
+      <div class="modal-stat">
+        <div class="modal-stat-label">YoY Change</div>
+        <div class="modal-stat-value ${yoyClass}">${fmtChange(metric.yoyChange, metric.unit)} YoY${fmtYoyPct(metric)}</div>
+      </div>
+      ${metric.unit ? `<div class="modal-stat"><div class="modal-stat-label">Unit</div><div class="modal-stat-value" style="font-size:1rem">${metric.unit.trim() || '—'}</div></div>` : ''}
+    `;
+
+    // Full chart from sparkline data
+    destroyChart('modal-chart');
+    const canvas = document.getElementById('modal-chart');
+    if (canvas && metric.sparkline && metric.sparkline.length) {
+      const data = metric.sparkline;
+      const positiveTrend = inverted
+        ? data[data.length - 1] < data[0]
+        : data[data.length - 1] > data[0];
+      const color = positiveTrend ? '#34d399' : '#f87171';
+      const labels = Array.from({ length: data.length }, (_, i) => {
+        const d = new Date(metric.date);
+        d.setMonth(d.getMonth() - (data.length - 1 - i));
+        return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+      });
+
+      chartRegistry['modal-chart'] = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            data,
+            borderColor: color,
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            tension: 0.35,
+            fill: true,
+            backgroundColor: ctx => {
+              const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, canvas.offsetHeight || 160);
+              g.addColorStop(0, color + '33');
+              g.addColorStop(1, color + '00');
+              return g;
+            },
+          }],
+        },
+        options: {
+          responsive: false,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1a1d27', borderColor: '#2e3250', borderWidth: 1,
+              titleColor: '#e2e8f0', bodyColor: '#8892aa',
+            },
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: '#8892aa', font: { size: 10 },
+                maxTicksLimit: 8,
+              },
+              grid: { color: '#2e3250' },
+            },
+            y: {
+              ticks: { color: '#8892aa', font: { size: 10 } },
+              grid: { color: '#2e3250' },
+            },
+          },
+        },
+      });
+    }
+
+    // AI signal
+    const signalEl = document.getElementById('modal-signal');
+    signalEl.textContent = 'Generating AI signal…';
+    signalEl.classList.add('loading');
+    if (AI.hasKey()) {
+      AI.metricSignal(metric).then(sig => {
+        signalEl.textContent = sig || 'No signal available.';
+        signalEl.classList.remove('loading');
+      }).catch(() => {
+        signalEl.textContent = 'Signal unavailable.';
+        signalEl.classList.remove('loading');
+      });
+    } else {
+      signalEl.textContent = 'Connect Databricks in the sidebar to get AI signals.';
+      signalEl.classList.remove('loading');
+    }
+
+    // Source
+    document.getElementById('modal-source').textContent = `Source: ${metric.release || '—'}`;
+
+    overlay.classList.add('open');
+  };
+})();
 
 // ── Routing ──────────────────────────────────────────────────────────────────
 

@@ -49,6 +49,28 @@
 
   <div id="search-results" class="search-dropdown hidden"></div>
 
+  <!-- Metric expand modal -->
+  <div id="metric-modal-overlay">
+    <div id="metric-modal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="modal-title"></div>
+          <div class="modal-meta" id="modal-meta"></div>
+        </div>
+        <button class="modal-close" id="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-stats" id="modal-stats"></div>
+        <div class="modal-chart-wrap">
+          <div class="modal-chart-label">24-Month History</div>
+          <canvas id="modal-chart" style="position:absolute;inset:42px 16px 16px;"></canvas>
+        </div>
+        <div class="modal-signal loading" id="modal-signal">Generating AI signal…</div>
+        <div class="modal-source" id="modal-source"></div>
+      </div>
+    </div>
+  </div>
+
   <script src="js/data.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/ai.js"></script>
