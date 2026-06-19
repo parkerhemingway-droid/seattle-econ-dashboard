@@ -334,7 +334,7 @@ const PIPELINE_FORECAST = {
     { month: 'Nov 25', sf: 440, mf: 1340 }, { month: 'Dec 25', sf: 410, mf: 1280 },
     // 2026 Jan–May actual
     { month: 'Jan 26', sf: 390, mf: 1220 }, { month: 'Feb 26', sf: 370, mf: 1190 },
-    { month: 'Mar 26', sf: 410, mf: 1210 }, { month: 'Apr 26', sf: 450, mf: 834 },
+    { month: 'Mar 26', sf: 410, mf: 1210 }, { month: 'Apr 26', sf: 450, mf: 1200 },
     { month: 'May 26', sf: 430, mf: 1180 },
   ],
 
@@ -359,12 +359,12 @@ const PIPELINE_FORECAST = {
 
   // Submarket breakdown
   submarkets: [
-    { name: 'Seattle Core (Cap Hill, SLU, Downtown)', sfPct: 4,  mfPct: 28, totalUnits: 7940 },
-    { name: 'Eastside (Bellevue, Kirkland, Redmond)',  sfPct: 22, mfPct: 31, totalUnits: 8820 },
-    { name: 'South King Co. (Renton, Kent, Auburn)',   sfPct: 31, mfPct: 18, totalUnits: 6240 },
-    { name: 'North King Co. (Shoreline, Bothell)',     sfPct: 18, mfPct: 12, totalUnits: 4210 },
-    { name: 'Snohomish Co. (Everett, Lynnwood)',       sfPct: 18, mfPct: 8,  totalUnits: 3720 },
-    { name: 'Pierce Co. (Tacoma, Puyallup)',           sfPct: 7,  mfPct: 3,  totalUnits: 1490 },
+    { name: 'Seattle Core (Cap Hill, SLU, Downtown)', sfPct: 4,  mfPct: 28, totalUnits: 6960 },
+    { name: 'Eastside (Bellevue, Kirkland, Redmond)',  sfPct: 22, mfPct: 31, totalUnits: 7732 },
+    { name: 'South King Co. (Renton, Kent, Auburn)',   sfPct: 31, mfPct: 18, totalUnits: 5470 },
+    { name: 'North King Co. (Shoreline, Bothell)',     sfPct: 18, mfPct: 12, totalUnits: 3691 },
+    { name: 'Snohomish Co. (Everett, Lynnwood)',       sfPct: 18, mfPct: 8,  totalUnits: 3261 },
+    { name: 'Pierce Co. (Tacoma, Puyallup)',           sfPct: 7,  mfPct: 3,  totalUnits: 1306 },
   ],
 
   assumptions: [
