@@ -817,6 +817,12 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
 .luxury-type-bar-fill { height: 100%; background: #c9a84c; border-radius: 2px; }
 
 .luxury-source { font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; font-style: italic; }
+.luxury-chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.luxury-chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin: 14px 0 0; }
+.luxury-chart-title { font-size: 0.7rem; font-weight: 600; color: #c9a84c; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+.luxury-chart-wrap { position: relative; }
+.luxury-chart-wrap canvas { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; }
+@media (max-width: 900px) { .luxury-chart-row { grid-template-columns: 1fr; } }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

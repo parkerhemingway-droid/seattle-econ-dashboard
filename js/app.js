@@ -498,8 +498,14 @@ function renderLuxury() {
   const h = d.headline;
 
   const fmtM = v => v >= 1000000 ? `$${(v/1000000).toFixed(2)}M` : `$${v.toLocaleString()}`;
-  const pctCls = v => v > 0 ? 'style="color:var(--green)"' : v < 0 ? 'style="color:var(--red)"' : '';
   const sign = v => v > 0 ? `+${v}` : `${v}`;
+  const mkTitle = text => { const t = document.createElement('div'); t.className = 'subsection-title'; t.textContent = text; return t; };
+  const mkChartCard = (title, id, height = 210) => {
+    const card = document.createElement('div');
+    card.className = 'luxury-chart-card';
+    card.innerHTML = `<div class="luxury-chart-title">${title}</div><div class="luxury-chart-wrap" style="height:${height}px"><canvas id="${id}"></canvas></div>`;
+    return card;
+  };
 
   el.innerHTML = `<div class="section-title">Luxury Market — $3M+</div>
     <div class="section-subtitle">Greater Seattle ultra-premium residential — King, Snohomish & Pierce Counties</div>`;
@@ -508,14 +514,14 @@ function renderLuxury() {
   const hero = document.createElement('div');
   hero.className = 'luxury-hero';
   const heroStats = [
-    { label: 'Median Sale Price',   value: fmtM(h.medianPrice),          sub: `YoY ${sign(h.yoyPricePct)}%`, cls: h.yoyPricePct >= 0 ? 'up' : 'down' },
-    { label: 'Avg Sale Price',      value: fmtM(h.avgPrice),              sub: 'rolling 12-month', cls: '' },
-    { label: 'Active Inventory',    value: h.activeInventory.toString(),  sub: `${h.absorptionMonths} mo supply`, cls: '' },
-    { label: 'Avg Days on Market',  value: `${h.medianDOM} days`,         sub: 'median', cls: '' },
-    { label: 'Sale / List Ratio',   value: `${h.saleToList}%`,            sub: 'avg concession ~3.2%', cls: '' },
-    { label: 'Price Reductions',    value: `${h.priceReductions}%`,       sub: 'of active listings', cls: '' },
-    { label: 'Closed Sales',        value: h.closedSales.toString(),       sub: `May 2026`, cls: '' },
-    { label: 'New Listings',        value: h.newListings.toString(),       sub: `May 2026`, cls: '' },
+    { label: 'Median Sale Price',  value: fmtM(h.medianPrice),         sub: `YoY ${sign(h.yoyPricePct)}%`, cls: h.yoyPricePct >= 0 ? 'up' : 'down' },
+    { label: 'Avg Sale Price',     value: fmtM(h.avgPrice),             sub: 'rolling 12-month', cls: '' },
+    { label: 'Active Inventory',   value: h.activeInventory.toString(), sub: `${h.absorptionMonths} mo supply`, cls: '' },
+    { label: 'Avg Days on Market', value: `${h.medianDOM} days`,        sub: 'median', cls: '' },
+    { label: 'Sale / List Ratio',  value: `${h.saleToList}%`,           sub: 'avg concession ~3.2%', cls: '' },
+    { label: 'Price Reductions',   value: `${h.priceReductions}%`,      sub: 'of active listings', cls: '' },
+    { label: 'Closed Sales',       value: h.closedSales.toString(),      sub: 'May 2026', cls: '' },
+    { label: 'New Listings',       value: h.newListings.toString(),      sub: 'May 2026', cls: '' },
   ];
   hero.innerHTML = heroStats.map(s => `
     <div class="luxury-hero-stat">
@@ -525,8 +531,15 @@ function renderLuxury() {
     </div>`).join('');
   el.appendChild(hero);
 
+  // ── Trend charts (price + sales/DOM side-by-side) ──
+  el.appendChild(mkTitle('12-Month Trend'));
+  const trendChartRow = document.createElement('div');
+  trendChartRow.className = 'luxury-chart-row';
+  trendChartRow.appendChild(mkChartCard('Median Sale Price', 'lux-price-chart'));
+  trendChartRow.appendChild(mkChartCard('Closed Sales & Days on Market', 'lux-sales-chart'));
+  el.appendChild(trendChartRow);
+
   // ── Monthly trend table ──
-  el.innerHTML += `<div class="subsection-title">12-Month Trend</div>`;
   const trendWrap = document.createElement('div');
   trendWrap.className = 'luxury-table-wrap';
   const months = d.monthly;
@@ -561,7 +574,7 @@ function renderLuxury() {
   el.appendChild(trendWrap);
 
   // ── Price tier breakdowns ──
-  el.innerHTML += `<div class="subsection-title">Price Tier Breakdown</div>`;
+  el.appendChild(mkTitle('Price Tier Breakdown'));
   const tierGrid = document.createElement('div');
   tierGrid.className = 'luxury-tier-grid';
   d.tiers.forEach(t => {
@@ -580,9 +593,10 @@ function renderLuxury() {
       </div>`;
   });
   el.appendChild(tierGrid);
+  el.appendChild(mkChartCard('Median Price by Tier', 'lux-tier-chart', 160));
 
   // ── Submarket breakdown ──
-  el.innerHTML += `<div class="subsection-title">Submarket Breakdown</div>`;
+  el.appendChild(mkTitle('Submarket Breakdown'));
   const subGrid = document.createElement('div');
   subGrid.className = 'luxury-sub-grid';
   d.submarkets.forEach(s => {
@@ -612,9 +626,10 @@ function renderLuxury() {
       </div>`;
   });
   el.appendChild(subGrid);
+  el.appendChild(mkChartCard('Median Price by Submarket (gold = YoY+, red = YoY−)', 'lux-sub-chart', 260));
 
   // ── Property type breakdown ──
-  el.innerHTML += `<div class="subsection-title">By Property Type</div>`;
+  el.appendChild(mkTitle('By Property Type'));
   const typeGrid = document.createElement('div');
   typeGrid.className = 'luxury-type-grid';
   d.propertyTypes.forEach(t => {
@@ -637,6 +652,112 @@ function renderLuxury() {
   src.className = 'luxury-source';
   src.textContent = `Source: ${d.sources}`;
   el.appendChild(src);
+
+  // ── Draw all charts after element is in DOM ──
+  setTimeout(() => {
+    const GOLD = '#c9a84c';
+    const BLUE = '#4f8ef7';
+    const RED  = '#f87171';
+    const ttOpts = { backgroundColor: '#1a1d27', borderColor: '#2e3250', borderWidth: 1, titleColor: '#e2e8f0', bodyColor: '#8892aa' };
+    const scaleX = { ticks: { color: '#8892aa', font: { size: 10 } }, grid: { color: '#2e3250' } };
+    const scaleY = { ticks: { color: '#8892aa', font: { size: 10 } }, grid: { color: '#2e3250' } };
+
+    // Chart 1 — Median price 12-month line
+    const priceEl = document.getElementById('lux-price-chart');
+    if (priceEl) {
+      destroyChart('lux-price-chart');
+      const ctx = priceEl.getContext('2d');
+      const grad = ctx.createLinearGradient(0, 0, 0, 210);
+      grad.addColorStop(0, GOLD + '44');
+      grad.addColorStop(1, GOLD + '00');
+      chartRegistry['lux-price-chart'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: months.map(m => m.month),
+          datasets: [{ label: 'Median Price', data: months.map(m => m.medianPrice / 1e6),
+            borderColor: GOLD, borderWidth: 2, pointRadius: 3, pointBackgroundColor: GOLD,
+            tension: 0.3, fill: true, backgroundColor: grad }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          plugins: { legend: { display: false }, tooltip: { ...ttOpts, callbacks: { label: c => `$${c.parsed.y.toFixed(2)}M` } } },
+          scales: { x: scaleX, y: { ...scaleY, ticks: { ...scaleY.ticks, callback: v => `$${v.toFixed(1)}M` } } },
+        },
+      });
+    }
+
+    // Chart 2 — Closed sales (bar) + DOM (line), dual axis
+    const salesEl = document.getElementById('lux-sales-chart');
+    if (salesEl) {
+      destroyChart('lux-sales-chart');
+      chartRegistry['lux-sales-chart'] = new Chart(salesEl.getContext('2d'), {
+        data: {
+          labels: months.map(m => m.month),
+          datasets: [
+            { type: 'bar',  label: 'Closed Sales', data: months.map(m => m.closedSales),
+              backgroundColor: BLUE + 'bb', borderRadius: 3, yAxisID: 'yL' },
+            { type: 'line', label: 'Avg DOM', data: months.map(m => m.dom),
+              borderColor: RED, borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false, yAxisID: 'yR' },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          plugins: { legend: { display: true, labels: { color: '#8892aa', font: { size: 10 }, boxWidth: 12 } },
+            tooltip: { ...ttOpts, mode: 'index', intersect: false } },
+          scales: {
+            x: scaleX,
+            yL: { type: 'linear', position: 'left', ...scaleY, ticks: { color: BLUE, font: { size: 10 } },
+              title: { display: true, text: 'Sales', color: BLUE, font: { size: 9 } } },
+            yR: { type: 'linear', position: 'right', grid: { drawOnChartArea: false },
+              ticks: { color: RED, font: { size: 10 } },
+              title: { display: true, text: 'DOM', color: RED, font: { size: 9 } } },
+          },
+        },
+      });
+    }
+
+    // Chart 3 — Tier median prices (horizontal bar)
+    const tierEl = document.getElementById('lux-tier-chart');
+    if (tierEl) {
+      destroyChart('lux-tier-chart');
+      chartRegistry['lux-tier-chart'] = new Chart(tierEl.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: d.tiers.map(t => t.label),
+          datasets: [{ label: 'Median Price', data: d.tiers.map(t => t.medianPrice / 1e6),
+            backgroundColor: [GOLD + 'dd', GOLD + 'aa', GOLD + '77', GOLD + '44'],
+            borderColor: GOLD, borderWidth: 1, borderRadius: 4 }],
+        },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: false,
+          plugins: { legend: { display: false }, tooltip: { ...ttOpts, callbacks: { label: c => `$${c.parsed.x.toFixed(2)}M` } } },
+          scales: { x: { ...scaleX, ticks: { ...scaleX.ticks, callback: v => `$${v}M` } }, y: scaleY },
+        },
+      });
+    }
+
+    // Chart 4 — Submarket median prices (horizontal bar, sorted desc, gold=up red=down)
+    const subEl = document.getElementById('lux-sub-chart');
+    if (subEl) {
+      destroyChart('lux-sub-chart');
+      const sorted = [...d.submarkets].sort((a, b) => b.medianPrice - a.medianPrice);
+      chartRegistry['lux-sub-chart'] = new Chart(subEl.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: sorted.map(s => s.name),
+          datasets: [{ label: 'Median Price', data: sorted.map(s => s.medianPrice / 1e6),
+            backgroundColor: sorted.map(s => (s.yoyPricePct >= 0 ? GOLD : RED) + 'bb'),
+            borderColor:     sorted.map(s => s.yoyPricePct >= 0 ? GOLD : RED),
+            borderWidth: 1, borderRadius: 4 }],
+        },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: false,
+          plugins: { legend: { display: false }, tooltip: { ...ttOpts, callbacks: { label: c => `$${c.parsed.x.toFixed(2)}M` } } },
+          scales: { x: { ...scaleX, ticks: { ...scaleX.ticks, callback: v => `$${v}M` } }, y: scaleY },
+        },
+      });
+    }
+  }, 0);
 
   return el;
 }
