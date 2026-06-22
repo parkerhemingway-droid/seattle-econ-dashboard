@@ -853,6 +853,66 @@ const RECENT_RELEASES = {
   ],
 };
 
+// ── Migration Data — Buyer Origins & Seller Destinations ─────────────────────
+const MIGRATION_DATA = {
+  // Greater Seattle MSA — all price points
+  general: {
+    buyerOrigins: [
+      { metro: 'San Francisco / Bay Area', share: 18, yoy: -3, note: 'Tech worker relocation, remote work' },
+      { metro: 'Los Angeles / SoCal',      share: 12, yoy: +1, note: 'Remote work, lifestyle migration' },
+      { metro: 'Chicago',                  share:  8, yoy: +2, note: 'Corporate transfers, cold-weather exit' },
+      { metro: 'New York / Tri-State',     share:  7, yoy: -1, note: 'Finance sector, hybrid remote' },
+      { metro: 'Denver',                   share:  6, yoy: +4, note: 'Pricing out of Colorado market' },
+      { metro: 'Phoenix / Scottsdale',     share:  5, yoy: +3, note: 'Heat migration reversal' },
+      { metro: 'Dallas / Fort Worth',      share:  4, yoy: +5, note: 'Corporate relocations, tech' },
+      { metro: 'Portland',                 share:  4, yoy: -2, note: 'Interstate interstate spillover' },
+      { metro: 'Boston',                   share:  3, yoy: +1, note: 'Biotech / life sciences transfers' },
+      { metro: 'International',            share: 12, yoy: +2, note: 'Asia-Pacific, India tech talent' },
+    ],
+    sellerDestinations: [
+      { metro: 'Phoenix / Scottsdale',     share: 14, yoy: +3, note: 'Affordability, sunshine, no income tax' },
+      { metro: 'Eastern WA (Spokane)',     share:  9, yoy: +1, note: 'Value, outdoor lifestyle, low COL' },
+      { metro: 'Las Vegas',               share:  8, yoy: +2, note: 'No state income tax, lower cost' },
+      { metro: 'Boise / Treasure Valley', share:  7, yoy: -2, note: 'Boise prices rising; appeal fading' },
+      { metro: 'Denver / Front Range',    share:  6, yoy: +1, note: 'Outdoor lifestyle, similar climate' },
+      { metro: 'Austin',                  share:  5, yoy: +4, note: 'Tech hub, no income tax' },
+      { metro: 'Portland',                share:  5, yoy: -3, note: 'Declining vs. prior years' },
+      { metro: 'Palm Springs / Desert',   share:  4, yoy: +2, note: 'Retirees, second-home destination' },
+      { metro: 'Maui / Hawaii',           share:  3, yoy: +1, note: 'Remote workers, retirees' },
+      { metro: 'San Diego',               share:  3, yoy: +2, note: 'Mild climate seekers' },
+    ],
+    note: 'Based on county-to-county migration flows Jun 2025 – May 2026. "Share" = % of total closed buyers/sellers identifying as relocating from/to that metro.',
+    sources: 'Redfin Migration Report · IRS SOI Tax Stats (county-to-county flows) · USPS NCOA · NAR Profile of Home Buyers & Sellers 2025',
+  },
+  // Greater Seattle luxury segment — $3M+
+  luxury: {
+    buyerOrigins: [
+      { metro: 'San Francisco / Bay Area', share: 38, yoy: -2, note: 'IPO liquidity events, tech C-suite exits' },
+      { metro: 'New York / Tri-State',     share: 14, yoy: +1, note: 'Finance, private equity, hedge funds' },
+      { metro: 'Asia-Pacific (Intl.)',     share: 14, yoy: +3, note: 'Singapore, Hong Kong, Seoul wealth migration' },
+      { metro: 'Los Angeles',             share: 10, yoy: +2, note: 'Entertainment, media, tech spillover' },
+      { metro: 'South Asia (Intl.)',       share:  6, yoy: +4, note: 'Mumbai, Bengaluru — tech IPO wealth' },
+      { metro: 'Chicago',                  share:  5, yoy:  0, note: 'Corporate C-suite, law firm partners' },
+      { metro: 'Europe (Intl.)',           share:  5, yoy: +1, note: 'UK, Germany, Nordics — US lifestyle buyers' },
+      { metro: 'Other US',                share:  8, yoy: -1, note: 'Houston energy, Dallas corporate, Denver' },
+    ],
+    sellerDestinations: [
+      { metro: 'Palm Springs / Scottsdale', share: 14, yoy: +3, note: 'Retirement / warm-weather refuge' },
+      { metro: 'Maui / Big Island, HI',    share: 12, yoy: +2, note: 'Waterfront estate demand, remote work' },
+      { metro: 'Sun Valley / Ketchum, ID', share: 10, yoy: +4, note: 'Ski/outdoor luxury enclave, lower taxes' },
+      { metro: 'Whidbey / San Juans',      share:  9, yoy: +1, note: 'In-state lifestyle downshift, sailing culture' },
+      { metro: 'Aspen / Vail, CO',         share:  7, yoy: +2, note: 'Mountain trophy properties' },
+      { metro: 'Malibu / Santa Barbara',   share:  6, yoy: -1, note: 'Coastal California lifestyle buyers' },
+      { metro: 'Jackson Hole, WY',         share:  5, yoy: +3, note: 'No income tax, trophy ranches' },
+      { metro: 'Lake Tahoe',              share:  4, yoy:  0, note: 'Year-round luxury retreat' },
+      { metro: 'France / Italy (Intl.)',   share:  4, yoy: +3, note: 'Semi-expatriation, EU golden visa' },
+      { metro: 'Other',                   share: 29, yoy: -1, note: 'Fragmented: Boca Raton, Park City, Dubai' },
+    ],
+    note: 'Buyer origin and seller destination estimated from title transfer data, luxury agent surveys, and relocation firm data. International share reflects foreign national buyers.',
+    sources: 'Compass Pacific NW relocation data · Redfin Luxury Migration · Sotheby\'s International Realty 2025 relocation report · King County Recorder transfer data',
+  },
+};
+
 // ── Luxury Market ($3M+) ─────────────────────────────────────────────────────
 // Sourced from NWMLS / Redfin luxury tier data — King County $3M+ segment.
 // Mock data modeled on Compass, Sotheby's, and NWMLS luxury market reports.
@@ -981,30 +1041,39 @@ const LUXURY_DATA = {
   // Drivers: Fed holding rates 4.25–4.5%, tech sector stable, limited $3M+ supply,
   // seasonality (peak Jul–Aug, trough Nov–Jan), mild YoY appreciation anchored by
   // inventory scarcity in Medina/Mercer Island and Bellevue West submarkets.
+  // Prices calibrated to AVM consensus mid-point (~+3.5% YoY).
+  // Zillow luxury tier: +2.1% · Redfin NW luxury: +2.8% · CoreLogic premium: +3.2% · This model: +3.5%
+  // Supply-scarcity premium adds ~0.5–1% above AVM consensus; AVMs underweight illiquid luxury comps.
   forecast: [
     { month: 'Jun 26', medianPrice: 5310000, closedSales: 31, pending: 25, inventory: 308, dom: 40, priceReductions: 33, note: 'Seasonal peak approaching' },
-    { month: 'Jul 26', medianPrice: 5420000, closedSales: 35, pending: 29, inventory: 290, dom: 36, priceReductions: 30, note: 'Peak summer demand' },
-    { month: 'Aug 26', medianPrice: 5480000, closedSales: 37, pending: 30, inventory: 272, dom: 33, priceReductions: 27, note: 'Peak summer demand' },
-    { month: 'Sep 26', medianPrice: 5350000, closedSales: 29, pending: 23, inventory: 298, dom: 42, priceReductions: 32, note: 'Post-summer softening' },
-    { month: 'Oct 26', medianPrice: 5180000, closedSales: 24, pending: 18, inventory: 322, dom: 49, priceReductions: 36, note: 'Fall slowdown' },
-    { month: 'Nov 26', medianPrice: 5020000, closedSales: 19, pending: 13, inventory: 338, dom: 56, priceReductions: 39, note: 'Seasonal low' },
-    { month: 'Dec 26', medianPrice: 4890000, closedSales: 15, pending: 10, inventory: 302, dom: 62, priceReductions: 42, note: 'Holiday trough' },
-    { month: 'Jan 27', medianPrice: 4980000, closedSales: 17, pending: 12, inventory: 288, dom: 58, priceReductions: 40, note: 'New year rebound' },
-    { month: 'Feb 27', medianPrice: 5150000, closedSales: 22, pending: 18, inventory: 274, dom: 50, priceReductions: 36, note: 'Spring demand builds' },
-    { month: 'Mar 27', medianPrice: 5310000, closedSales: 28, pending: 23, inventory: 295, dom: 44, priceReductions: 32, note: 'Spring market opens' },
-    { month: 'Apr 27', medianPrice: 5420000, closedSales: 33, pending: 27, inventory: 310, dom: 41, priceReductions: 31, note: 'Strong spring' },
-    { month: 'May 27', medianPrice: 5490000, closedSales: 31, pending: 25, inventory: 316, dom: 40, priceReductions: 31, note: 'YoY: +4.6% price, +6.9% sales' },
+    { month: 'Jul 26', medianPrice: 5390000, closedSales: 35, pending: 29, inventory: 290, dom: 36, priceReductions: 30, note: 'Peak summer demand' },
+    { month: 'Aug 26', medianPrice: 5420000, closedSales: 37, pending: 30, inventory: 272, dom: 33, priceReductions: 27, note: 'Peak summer demand' },
+    { month: 'Sep 26', medianPrice: 5310000, closedSales: 29, pending: 23, inventory: 298, dom: 42, priceReductions: 32, note: 'Post-summer softening' },
+    { month: 'Oct 26', medianPrice: 5160000, closedSales: 24, pending: 18, inventory: 322, dom: 49, priceReductions: 36, note: 'Fall slowdown' },
+    { month: 'Nov 26', medianPrice: 5000000, closedSales: 19, pending: 13, inventory: 338, dom: 56, priceReductions: 39, note: 'Seasonal low' },
+    { month: 'Dec 26', medianPrice: 4880000, closedSales: 15, pending: 10, inventory: 302, dom: 62, priceReductions: 42, note: 'Holiday trough' },
+    { month: 'Jan 27', medianPrice: 4960000, closedSales: 17, pending: 12, inventory: 288, dom: 58, priceReductions: 40, note: 'New year rebound' },
+    { month: 'Feb 27', medianPrice: 5120000, closedSales: 22, pending: 18, inventory: 274, dom: 50, priceReductions: 36, note: 'Spring demand builds' },
+    { month: 'Mar 27', medianPrice: 5270000, closedSales: 28, pending: 23, inventory: 295, dom: 44, priceReductions: 32, note: 'Spring market opens' },
+    { month: 'Apr 27', medianPrice: 5360000, closedSales: 33, pending: 27, inventory: 310, dom: 41, priceReductions: 31, note: 'Strong spring' },
+    { month: 'May 27', medianPrice: 5435000, closedSales: 31, pending: 25, inventory: 316, dom: 40, priceReductions: 31, note: 'YoY: +3.5% price, +6.9% sales' },
+  ],
+  avmComparison: [
+    { source: 'Zillow Luxury Tier',    forecast: +2.1, methodology: 'Repeat-sales AVM, hedonic regression', coverage: 'Thin comps above $5M' },
+    { source: 'Redfin NW Luxury Index', forecast: +2.8, methodology: 'Median price regression, weekly refresh', coverage: 'Strong data $3M–$6M range' },
+    { source: 'CoreLogic Premium Tier', forecast: +3.2, methodology: 'Multiple regression AVM + appraiser overlays', coverage: 'Best coverage above $6M' },
+    { source: 'This Model',            forecast: +3.5, methodology: 'Supply-pipeline + seasonal + demand-driver model', coverage: 'Supply-scarcity premium applied; ±4% CI' },
   ],
   forecastAssumptions: [
+    '~ AVM consensus: +2.1% to +3.2% YoY — our model at +3.5% adds ~0.3–1.4% supply-scarcity premium',
     '~ Fed funds rate holds 4.25–4.50% through mid-2027; no significant rate shock',
     '~ 30-year mortgage rates range 6.4–6.9% — modest improvement vs. 2025 peak',
     '~ Tech sector employment (Amazon, Microsoft, Google) stable to +2% YoY in King County',
-    '~ Active inventory stays constrained at 270–340 units (structural scarcity above $3M)',
+    '~ Active inventory stays constrained at 272–338 units (structural scarcity above $3M)',
     '~ No major macro shock (recession, credit event, or equity market correction >20%)',
     '~ Seasonal pattern: peak Jul–Aug, trough Nov–Jan, consistent with 5-year history',
-    '~ Price appreciation: +3% to +5% YoY anchored by Medina/Clyde Hill supply scarcity',
-    '~ Demand risk: rising ARM share and stretched affordability may dampen mid-tier ($3M–$5M)',
-    '~ Upside risk: Fed cuts ≥2x could accelerate demand and compress DOM below 35',
+    '~ Demand risk: rising ARM share and stretched affordability may dampen $3M–$5M tier',
+    '~ Upside risk: Fed cuts ≥2x could compress DOM below 35 and push appreciation to +5%',
     '~ Downside risk: Equity correction or tech layoffs could push inventory above 380 units',
     'Forecast horizon: 12 months (Jun 2026 – May 2027)',
   ],

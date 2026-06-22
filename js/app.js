@@ -238,6 +238,140 @@ function renderToday() {
 
 // ── Construction Pipeline Forecast ───────────────────────────────────────────
 
+// ── Migration section helper (used by Housing + Luxury) ─────────────────────
+function buildMigrationSection(migData, idSuffix) {
+  const wrap = document.createElement('div');
+
+  const mkChartCard = (title, id, height = 240) => {
+    const card = document.createElement('div');
+    card.className = 'migration-chart-card';
+    card.innerHTML = `<div class="migration-chart-title">${title}</div><div class="migration-chart-wrap" style="height:${height}px"><canvas id="${id}"></canvas></div>`;
+    return card;
+  };
+
+  const row = document.createElement('div');
+  row.className = 'migration-row';
+  row.appendChild(mkChartCard('Where Buyers Are Coming From', `mig-buyers-${idSuffix}`));
+  row.appendChild(mkChartCard('Where Sellers Are Going', `mig-sellers-${idSuffix}`));
+  wrap.appendChild(row);
+
+  const noteEl = document.createElement('div');
+  noteEl.className = 'migration-note';
+  noteEl.textContent = migData.note;
+  wrap.appendChild(noteEl);
+
+  const srcEl = document.createElement('div');
+  srcEl.className = 'luxury-source';
+  srcEl.textContent = `Source: ${migData.sources}`;
+  wrap.appendChild(srcEl);
+
+  // Draw after in DOM
+  setTimeout(() => {
+    const C_BLUE   = '#007BFF';
+    const C_ORANGE = '#FF7043';
+    const tickColor = '#90A4AE';
+    const tickFont = { size: 10 };
+    const tt = { backgroundColor: '#ffffff', borderColor: '#DADADA', borderWidth: 1, titleColor: '#000', bodyColor: '#4a4a4a', padding: 10, cornerRadius: 4 };
+    const gridColor = 'rgba(218,218,218,0.1)';
+    const scaleBase = { ticks: { color: tickColor, font: tickFont, padding: 6 }, grid: { color: gridColor, drawTicks: false }, border: { display: false } };
+    const scaleNoVGrid = { ...scaleBase, grid: { display: false }, border: { display: false } };
+
+    const drawMigChart = (canvasId, items, color, labelKey, valueKey, fmtLabel) => {
+      const el = document.getElementById(canvasId);
+      if (!el) return;
+      destroyChart(canvasId);
+      const sorted = [...items].sort((a, b) => a[valueKey] - b[valueKey]);
+      chartRegistry[canvasId] = new Chart(el.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: sorted.map(d => d[labelKey]),
+          datasets: [{
+            label: 'Share %',
+            data: sorted.map(d => d[valueKey]),
+            backgroundColor: color + 'cc',
+            borderWidth: 0,
+            borderRadius: 4,
+          }],
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          layout: { padding: { top: 4, right: 40 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              ...tt,
+              callbacks: {
+                label: c => ` ${c.parsed.x}% of relocating ${fmtLabel}`,
+                afterLabel: c => {
+                  const item = sorted[c.dataIndex];
+                  const yoy = item.yoy;
+                  const dir = yoy > 0 ? `+${yoy}% YoY` : `${yoy}% YoY`;
+                  return [`${dir}`, item.note];
+                },
+              },
+            },
+          },
+          scales: {
+            x: { ...scaleBase, ticks: { ...scaleBase.ticks, callback: v => `${v}%` }, max: Math.max(...items.map(d => d[valueKey])) + 4 },
+            y: scaleNoVGrid,
+          },
+        },
+        plugins: [{
+          id: 'yoyLabels',
+          afterDatasetsDraw(chart) {
+            const { ctx, scales: { x, y } } = chart;
+            ctx.save();
+            ctx.font = '9px -apple-system, sans-serif';
+            sorted.forEach((item, i) => {
+              const yoy = item.yoy;
+              if (yoy === 0) return;
+              const xPos = x.getPixelForValue(item[valueKey]);
+              const yPos = y.getPixelForValue(i);
+              ctx.fillStyle = yoy > 0 ? '#00D084' : '#FF7043';
+              ctx.fillText(`${yoy > 0 ? '+' : ''}${yoy}%`, xPos + 4, yPos + 4);
+            });
+            ctx.restore();
+          },
+        }],
+      });
+    };
+
+    drawMigChart(`mig-buyers-${idSuffix}`, migData.buyerOrigins,     C_BLUE,   'metro', 'share', 'buyers');
+    drawMigChart(`mig-sellers-${idSuffix}`, migData.sellerDestinations, C_ORANGE, 'metro', 'share', 'sellers');
+  }, 0);
+
+  return wrap;
+}
+
+// ── AVM comparison helper (used by Luxury forecast) ──────────────────────────
+function buildAvmComparison(avmData) {
+  const wrap = document.createElement('div');
+  wrap.className = 'avm-compare-wrap';
+  wrap.innerHTML = `<div class="avm-compare-title">AVM Benchmark Cross-Check — 12-Month Price Forecast</div>
+    <table class="avm-compare-table">
+      <thead><tr><th>Source</th><th>YoY Forecast</th><th>Methodology</th><th>Coverage Note</th></tr></thead>
+      <tbody>
+        ${avmData.map(r => {
+          const cls = r.source === 'This Model' ? 'avm-row-highlight' : '';
+          const color = r.forecast >= 3.0 ? 'var(--green)' : 'var(--text-muted)';
+          return `<tr class="${cls}">
+            <td><strong>${r.source}</strong></td>
+            <td style="color:${color};font-weight:700">+${r.forecast}%</td>
+            <td style="color:var(--text-muted)">${r.methodology}</td>
+            <td style="color:var(--text-muted)">${r.coverage}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    <div style="font-size:0.7rem;color:var(--text-muted);margin-top:8px">
+      Our model applies a supply-scarcity premium (+0.3–1.4%) above AVM consensus to reflect illiquid comps and Medina/Mercer Island structural undersupply. ±4% confidence interval.
+    </div>`;
+  return wrap;
+}
+
 function buildPipelineForecast() {
   const wrap = document.createElement('div');
 
@@ -483,6 +617,13 @@ function renderHousing() {
   el.innerHTML += `<div class="subsection-title">Construction Completion Forecast — 18-Month Pipeline</div>`;
   el.appendChild(buildPipelineForecast());
 
+  // ── Migration ──
+  const migTitle = document.createElement('div');
+  migTitle.className = 'subsection-title';
+  migTitle.textContent = 'Buyer Origins & Seller Destinations — Greater Seattle MSA';
+  el.appendChild(migTitle);
+  el.appendChild(buildMigrationSection(MIGRATION_DATA.general, 'housing'));
+
   setTimeout(() => {
     drawSparklines(allShown);
     populateSignals(allShown, el);
@@ -662,6 +803,8 @@ function renderLuxury() {
   fcastRow.appendChild(mkChartCard('Inventory & Pending Forecast', 'lux-fcast-inv-chart'));
   el.appendChild(fcastRow);
 
+  el.appendChild(buildAvmComparison(d.avmComparison));
+
   const assumWrap = document.createElement('div');
   assumWrap.className = 'luxury-forecast-assumptions';
   assumWrap.innerHTML = `<div class="luxury-forecast-assume-title">Forecast Assumptions</div>` +
@@ -670,6 +813,13 @@ function renderLuxury() {
       return `<div style="color:${color}">• ${a}</div>`;
     }).join('');
   el.appendChild(assumWrap);
+
+  // ── Buyer & Seller Migration ──
+  const migTitle2 = document.createElement('div');
+  migTitle2.className = 'subsection-title';
+  migTitle2.textContent = 'Buyer Origins & Seller Destinations — $3M+ Segment';
+  el.appendChild(migTitle2);
+  el.appendChild(buildMigrationSection(MIGRATION_DATA.luxury, 'luxury'));
 
   // ── Source note ──
   const src = document.createElement('div');

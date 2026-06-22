@@ -825,6 +825,24 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
 .luxury-source { font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; font-style: italic; }
 .luxury-forecast-assumptions { background: #1f2335; border: 1px solid rgba(218,218,218,0.1); border-radius: 8px; padding: 14px 16px; margin: 14px 0 0; font-size: 0.75rem; line-height: 1.7; }
 .luxury-forecast-assume-title { font-size: 0.68rem; font-weight: 600; color: #BCC8CE; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+
+/* ── AVM Comparison ── */
+.avm-compare-wrap { background: #1f2335; border: 1px solid rgba(218,218,218,0.1); border-radius: 8px; padding: 14px 16px; margin: 14px 0 0; }
+.avm-compare-title { font-size: 0.68rem; font-weight: 600; color: #BCC8CE; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
+.avm-compare-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.avm-compare-table th { text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 8px 6px 0; border-bottom: 1px solid rgba(218,218,218,0.12); }
+.avm-compare-table td { padding: 7px 8px 7px 0; border-bottom: 1px solid rgba(218,218,218,0.06); vertical-align: top; }
+.avm-row-highlight td { background: rgba(0,123,255,0.08); }
+.avm-row-highlight td:first-child { border-left: 3px solid #007BFF; padding-left: 6px; }
+
+/* ── Migration Charts ── */
+.migration-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 8px 0 0; }
+.migration-chart-card { background: #1f2335; border: 1px solid rgba(218,218,218,0.1); border-radius: 10px; padding: 14px 16px; }
+.migration-chart-title { font-size: 0.68rem; font-weight: 600; color: #BCC8CE; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
+.migration-chart-wrap { position: relative; }
+.migration-chart-wrap canvas { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; }
+.migration-note { font-size: 0.72rem; color: var(--text-muted); margin: 10px 0 4px; line-height: 1.5; font-style: italic; }
+@media (max-width: 900px) { .migration-row { grid-template-columns: 1fr; } }
 .luxury-chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
 .luxury-chart-card { background: #1f2335; border: 1px solid rgba(218,218,218,0.1); border-radius: 10px; padding: 16px 18px; margin: 14px 0 0; }
 .luxury-chart-title { font-size: 0.68rem; font-weight: 600; color: #BCC8CE; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 12px; }
