@@ -1,7 +1,7 @@
 // Mock data — Seattle-localized where applicable, national where metro data unavailable.
 // Replace sparkline arrays with real API calls to wire up live data.
 
-const TODAY = '2026-06-18';
+const TODAY = '2026-06-21';
 
 // trend: total fractional change over the full series (e.g. +0.15 = +15% over count periods)
 // The last value will land approximately at base*(1+trend) before noise.
@@ -31,7 +31,7 @@ function sparklineFromMetric(value, yoyChange, count = 24, volatility = 0.02) {
 const MARKETS = {
   treasury10y: {
     id: 'treasury10y', name: '10-Year Treasury Yield', section: 'today',
-    value: 4.38, unit: '%', date: '2026-06-18',
+    value: 4.38, unit: '%', date: '2026-06-21',
     periodChange: +0.04, yoyChange: -0.41,
     release: 'Daily — Treasury Dept.',
     sparkline: sparkline(4.38, 24, 0.02),
@@ -39,7 +39,7 @@ const MARKETS = {
   },
   treasury2y: {
     id: 'treasury2y', name: '2-Year Treasury Yield', section: 'today',
-    value: 4.12, unit: '%', date: '2026-06-18',
+    value: 4.12, unit: '%', date: '2026-06-21',
     periodChange: +0.02, yoyChange: -0.58,
     release: 'Daily — Treasury Dept.',
     sparkline: sparkline(4.12, 24, 0.02),
@@ -47,7 +47,7 @@ const MARKETS = {
   },
   sp500: {
     id: 'sp500', name: 'S&P 500', section: 'today',
-    value: 5482, unit: '', date: '2026-06-18',
+    value: 5482, unit: '', date: '2026-06-21',
     periodChange: +23, yoyChange: +312,
     release: 'Daily — NYSE',
     sparkline: sparkline(5482, 24, 0.012),
@@ -55,7 +55,7 @@ const MARKETS = {
   },
   oil: {
     id: 'oil', name: 'WTI Crude Oil', section: 'today',
-    value: 72.40, unit: '$/bbl', date: '2026-06-18',
+    value: 72.40, unit: '$/bbl', date: '2026-06-21',
     periodChange: -1.20, yoyChange: -8.30,
     release: 'Daily — EIA',
     sparkline: sparkline(72.40, 24, 0.025),
@@ -482,7 +482,7 @@ const INFLATION = {
   },
   breakeven5y: {
     id: 'breakeven5y', name: '5-Year Breakeven', section: 'inflation',
-    value: 2.44, unit: '%', date: '2026-06-18',
+    value: 2.44, unit: '%', date: '2026-06-21',
     periodChange: -0.02, yoyChange: -0.08,
     release: 'Daily — Treasury',
     sparkline: sparkline(2.44, 24, 0.015),
@@ -490,7 +490,7 @@ const INFLATION = {
   },
   breakeven10y: {
     id: 'breakeven10y', name: '10-Year Breakeven', section: 'inflation',
-    value: 2.38, unit: '%', date: '2026-06-18',
+    value: 2.38, unit: '%', date: '2026-06-21',
     periodChange: -0.01, yoyChange: -0.06,
     release: 'Daily — Treasury',
     sparkline: sparkline(2.38, 24, 0.015),
@@ -703,7 +703,7 @@ const EMPLOYMENT = {
 const FED = {
   effFedFunds: {
     id: 'effFedFunds', name: 'Effective Fed Funds Rate', section: 'fed',
-    value: 4.33, unit: '%', date: '2026-06-18',
+    value: 4.33, unit: '%', date: '2026-06-21',
     periodChange: 0, yoyChange: -0.92,
     release: 'Daily — FRED',
     sparkline: sparkline(4.33, 24, 0.003),
@@ -711,7 +711,7 @@ const FED = {
   },
   fedTargetHigh: {
     id: 'fedTargetHigh', name: 'Fed Target Range (Upper)', section: 'fed',
-    value: 4.50, unit: '%', date: '2026-06-18',
+    value: 4.50, unit: '%', date: '2026-06-21',
     periodChange: 0, yoyChange: -1.0,
     release: 'FOMC Decision',
     sparkline: sparkline(4.5, 24, 0.001),
@@ -720,7 +720,7 @@ const FED = {
   // Cut probabilities for upcoming FOMC meetings
   cutProbJul: {
     id: 'cutProbJul', name: 'Jul FOMC Cut Prob.', section: 'fed',
-    value: 14, unit: '%', date: '2026-06-18',
+    value: 14, unit: '%', date: '2026-06-21',
     periodChange: -2, yoyChange: null,
     release: 'Daily — CME FedWatch',
     sparkline: sparkline(14, 24, 0.1),
@@ -728,7 +728,7 @@ const FED = {
   },
   cutProbSep: {
     id: 'cutProbSep', name: 'Sep FOMC Cut Prob.', section: 'fed',
-    value: 68, unit: '%', date: '2026-06-18',
+    value: 68, unit: '%', date: '2026-06-21',
     periodChange: +4, yoyChange: null,
     release: 'Daily — CME FedWatch',
     sparkline: sparkline(68, 24, 0.06),
@@ -736,7 +736,7 @@ const FED = {
   },
   cutProbNov: {
     id: 'cutProbNov', name: 'Nov FOMC Cut Prob.', section: 'fed',
-    value: 82, unit: '%', date: '2026-06-18',
+    value: 82, unit: '%', date: '2026-06-21',
     periodChange: +2, yoyChange: null,
     release: 'Daily — CME FedWatch',
     sparkline: sparkline(82, 24, 0.04),
