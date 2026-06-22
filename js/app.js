@@ -626,7 +626,7 @@ function renderLuxury() {
       </div>`;
   });
   el.appendChild(subGrid);
-  el.appendChild(mkChartCard('Median Price by Submarket (gold = YoY+, red = YoY−)', 'lux-sub-chart', 260));
+  el.appendChild(mkChartCard('Median Price by Submarket (blue = YoY+, orange = YoY−)', 'lux-sub-chart', 260));
 
   // ── Property type breakdown ──
   el.appendChild(mkTitle('By Property Type'));
@@ -655,38 +655,69 @@ function renderLuxury() {
 
   // ── Draw all charts after element is in DOM ──
   setTimeout(() => {
-    const GOLD = '#c9a84c';
-    const BLUE = '#4f8ef7';
-    const RED  = '#f87171';
-    const ttOpts = { backgroundColor: '#1a1d27', borderColor: '#2e3250', borderWidth: 1, titleColor: '#e2e8f0', bodyColor: '#8892aa' };
-    const scaleX = { ticks: { color: '#8892aa', font: { size: 10 } }, grid: { color: '#2e3250' } };
-    const scaleY = { ticks: { color: '#8892aa', font: { size: 10 } }, grid: { color: '#2e3250' } };
+    // Compass brand palette
+    const C_BLUE   = '#007BFF';
+    const C_ORANGE = '#FF7043';
+    const C_AMBER  = '#FFB30F';
+    const C_TEAL   = '#00D084';
+    const C_PURPLE = '#9C27B0';
 
-    // Chart 1 — Median price 12-month line
+    // Flourish-style shared config
+    const tt = {
+      backgroundColor: '#ffffff',
+      borderColor: '#DADADA',
+      borderWidth: 1,
+      titleColor: '#000000',
+      bodyColor: '#4a4a4a',
+      padding: 10,
+      cornerRadius: 4,
+      displayColors: false,
+    };
+    const gridColor = 'rgba(218,218,218,0.1)';
+    const tickColor = '#90A4AE';
+    const tickFont = { size: 10, family: '-apple-system, BlinkMacSystemFont, sans-serif' };
+    const scaleBase = {
+      ticks: { color: tickColor, font: tickFont, padding: 6 },
+      grid: { color: gridColor, drawTicks: false },
+      border: { display: false },
+    };
+    const scaleNoVGrid = { ...scaleBase, grid: { display: false }, border: { display: false } };
+
+    // Chart 1 — Median price 12-month line (Compass blue)
     const priceEl = document.getElementById('lux-price-chart');
     if (priceEl) {
       destroyChart('lux-price-chart');
       const ctx = priceEl.getContext('2d');
       const grad = ctx.createLinearGradient(0, 0, 0, 210);
-      grad.addColorStop(0, GOLD + '44');
-      grad.addColorStop(1, GOLD + '00');
+      grad.addColorStop(0, C_BLUE + '40');
+      grad.addColorStop(1, C_BLUE + '00');
       chartRegistry['lux-price-chart'] = new Chart(ctx, {
         type: 'line',
         data: {
           labels: months.map(m => m.month),
-          datasets: [{ label: 'Median Price', data: months.map(m => m.medianPrice / 1e6),
-            borderColor: GOLD, borderWidth: 2, pointRadius: 3, pointBackgroundColor: GOLD,
-            tension: 0.3, fill: true, backgroundColor: grad }],
+          datasets: [{
+            label: 'Median Price', data: months.map(m => m.medianPrice / 1e6),
+            borderColor: C_BLUE, borderWidth: 2.5,
+            pointRadius: 4, pointBackgroundColor: '#1a1d27', pointBorderColor: C_BLUE, pointBorderWidth: 2,
+            tension: 0.4, fill: true, backgroundColor: grad,
+          }],
         },
         options: {
           responsive: true, maintainAspectRatio: false, animation: false,
-          plugins: { legend: { display: false }, tooltip: { ...ttOpts, callbacks: { label: c => `$${c.parsed.y.toFixed(2)}M` } } },
-          scales: { x: scaleX, y: { ...scaleY, ticks: { ...scaleY.ticks, callback: v => `$${v.toFixed(1)}M` } } },
+          layout: { padding: { top: 8, right: 8 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: { ...tt, callbacks: { label: c => ` $${c.parsed.y.toFixed(2)}M` } },
+          },
+          scales: {
+            x: scaleNoVGrid,
+            y: { ...scaleBase, ticks: { ...scaleBase.ticks, callback: v => `$${v.toFixed(1)}M` } },
+          },
         },
       });
     }
 
-    // Chart 2 — Closed sales (bar) + DOM (line), dual axis
+    // Chart 2 — Closed sales (Compass blue bars) + DOM (Compass orange line)
     const salesEl = document.getElementById('lux-sales-chart');
     if (salesEl) {
       destroyChart('lux-sales-chart');
@@ -694,29 +725,47 @@ function renderLuxury() {
         data: {
           labels: months.map(m => m.month),
           datasets: [
-            { type: 'bar',  label: 'Closed Sales', data: months.map(m => m.closedSales),
-              backgroundColor: BLUE + 'bb', borderRadius: 3, yAxisID: 'yL' },
-            { type: 'line', label: 'Avg DOM', data: months.map(m => m.dom),
-              borderColor: RED, borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false, yAxisID: 'yR' },
+            {
+              type: 'bar', label: 'Closed Sales', data: months.map(m => m.closedSales),
+              backgroundColor: C_BLUE + 'cc', borderWidth: 0, borderRadius: 5, yAxisID: 'yL',
+            },
+            {
+              type: 'line', label: 'Avg DOM', data: months.map(m => m.dom),
+              borderColor: C_ORANGE, borderWidth: 2.5,
+              pointRadius: 3, pointBackgroundColor: '#1a1d27', pointBorderColor: C_ORANGE, pointBorderWidth: 2,
+              tension: 0.4, fill: false, yAxisID: 'yR',
+            },
           ],
         },
         options: {
           responsive: true, maintainAspectRatio: false, animation: false,
-          plugins: { legend: { display: true, labels: { color: '#8892aa', font: { size: 10 }, boxWidth: 12 } },
-            tooltip: { ...ttOpts, mode: 'index', intersect: false } },
+          layout: { padding: { top: 8, right: 8 } },
+          plugins: {
+            legend: {
+              display: true, position: 'top', align: 'end',
+              labels: { color: tickColor, font: { size: 10 }, boxWidth: 10, boxHeight: 10, padding: 12, usePointStyle: true },
+            },
+            tooltip: { ...tt, displayColors: true, mode: 'index', intersect: false },
+          },
           scales: {
-            x: scaleX,
-            yL: { type: 'linear', position: 'left', ...scaleY, ticks: { color: BLUE, font: { size: 10 } },
-              title: { display: true, text: 'Sales', color: BLUE, font: { size: 9 } } },
-            yR: { type: 'linear', position: 'right', grid: { drawOnChartArea: false },
-              ticks: { color: RED, font: { size: 10 } },
-              title: { display: true, text: 'DOM', color: RED, font: { size: 9 } } },
+            x: scaleNoVGrid,
+            yL: {
+              type: 'linear', position: 'left', ...scaleBase,
+              ticks: { ...scaleBase.ticks, color: C_BLUE },
+              title: { display: true, text: 'Sales', color: C_BLUE, font: { size: 9 } },
+            },
+            yR: {
+              type: 'linear', position: 'right',
+              ticks: { color: C_ORANGE, font: tickFont, padding: 6 },
+              grid: { drawOnChartArea: false }, border: { display: false },
+              title: { display: true, text: 'DOM', color: C_ORANGE, font: { size: 9 } },
+            },
           },
         },
       });
     }
 
-    // Chart 3 — Tier median prices (horizontal bar)
+    // Chart 3 — Tier prices (horizontal bar, one Compass color per tier)
     const tierEl = document.getElementById('lux-tier-chart');
     if (tierEl) {
       destroyChart('lux-tier-chart');
@@ -724,19 +773,29 @@ function renderLuxury() {
         type: 'bar',
         data: {
           labels: d.tiers.map(t => t.label),
-          datasets: [{ label: 'Median Price', data: d.tiers.map(t => t.medianPrice / 1e6),
-            backgroundColor: [GOLD + 'dd', GOLD + 'aa', GOLD + '77', GOLD + '44'],
-            borderColor: GOLD, borderWidth: 1, borderRadius: 4 }],
+          datasets: [{
+            label: 'Median Price',
+            data: d.tiers.map(t => t.medianPrice / 1e6),
+            backgroundColor: [C_BLUE + 'cc', C_PURPLE + 'cc', C_ORANGE + 'cc', C_AMBER + 'cc'],
+            borderWidth: 0, borderRadius: 5,
+          }],
         },
         options: {
           indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: false,
-          plugins: { legend: { display: false }, tooltip: { ...ttOpts, callbacks: { label: c => `$${c.parsed.x.toFixed(2)}M` } } },
-          scales: { x: { ...scaleX, ticks: { ...scaleX.ticks, callback: v => `$${v}M` } }, y: scaleY },
+          layout: { padding: { top: 4, right: 20 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: { ...tt, callbacks: { label: c => ` $${c.parsed.x.toFixed(2)}M` } },
+          },
+          scales: {
+            x: { ...scaleBase, ticks: { ...scaleBase.ticks, callback: v => `$${v}M` } },
+            y: scaleNoVGrid,
+          },
         },
       });
     }
 
-    // Chart 4 — Submarket median prices (horizontal bar, sorted desc, gold=up red=down)
+    // Chart 4 — Submarket prices (horizontal bar, blue=YoY+ / orange=YoY−)
     const subEl = document.getElementById('lux-sub-chart');
     if (subEl) {
       destroyChart('lux-sub-chart');
@@ -745,15 +804,24 @@ function renderLuxury() {
         type: 'bar',
         data: {
           labels: sorted.map(s => s.name),
-          datasets: [{ label: 'Median Price', data: sorted.map(s => s.medianPrice / 1e6),
-            backgroundColor: sorted.map(s => (s.yoyPricePct >= 0 ? GOLD : RED) + 'bb'),
-            borderColor:     sorted.map(s => s.yoyPricePct >= 0 ? GOLD : RED),
-            borderWidth: 1, borderRadius: 4 }],
+          datasets: [{
+            label: 'Median Price',
+            data: sorted.map(s => s.medianPrice / 1e6),
+            backgroundColor: sorted.map(s => (s.yoyPricePct >= 0 ? C_BLUE : C_ORANGE) + 'cc'),
+            borderWidth: 0, borderRadius: 5,
+          }],
         },
         options: {
           indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: false,
-          plugins: { legend: { display: false }, tooltip: { ...ttOpts, callbacks: { label: c => `$${c.parsed.x.toFixed(2)}M` } } },
-          scales: { x: { ...scaleX, ticks: { ...scaleX.ticks, callback: v => `$${v}M` } }, y: scaleY },
+          layout: { padding: { top: 4, right: 20 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: { ...tt, callbacks: { label: c => ` $${c.parsed.x.toFixed(2)}M` } },
+          },
+          scales: {
+            x: { ...scaleBase, ticks: { ...scaleBase.ticks, callback: v => `$${v}M` } },
+            y: scaleNoVGrid,
+          },
         },
       });
     }
