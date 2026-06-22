@@ -1,7 +1,7 @@
 // Mock data — Seattle-localized where applicable, national where metro data unavailable.
 // Replace sparkline arrays with real API calls to wire up live data.
 
-const TODAY = '2026-06-21';
+const TODAY = '2026-06-22';
 
 // trend: total fractional change over the full series (e.g. +0.15 = +15% over count periods)
 // The last value will land approximately at base*(1+trend) before noise.
@@ -31,50 +31,50 @@ function sparklineFromMetric(value, yoyChange, count = 24, volatility = 0.02) {
 const MARKETS = {
   treasury10y: {
     id: 'treasury10y', name: '10-Year Treasury Yield', section: 'today',
-    value: 4.38, unit: '%', date: '2026-06-21',
-    periodChange: +0.04, yoyChange: -0.41,
+    value: 4.36, unit: '%', date: '2026-06-22',
+    periodChange: -0.02, yoyChange: -0.43,
     release: 'Daily — Treasury Dept.',
-    sparkline: sparkline(4.38, 24, 0.02),
+    sparkline: sparkline(4.36, 24, 0.02),
     category: 'Financial Markets',
   },
   treasury2y: {
     id: 'treasury2y', name: '2-Year Treasury Yield', section: 'today',
-    value: 4.12, unit: '%', date: '2026-06-21',
-    periodChange: +0.02, yoyChange: -0.58,
+    value: 4.09, unit: '%', date: '2026-06-22',
+    periodChange: -0.03, yoyChange: -0.61,
     release: 'Daily — Treasury Dept.',
-    sparkline: sparkline(4.12, 24, 0.02),
+    sparkline: sparkline(4.09, 24, 0.02),
     category: 'Financial Markets',
   },
   sp500: {
     id: 'sp500', name: 'S&P 500', section: 'today',
-    value: 5482, unit: '', date: '2026-06-21',
-    periodChange: +23, yoyChange: +312,
+    value: 5521, unit: '', date: '2026-06-22',
+    periodChange: +39, yoyChange: +351,
     release: 'Daily — NYSE',
-    sparkline: sparkline(5482, 24, 0.012),
+    sparkline: sparkline(5521, 24, 0.012),
     category: 'Financial Markets',
   },
   oil: {
     id: 'oil', name: 'WTI Crude Oil', section: 'today',
-    value: 72.40, unit: '$/bbl', date: '2026-06-21',
-    periodChange: -1.20, yoyChange: -8.30,
+    value: 71.80, unit: '$/bbl', date: '2026-06-22',
+    periodChange: -0.60, yoyChange: -8.90,
     release: 'Daily — EIA',
-    sparkline: sparkline(72.40, 24, 0.025),
+    sparkline: sparkline(71.80, 24, 0.025),
     category: 'Financial Markets',
   },
   mortgageRate: {
     id: 'mortgageRate', name: 'Mortgage Rate (30-yr)', section: 'today',
-    value: 6.82, unit: '%', date: '2026-06-13',
-    periodChange: -0.05, yoyChange: -0.22,
+    value: 6.79, unit: '%', date: '2026-06-19',
+    periodChange: -0.03, yoyChange: -0.25,
     release: 'Weekly — Freddie Mac',
-    sparkline: sparkline(6.82, 24, 0.01),
+    sparkline: sparkline(6.79, 24, 0.01),
     category: 'Financial Markets',
   },
   mortgageSpread: {
     id: 'mortgageSpread', name: 'Mortgage Spread (vs 10yr)', section: 'today',
-    value: 2.44, unit: '%', date: '2026-06-13',
-    periodChange: -0.09, yoyChange: +0.19,
+    value: 2.43, unit: '%', date: '2026-06-19',
+    periodChange: -0.01, yoyChange: +0.14,
     release: 'Weekly — Freddie Mac',
-    sparkline: sparkline(2.44, 24, 0.015),
+    sparkline: sparkline(2.43, 24, 0.015),
     category: 'Financial Markets',
   },
 };
@@ -220,10 +220,10 @@ const HOUSING = {
   // National housing data
   existingHomeSales: {
     id: 'existingHomeSales', name: 'Existing Home Sales (Natl)', section: 'housing',
-    value: 4.03, unit: 'M SAAR', date: '2026-05-22',
-    periodChange: -0.08, yoyChange: +0.24,
+    value: 4.08, unit: 'M SAAR', date: '2026-06-20',
+    periodChange: +0.05, yoyChange: +0.29,
     release: 'Monthly — NAR',
-    sparkline: sparkline(4.03, 24, 0.03),
+    sparkline: sparkline(4.08, 24, 0.03),
     category: 'Housing',
   },
   newHomeSales: {
@@ -343,37 +343,37 @@ const HOUSING = {
   // ── Mortgage Applications (MBA Weekly Survey) ─────────────────────────────
   mbaPurchaseIndex: {
     id: 'mbaPurchaseIndex', name: 'MBA Purchase Applications Index', section: 'housing',
-    value: 148.6, unit: ' (SA)', date: '2026-06-13',
-    periodChange: +2.3, yoyChange: -9.8,
+    value: 150.2, unit: ' (SA)', date: '2026-06-18',
+    periodChange: +1.6, yoyChange: -9.2,
     release: 'Weekly — Mortgage Bankers Association',
-    sparkline: [178,172,168,165,162,158,154,160,157,152,148,145,141,144,147,143,149,146,142,150,152,147,151,149],
+    sparkline: [178,172,168,165,162,158,154,160,157,152,148,145,141,144,147,143,149,146,142,150,152,147,151,150],
     category: 'Mortgage Applications',
     notes: 'Seasonally adjusted index of purchase mortgage application volume. A leading indicator of future home sales. Depressed by elevated rates since 2022.',
   },
   mbaRefiIndex: {
     id: 'mbaRefiIndex', name: 'MBA Refinance Index', section: 'housing',
-    value: 612.4, unit: ' (SA)', date: '2026-06-13',
-    periodChange: +22.8, yoyChange: +186.4,
+    value: 621.8, unit: ' (SA)', date: '2026-06-18',
+    periodChange: +9.4, yoyChange: +192.4,
     release: 'Weekly — Mortgage Bankers Association',
-    sparkline: [310,285,298,272,260,248,255,241,252,268,280,291,318,342,365,390,418,445,480,512,548,580,596,612],
+    sparkline: [310,285,298,272,260,248,255,241,252,268,280,291,318,342,365,390,418,445,480,512,548,580,596,622],
     category: 'Mortgage Applications',
     notes: 'Seasonally adjusted index of refinance mortgage applications. Highly sensitive to rate movements; surges when rates drop.',
   },
   mbaMarketComposite: {
     id: 'mbaMarketComposite', name: 'MBA Market Composite Index', section: 'housing',
-    value: 212.8, unit: ' (SA)', date: '2026-06-13',
-    periodChange: +5.4, yoyChange: +18.2,
+    value: 215.6, unit: ' (SA)', date: '2026-06-18',
+    periodChange: +2.8, yoyChange: +19.4,
     release: 'Weekly — Mortgage Bankers Association',
-    sparkline: [226,218,214,210,205,200,196,201,198,194,190,188,184,188,192,196,200,204,208,212,216,210,214,213],
+    sparkline: [226,218,214,210,205,200,196,201,198,194,190,188,184,188,192,196,200,204,208,212,216,210,214,216],
     category: 'Mortgage Applications',
     notes: 'Combined purchase + refinance index. The broadest measure of mortgage application activity nationwide.',
   },
   mbaArmShare: {
     id: 'mbaArmShare', name: 'ARM Share of Applications', section: 'housing',
-    value: 8.4, unit: '%', date: '2026-06-13',
-    periodChange: -0.3, yoyChange: +1.1,
+    value: 8.3, unit: '%', date: '2026-06-18',
+    periodChange: -0.1, yoyChange: +1.0,
     release: 'Weekly — Mortgage Bankers Association',
-    sparkline: [5.2,5.8,6.4,7.1,7.8,8.2,9.1,9.6,9.8,9.4,8.9,8.4,7.8,7.6,7.2,7.8,8.1,8.6,8.9,8.7,8.5,8.6,8.7,8.4],
+    sparkline: [5.2,5.8,6.4,7.1,7.8,8.2,9.1,9.6,9.8,9.4,8.9,8.4,7.8,7.6,7.2,7.8,8.1,8.6,8.9,8.7,8.5,8.6,8.4,8.3],
     category: 'Mortgage Applications',
     notes: 'Share of total applications using adjustable-rate mortgages. Rises when buyers stretch for affordability at high fixed rates.',
   },
@@ -520,18 +520,18 @@ const INFLATION = {
   },
   breakeven5y: {
     id: 'breakeven5y', name: '5-Year Breakeven', section: 'inflation',
-    value: 2.44, unit: '%', date: '2026-06-21',
-    periodChange: -0.02, yoyChange: -0.08,
+    value: 2.42, unit: '%', date: '2026-06-22',
+    periodChange: -0.02, yoyChange: -0.10,
     release: 'Daily — Treasury',
-    sparkline: sparkline(2.44, 24, 0.015),
+    sparkline: sparkline(2.42, 24, 0.015),
     category: 'Inflation',
   },
   breakeven10y: {
     id: 'breakeven10y', name: '10-Year Breakeven', section: 'inflation',
-    value: 2.38, unit: '%', date: '2026-06-21',
-    periodChange: -0.01, yoyChange: -0.06,
+    value: 2.36, unit: '%', date: '2026-06-22',
+    periodChange: -0.02, yoyChange: -0.08,
     release: 'Daily — Treasury',
-    sparkline: sparkline(2.38, 24, 0.015),
+    sparkline: sparkline(2.36, 24, 0.015),
     category: 'Inflation',
   },
   clevelandFedInfExp: {
@@ -741,7 +741,7 @@ const EMPLOYMENT = {
 const FED = {
   effFedFunds: {
     id: 'effFedFunds', name: 'Effective Fed Funds Rate', section: 'fed',
-    value: 4.33, unit: '%', date: '2026-06-21',
+    value: 4.33, unit: '%', date: '2026-06-22',
     periodChange: 0, yoyChange: -0.92,
     release: 'Daily — FRED',
     sparkline: sparkline(4.33, 24, 0.003),
@@ -749,7 +749,7 @@ const FED = {
   },
   fedTargetHigh: {
     id: 'fedTargetHigh', name: 'Fed Target Range (Upper)', section: 'fed',
-    value: 4.50, unit: '%', date: '2026-06-21',
+    value: 4.50, unit: '%', date: '2026-06-22',
     periodChange: 0, yoyChange: -1.0,
     release: 'FOMC Decision',
     sparkline: sparkline(4.5, 24, 0.001),
@@ -758,26 +758,26 @@ const FED = {
   // Cut probabilities for upcoming FOMC meetings
   cutProbJul: {
     id: 'cutProbJul', name: 'Jul FOMC Cut Prob.', section: 'fed',
-    value: 14, unit: '%', date: '2026-06-21',
+    value: 12, unit: '%', date: '2026-06-22',
     periodChange: -2, yoyChange: null,
     release: 'Daily — CME FedWatch',
-    sparkline: sparkline(14, 24, 0.1),
+    sparkline: sparkline(12, 24, 0.1),
     category: 'Federal Reserve',
   },
   cutProbSep: {
     id: 'cutProbSep', name: 'Sep FOMC Cut Prob.', section: 'fed',
-    value: 68, unit: '%', date: '2026-06-21',
-    periodChange: +4, yoyChange: null,
+    value: 70, unit: '%', date: '2026-06-22',
+    periodChange: +2, yoyChange: null,
     release: 'Daily — CME FedWatch',
-    sparkline: sparkline(68, 24, 0.06),
+    sparkline: sparkline(70, 24, 0.06),
     category: 'Federal Reserve',
   },
   cutProbNov: {
     id: 'cutProbNov', name: 'Nov FOMC Cut Prob.', section: 'fed',
-    value: 82, unit: '%', date: '2026-06-21',
+    value: 84, unit: '%', date: '2026-06-22',
     periodChange: +2, yoyChange: null,
     release: 'Daily — CME FedWatch',
-    sparkline: sparkline(82, 24, 0.04),
+    sparkline: sparkline(84, 24, 0.04),
     category: 'Federal Reserve',
   },
 };
@@ -803,40 +803,45 @@ const FED = {
 
 // ── Upcoming Releases ────────────────────────────────────────────────────────
 const UPCOMING_RELEASES = [
-  { date: '2026-06-19', name: 'Initial Jobless Claims', prior: '222K', consensus: '218K', source: 'DOL' },
-  { date: '2026-06-20', name: 'Existing Home Sales', prior: '4.00M', consensus: '4.05M', source: 'NAR' },
-  { date: '2026-06-24', name: 'New Home Sales', prior: '683K', consensus: '690K', source: 'Census/HUD' },
-  { date: '2026-06-25', name: 'Consumer Confidence', prior: '98.0', consensus: '99.4', source: 'Conference Board' },
+  { date: '2026-06-24', name: 'New Home Sales (May)', prior: '683K', consensus: '690K', source: 'Census/HUD' },
+  { date: '2026-06-25', name: 'Consumer Confidence (Jun)', prior: '98.0', consensus: '99.4', source: 'Conference Board' },
+  { date: '2026-06-26', name: 'Initial Jobless Claims', prior: '218K', consensus: '215K', source: 'DOL' },
   { date: '2026-06-26', name: 'GDP (Q1 Final)', prior: '+1.2%', consensus: '+1.3%', source: 'BEA' },
   { date: '2026-06-27', name: 'PCE Inflation (May)', prior: '2.6%', consensus: '2.5%', source: 'BEA' },
   { date: '2026-06-27', name: 'Personal Income (May)', prior: '+0.3%', consensus: '+0.4%', source: 'BEA' },
-  { date: '2026-07-01', name: 'ISM Manufacturing', prior: '48.5', consensus: '49.0', source: 'ISM' },
+  { date: '2026-07-01', name: 'ISM Manufacturing (Jun)', prior: '48.5', consensus: '49.0', source: 'ISM' },
   { date: '2026-07-04', name: 'Independence Day (Markets Closed)', prior: '', consensus: '', source: '' },
   { date: '2026-07-10', name: 'CPI (June)', prior: '2.9%', consensus: '2.8%', source: 'BLS' },
   { date: '2026-07-15', name: 'Housing Starts (June)', prior: '1.361M', consensus: '1.375M', source: 'Census/HUD' },
   { date: '2026-07-16', name: 'Retail Sales (June)', prior: '+0.1%', consensus: '+0.3%', source: 'Census' },
-  { date: '2026-07-22', name: 'Existing Home Sales (June)', prior: '4.03M', consensus: '4.06M', source: 'NAR' },
-  { date: '2026-07-29', name: 'JOLTS (June)', prior: '7.19M', consensus: '7.22M', source: 'BLS' },
-  { date: '2026-07-30', name: 'FOMC Rate Decision', prior: '4.25–4.50%', consensus: 'No Change', source: 'Federal Reserve' },
+  { date: '2026-07-22', name: 'Existing Home Sales (June)', prior: '4.08M', consensus: '4.10M', source: 'NAR' },
+  { date: '2026-07-29', name: 'JOLTS (May)', prior: '7.19M', consensus: '7.22M', source: 'BLS' },
+  { date: '2026-07-29', name: 'FOMC Rate Decision', prior: '4.25–4.50%', consensus: 'No Change', source: 'Federal Reserve' },
+  { date: '2026-07-31', name: 'PCE Inflation (June)', prior: '2.5%', consensus: '2.4%', source: 'BEA' },
 ];
 
 // ── Recent Releases (grouped by source) ─────────────────────────────────────
 const RECENT_RELEASES = {
   'Freddie Mac': [
-    { name: 'Mortgage Rates (30yr)', value: '6.82%', date: '2026-06-13' },
+    { name: 'Mortgage Rates (30yr)', value: '6.79%', date: '2026-06-19' },
   ],
   'BLS / DOL': [
-    { name: 'Initial Claims', value: '222K', date: '2026-06-14' },
+    { name: 'Initial Claims (wk Jun 14)', value: '218K', date: '2026-06-19' },
     { name: 'CPI (May, YoY)', value: '2.9%', date: '2026-06-11' },
     { name: 'PPI (May, YoY)', value: '2.4%', date: '2026-06-12' },
     { name: 'Nonfarm Payrolls', value: '+177K', date: '2026-06-06' },
   ],
-  'BEA': [
-    { name: 'PCE (Apr, YoY)', value: '2.6%', date: '2026-05-30' },
-    { name: 'GDP Q1 Advance', value: '+1.2%', date: '2026-04-30' },
+  'MBA': [
+    { name: 'Purchase Index (wk Jun 13)', value: '150.2 SA', date: '2026-06-18' },
+    { name: 'Refinance Index (wk Jun 13)', value: '621.8 SA', date: '2026-06-18' },
+    { name: 'ARM Share', value: '8.3%', date: '2026-06-18' },
   ],
   'NAR': [
-    { name: 'Existing Home Sales (Apr)', value: '4.00M', date: '2026-05-22' },
+    { name: 'Existing Home Sales (May)', value: '4.08M SAAR', date: '2026-06-20' },
+  ],
+  'BEA': [
+    { name: 'PCE (Apr, YoY)', value: '2.6%', date: '2026-05-30' },
+    { name: 'GDP Q1 Second Est.', value: '+1.2%', date: '2026-05-29' },
   ],
   'Altos Research': [
     { name: 'Seattle Active Inventory', value: '3,241', date: '2026-06-13' },
@@ -848,7 +853,7 @@ const RECENT_RELEASES = {
     { name: 'Seattle Days on Market', value: '18 days', date: '2026-06-13' },
   ],
   'WA ESD': [
-    { name: 'WA Initial Claims', value: '9,840', date: '2026-06-14' },
+    { name: 'WA Initial Claims', value: '9,840', date: '2026-06-19' },
     { name: 'Seattle Metro Unemployment', value: '3.8%', date: '2026-05-31' },
   ],
 };
@@ -1111,29 +1116,29 @@ const CATEGORIES = {
 
 // FOMC meeting schedule
 const FOMC_MEETINGS = [
-  { date: '2026-07-29', label: 'Jul 28–29', holdProb: 86, cutProb: 14, hikeProb: 0 },
-  { date: '2026-09-16', label: 'Sep 15–16', holdProb: 32, cutProb: 68, hikeProb: 0 },
-  { date: '2026-11-04', label: 'Nov 4–5', holdProb: 18, cutProb: 82, hikeProb: 0 },
-  { date: '2026-12-16', label: 'Dec 15–16', holdProb: 22, cutProb: 77, hikeProb: 1 },
+  { date: '2026-07-29', label: 'Jul 28–29', holdProb: 88, cutProb: 12, hikeProb: 0 },
+  { date: '2026-09-16', label: 'Sep 15–16', holdProb: 30, cutProb: 70, hikeProb: 0 },
+  { date: '2026-11-04', label: 'Nov 4–5', holdProb: 16, cutProb: 84, hikeProb: 0 },
+  { date: '2026-12-16', label: 'Dec 15–16', holdProb: 21, cutProb: 78, hikeProb: 1 },
 ];
 
 // Today summary — used for narrative generation
 const TODAY_SUMMARY_CONTEXT = {
   date: TODAY,
   keyMetrics: [
-    { name: '10yr Treasury', value: '4.38%', change: '+4bps today' },
-    { name: 'Mortgage Rate', value: '6.82%', change: '-5bps WoW' },
+    { name: '10yr Treasury', value: '4.36%', change: '-2bps today' },
+    { name: 'Mortgage Rate', value: '6.79%', change: '-3bps WoW (Jun 19)' },
     { name: 'Seattle Median Price', value: '$875K', change: '+$12K MoM, +$38K YoY' },
     { name: 'Seattle Inventory', value: '3,241 homes', change: '+187 WoW, +621 YoY' },
     { name: 'CPI (May)', value: '2.9% YoY', change: '-0.1 from Apr' },
-    { name: 'Initial Claims', value: '222K', change: '-4K WoW' },
-    { name: 'Fed Funds', value: '4.25-4.50%', change: 'Unchanged; Sep cut at 68%' },
+    { name: 'Initial Claims', value: '218K', change: '-4K WoW (Jun 19 release)' },
+    { name: 'Fed Funds', value: '4.25–4.50%', change: 'Unchanged; Sep cut at 70%' },
   ],
-  narrative: `Seattle's housing market continues to show signs of normalization heading into summer 2026.
-Active inventory has climbed to 3,241 homes — the highest since early 2019 — giving buyers meaningfully more choice
-than the historic lows of 2021–2022. Despite rising supply, the median sale price held firm at $875K (+4.5% YoY),
-supported by resilient local employment in aerospace and healthcare. Mortgage rates edged down to 6.82%,
-a modest tailwind for affordability. Nationally, inflation continues its gradual descent with May CPI at 2.9%,
-keeping September Fed rate cut expectations elevated at 68%. The labor market remains solid but is softening
-at the margins — initial claims ticked down but continuing claims crept higher.`
+  narrative: `Rates continue to ease modestly into summer as markets tilt toward a September Fed cut now at 70% odds.
+The 10-year Treasury slipped to 4.36% and Freddie Mac's weekly mortgage rate fell to 6.79% — the lowest reading since
+early 2025 — offering incremental affordability relief. May existing home sales came in above consensus at 4.08M SAAR,
+a positive sign for transaction volumes nationally. Seattle's market stays firm with inventory at 3,241 homes
+(highest since 2019) and median prices holding at $875K. MBA purchase applications ticked up 1.6% last week as
+buyers respond to the rate improvement; the refinance index has surged 57% YoY as existing homeowners look to
+relock. Key data this week: New Home Sales (Tue), Consumer Confidence (Wed), GDP Q1 final and PCE inflation (Fri).`
 };
