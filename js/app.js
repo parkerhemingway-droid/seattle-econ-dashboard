@@ -461,6 +461,7 @@ function renderHousing() {
     { title: 'Seattle Market Pulse', ids: ['seaMedianPrice', 'seaMedianListPrice', 'seaActiveInventory', 'seaWeeksSupply', 'seaNewListings', 'seaPendingSales', 'seaDaysOnMarket', 'seaPriceReductions', 'seaSaleTListRatio'] },
     { title: 'Home Prices', ids: ['seaCaseShiller', 'seaMedianPrice', 'existingHomeSales', 'newHomeSales'] },
     { title: 'Affordability', ids: ['seaAffordabilityRatio', 'kingCountyHomeowners', 'mortgageRate', 'mortgageSpread'] },
+    { title: 'Mortgage Applications (Weekly — MBA)', ids: ['mbaPurchaseIndex', 'mbaRefiIndex', 'mbaMarketComposite', 'mbaArmShare'] },
     { title: 'Seattle Construction Pipeline', ids: ['seaPermits', 'kingPermits', 'piercePermits', 'snohomishPermits', 'seaUnderConstruction', 'seaMultifamilyUnder', 'seaSingleFamilyUnder', 'seaCompletions'] },
     { title: 'National Construction Context', ids: ['housingStarts', 'buildingPermits', 'housingCompletions', 'unitsUnderConstruction'] },
     { title: 'National Context', ids: ['existingHomeSales', 'newHomeSales'] },

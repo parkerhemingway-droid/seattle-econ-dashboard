@@ -339,6 +339,44 @@ const HOUSING = {
     category: 'Construction',
     local: true,
   },
+
+  // ── Mortgage Applications (MBA Weekly Survey) ─────────────────────────────
+  mbaPurchaseIndex: {
+    id: 'mbaPurchaseIndex', name: 'MBA Purchase Applications Index', section: 'housing',
+    value: 148.6, unit: ' (SA)', date: '2026-06-13',
+    periodChange: +2.3, yoyChange: -9.8,
+    release: 'Weekly — Mortgage Bankers Association',
+    sparkline: [178,172,168,165,162,158,154,160,157,152,148,145,141,144,147,143,149,146,142,150,152,147,151,149],
+    category: 'Mortgage Applications',
+    notes: 'Seasonally adjusted index of purchase mortgage application volume. A leading indicator of future home sales. Depressed by elevated rates since 2022.',
+  },
+  mbaRefiIndex: {
+    id: 'mbaRefiIndex', name: 'MBA Refinance Index', section: 'housing',
+    value: 612.4, unit: ' (SA)', date: '2026-06-13',
+    periodChange: +22.8, yoyChange: +186.4,
+    release: 'Weekly — Mortgage Bankers Association',
+    sparkline: [310,285,298,272,260,248,255,241,252,268,280,291,318,342,365,390,418,445,480,512,548,580,596,612],
+    category: 'Mortgage Applications',
+    notes: 'Seasonally adjusted index of refinance mortgage applications. Highly sensitive to rate movements; surges when rates drop.',
+  },
+  mbaMarketComposite: {
+    id: 'mbaMarketComposite', name: 'MBA Market Composite Index', section: 'housing',
+    value: 212.8, unit: ' (SA)', date: '2026-06-13',
+    periodChange: +5.4, yoyChange: +18.2,
+    release: 'Weekly — Mortgage Bankers Association',
+    sparkline: [226,218,214,210,205,200,196,201,198,194,190,188,184,188,192,196,200,204,208,212,216,210,214,213],
+    category: 'Mortgage Applications',
+    notes: 'Combined purchase + refinance index. The broadest measure of mortgage application activity nationwide.',
+  },
+  mbaArmShare: {
+    id: 'mbaArmShare', name: 'ARM Share of Applications', section: 'housing',
+    value: 8.4, unit: '%', date: '2026-06-13',
+    periodChange: -0.3, yoyChange: +1.1,
+    release: 'Weekly — Mortgage Bankers Association',
+    sparkline: [5.2,5.8,6.4,7.1,7.8,8.2,9.1,9.6,9.8,9.4,8.9,8.4,7.8,7.6,7.2,7.8,8.1,8.6,8.9,8.7,8.5,8.6,8.7,8.4],
+    category: 'Mortgage Applications',
+    notes: 'Share of total applications using adjustable-rate mortgages. Rises when buyers stretch for affordability at high fixed rates.',
+  },
 };
 
 // ── Seattle Construction Pipeline Forecast ──────────────────────────────────
@@ -956,6 +994,7 @@ const CATEGORIES = {
     'seaNewListings', 'seaPendingSales', 'seaDaysOnMarket', 'seaPriceReductions',
     'seaSaleTListRatio', 'seaCaseShiller', 'kingCountyHomeowners', 'seaAffordabilityRatio'],
   'Housing — National': ['existingHomeSales', 'newHomeSales'],
+  'Mortgage Applications': ['mbaPurchaseIndex', 'mbaRefiIndex', 'mbaMarketComposite', 'mbaArmShare'],
   'Construction — Seattle MSA': ['seaPermits', 'kingPermits', 'piercePermits', 'snohomishPermits', 'seaCompletions', 'seaUnderConstruction', 'seaMultifamilyUnder', 'seaSingleFamilyUnder'],
   'Construction — National': ['housingStarts', 'buildingPermits', 'housingCompletions', 'unitsUnderConstruction'],
   'Inflation': ['cpiHeadline', 'cpiCore', 'pce', 'pceCore', 'trimmedMeanPce',
