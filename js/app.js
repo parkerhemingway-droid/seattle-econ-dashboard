@@ -97,11 +97,7 @@ function buildMetricCard(metric) {
     </div>
   `;
 
-  // Open modal on card click (but not on action button clicks)
-  card.addEventListener('click', e => {
-    if (e.target.closest('.card-actions')) return;
-    openMetricModal(metric.id);
-  });
+  // Modal wired via delegated listener below (see initClickDelegation)
 
   // Wire flag button
   card.querySelector('.flag-btn').addEventListener('click', e => {
@@ -1311,6 +1307,14 @@ document.getElementById('zip-input').addEventListener('keydown', e => {
 
 // Restore saved Databricks config into sidebar inputs
 AI.restoreInputs();
+
+// Single delegated listener for all card clicks → opens modal
+document.addEventListener('click', e => {
+  if (e.target.closest('.card-actions')) return;
+  const card = e.target.closest('.metric-card');
+  if (!card) return;
+  openMetricModal(card.dataset.id);
+});
 
 // Handle hash navigation on load
 const hash = window.location.hash.replace('#', '') || 'today';
