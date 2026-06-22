@@ -1761,7 +1761,32 @@ function openMetricModal(metricId) {
 // Wire modal close handlers
 document.getElementById('modal-close').addEventListener('click', closeModal);
 document.getElementById('metric-modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeChartExpand(); } });
+
+// Chart expand overlay
+function openChartExpand(canvasId, title) {
+  const chart = chartRegistry[canvasId];
+  if (!chart) return;
+  const src = chart.canvas;
+  // Composite chart onto a dark background so the export looks correct
+  const tmp = document.createElement('canvas');
+  tmp.width = src.width;
+  tmp.height = src.height;
+  const ctx = tmp.getContext('2d');
+  ctx.fillStyle = '#1f2335';
+  ctx.fillRect(0, 0, tmp.width, tmp.height);
+  ctx.drawImage(src, 0, 0);
+  document.getElementById('chart-expand-title').textContent = title || '';
+  document.getElementById('chart-expand-img').src = tmp.toDataURL('image/png');
+  document.getElementById('chart-expand-overlay').classList.add('open');
+}
+function closeChartExpand() {
+  document.getElementById('chart-expand-overlay').classList.remove('open');
+}
+document.getElementById('chart-expand-close').addEventListener('click', closeChartExpand);
+document.getElementById('chart-expand-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeChartExpand();
+});
 
 // ── Section: Zip Code ────────────────────────────────────────────────────────
 
@@ -2057,6 +2082,16 @@ document.addEventListener('click', e => {
   const card = e.target.closest('.metric-card');
   if (!card) return;
   openMetricModal(card.dataset.id);
+});
+
+// Delegated listener for luxury/migration chart cards → expand overlay
+document.addEventListener('click', e => {
+  const card = e.target.closest('.luxury-chart-card, .migration-chart-card');
+  if (!card) return;
+  const canvas = card.querySelector('canvas');
+  if (!canvas) return;
+  const titleEl = card.querySelector('.luxury-chart-title, .migration-chart-title');
+  openChartExpand(canvas.id, titleEl ? titleEl.textContent : '');
 });
 
 // Handle hash navigation on load
