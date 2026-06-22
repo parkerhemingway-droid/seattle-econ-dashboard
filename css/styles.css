@@ -577,21 +577,17 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
 
 /* ── Metric Expand Modal ── */
 #metric-modal-overlay {
+  display: none;
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.65);
   z-index: 1000;
-  display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.18s;
 }
 #metric-modal-overlay.open {
-  opacity: 1;
-  pointer-events: all;
+  display: flex;
 }
 #metric-modal {
   background: var(--surface);
@@ -602,11 +598,6 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
   max-height: 86vh;
   overflow-y: auto;
   box-shadow: 0 24px 64px rgba(0,0,0,0.5);
-  transform: translateY(12px);
-  transition: transform 0.18s;
-}
-#metric-modal-overlay.open #metric-modal {
-  transform: translateY(0);
 }
 .modal-header {
   display: flex;

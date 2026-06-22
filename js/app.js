@@ -100,11 +100,7 @@ function buildMetricCard(metric) {
   // Open modal on card click (but not on action button clicks)
   card.addEventListener('click', e => {
     if (e.target.closest('.card-actions')) return;
-    if (typeof window.openMetricModal !== 'function') {
-      console.error('[modal] openMetricModal not defined');
-      return;
-    }
-    window.openMetricModal(metric.id);
+    openMetricModal(metric.id);
   });
 
   // Wire flag button
@@ -885,183 +881,153 @@ function renderHelp() {
 
 // ── Metric Expand Modal ──────────────────────────────────────────────────────
 
-(function initModal() {
+function closeModal() {
   const overlay = document.getElementById('metric-modal-overlay');
-  const closeBtn = document.getElementById('modal-close');
+  if (overlay) overlay.classList.remove('open');
+  destroyChart('modal-chart');
+}
 
-  function closeModal() {
-    overlay.classList.remove('open');
-    destroyChart('modal-chart');
+function openMetricModal(metricId) {
+  const metric = ALL_METRICS[metricId];
+  if (!metric) return;
+
+  const overlay = document.getElementById('metric-modal-overlay');
+  if (!overlay) return;
+
+  const inverted = INVERTED.has(metricId);
+  const pcClass  = changeClass(metric.periodChange, inverted);
+  const yoyClass = changeClass(metric.yoyChange, inverted);
+
+  // Header
+  document.getElementById('modal-title').textContent = metric.name + (metric.local ? ' 📍' : '');
+  document.getElementById('modal-meta').textContent  = `${metric.date}  ·  ${metric.category || ''}`;
+
+  // Stat tiles
+  document.getElementById('modal-stats').innerHTML = `
+    <div class="modal-stat">
+      <div class="modal-stat-label">Current</div>
+      <div class="modal-stat-value">${fmt(metric)}</div>
+    </div>
+    <div class="modal-stat">
+      <div class="modal-stat-label">Period Change</div>
+      <div class="modal-stat-value ${pcClass}">${fmtChange(metric.periodChange, metric.unit)}${fmtPeriodPct(metric)}</div>
+    </div>
+    <div class="modal-stat">
+      <div class="modal-stat-label">YoY Change</div>
+      <div class="modal-stat-value ${yoyClass}">${fmtChange(metric.yoyChange, metric.unit)} YoY${fmtYoyPct(metric)}</div>
+    </div>
+    ${metric.unit ? `<div class="modal-stat"><div class="modal-stat-label">Unit</div><div class="modal-stat-value" style="font-size:1rem">${metric.unit.trim() || '—'}</div></div>` : ''}
+  `;
+
+  document.getElementById('modal-signal').textContent = 'Generating AI signal…';
+  document.getElementById('modal-signal').classList.add('loading');
+  document.getElementById('modal-source').textContent = `Source: ${metric.release || '—'}`;
+
+  // Monthly breakdown table
+  const existingTable = document.getElementById('modal-monthly-table');
+  if (existingTable) existingTable.remove();
+
+  const history = metric.monthlyHistory;
+  if (history && history.length) {
+    const tableWrap = document.createElement('div');
+    tableWrap.id = 'modal-monthly-table';
+    tableWrap.className = 'modal-monthly-wrap';
+    const rows = history.slice().reverse().map((row, i, arr) => {
+      const prev = arr[i + 1];
+      const priceDir = prev ? (row.medianPrice > prev.medianPrice ? 'up' : row.medianPrice < prev.medianPrice ? 'down' : '') : '';
+      const domDir   = prev ? (row.dom < prev.dom ? 'up' : row.dom > prev.dom ? 'down' : '') : '';
+      const s2lDir   = prev ? (row.saleToList > prev.saleToList ? 'up' : row.saleToList < prev.saleToList ? 'down' : '') : '';
+      const prDir    = prev ? (row.priceReductions < prev.priceReductions ? 'up' : row.priceReductions > prev.priceReductions ? 'down' : '') : '';
+      return `<tr>
+        <td>${row.month}</td>
+        <td class="${priceDir}">$${row.medianPrice.toLocaleString()}</td>
+        <td class="${domDir}">${row.dom}</td>
+        <td class="${s2lDir}">${row.saleToList.toFixed(1)}%</td>
+        <td class="${prDir}">${row.priceReductions.toFixed(1)}%</td>
+      </tr>`;
+    }).join('');
+    tableWrap.innerHTML = `
+      <div class="modal-monthly-title">Monthly Breakdown — Altos / Redfin <span class="modal-monthly-badge">Mock</span></div>
+      <div class="modal-monthly-scroll">
+        <table class="data-table">
+          <thead><tr><th>Month</th><th>MDN Sale Price</th><th>Avg DOM</th><th>Sold/List %</th><th>Price Reductions</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    document.getElementById('modal-signal').before(tableWrap);
   }
 
-  closeBtn.addEventListener('click', closeModal);
-  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+  // Show overlay
+  overlay.classList.add('open');
 
-  window.openMetricModal = function(metricId) {
-    const metric = ALL_METRICS[metricId];
-    if (!metric) { console.error('[modal] metric not found:', metricId); return; }
-    const overlayEl = document.getElementById('metric-modal-overlay');
-    if (!overlayEl) { console.error('[modal] overlay element missing'); return; }
-    console.log('[modal] opening', metricId, 'overlay found:', !!overlayEl);
-
-    const inverted = INVERTED.has(metricId);
-    const pcClass  = changeClass(metric.periodChange, inverted);
-    const yoyClass = changeClass(metric.yoyChange, inverted);
-
-    // Header
-    document.getElementById('modal-title').textContent = metric.name + (metric.local ? ' 📍' : '');
-    document.getElementById('modal-meta').textContent  = `${metric.date}  ·  ${metric.category || ''}`;
-
-    // Stat tiles
-    const statsEl = document.getElementById('modal-stats');
-    statsEl.innerHTML = `
-      <div class="modal-stat">
-        <div class="modal-stat-label">Current</div>
-        <div class="modal-stat-value">${fmt(metric)}</div>
-      </div>
-      <div class="modal-stat">
-        <div class="modal-stat-label">Period Change</div>
-        <div class="modal-stat-value ${pcClass}">${fmtChange(metric.periodChange, metric.unit)}${fmtPeriodPct(metric)}</div>
-      </div>
-      <div class="modal-stat">
-        <div class="modal-stat-label">YoY Change</div>
-        <div class="modal-stat-value ${yoyClass}">${fmtChange(metric.yoyChange, metric.unit)} YoY${fmtYoyPct(metric)}</div>
-      </div>
-      ${metric.unit ? `<div class="modal-stat"><div class="modal-stat-label">Unit</div><div class="modal-stat-value" style="font-size:1rem">${metric.unit.trim() || '—'}</div></div>` : ''}
-    `;
-
-    // Clear any previous chart
-    destroyChart('modal-chart');
-    document.getElementById('modal-signal').textContent = 'Generating AI signal…';
-    document.getElementById('modal-signal').classList.add('loading');
-    document.getElementById('modal-source').textContent = `Source: ${metric.release || '—'}`;
-
-    // Open overlay FIRST so canvas has real dimensions when Chart.js measures it
-    overlay.classList.add('open');
-
-    // Draw chart after the browser has painted the visible canvas
-    requestAnimationFrame(() => {
-      const canvas = document.getElementById('modal-chart');
-      if (canvas && metric.sparkline && metric.sparkline.length) {
-        const data = metric.sparkline;
-        const positiveTrend = inverted
-          ? data[data.length - 1] < data[0]
-          : data[data.length - 1] > data[0];
-        const color = positiveTrend ? '#34d399' : '#f87171';
-        const labels = Array.from({ length: data.length }, (_, i) => {
-          const d = new Date(metric.date);
-          d.setMonth(d.getMonth() - (data.length - 1 - i));
-          return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-        });
-
-        chartRegistry['modal-chart'] = new Chart(canvas, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [{
-              data,
-              borderColor: color,
-              borderWidth: 2,
-              pointRadius: 0,
-              pointHoverRadius: 4,
-              tension: 0.35,
-              fill: true,
-              backgroundColor: ctx => {
-                const h = canvas.offsetHeight || 160;
-                const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, h);
-                g.addColorStop(0, color + '33');
-                g.addColorStop(1, color + '00');
-                return g;
-              },
-            }],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                backgroundColor: '#1a1d27', borderColor: '#2e3250', borderWidth: 1,
-                titleColor: '#e2e8f0', bodyColor: '#8892aa',
-              },
-            },
-            scales: {
-              x: {
-                ticks: { color: '#8892aa', font: { size: 10 }, maxTicksLimit: 8 },
-                grid: { color: '#2e3250' },
-              },
-              y: {
-                ticks: { color: '#8892aa', font: { size: 10 } },
-                grid: { color: '#2e3250' },
-              },
-            },
-          },
-        });
-      }
+  // Draw chart
+  destroyChart('modal-chart');
+  const canvas = document.getElementById('modal-chart');
+  if (canvas && metric.sparkline && metric.sparkline.length) {
+    const data = metric.sparkline;
+    const positiveTrend = inverted ? data[data.length - 1] < data[0] : data[data.length - 1] > data[0];
+    const color = positiveTrend ? '#34d399' : '#f87171';
+    const labels = Array.from({ length: data.length }, (_, i) => {
+      const d = new Date(metric.date);
+      d.setMonth(d.getMonth() - (data.length - 1 - i));
+      return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
     });
+    chartRegistry['modal-chart'] = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          borderColor: color,
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          tension: 0.35,
+          fill: true,
+          backgroundColor: ctx => {
+            const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, canvas.offsetHeight || 160);
+            g.addColorStop(0, color + '33');
+            g.addColorStop(1, color + '00');
+            return g;
+          },
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: { backgroundColor: '#1a1d27', borderColor: '#2e3250', borderWidth: 1, titleColor: '#e2e8f0', bodyColor: '#8892aa' },
+        },
+        scales: {
+          x: { ticks: { color: '#8892aa', font: { size: 10 }, maxTicksLimit: 8 }, grid: { color: '#2e3250' } },
+          y: { ticks: { color: '#8892aa', font: { size: 10 } }, grid: { color: '#2e3250' } },
+        },
+      },
+    });
+  }
 
-    // Monthly breakdown table (housing metrics with monthlyHistory)
-    const existingTable = document.getElementById('modal-monthly-table');
-    if (existingTable) existingTable.remove();
-
-    const history = metric.monthlyHistory;
-    if (history && history.length) {
-      const tableWrap = document.createElement('div');
-      tableWrap.id = 'modal-monthly-table';
-      tableWrap.className = 'modal-monthly-wrap';
-      tableWrap.innerHTML = `
-        <div class="modal-monthly-title">Monthly Breakdown — Altos Research / Redfin <span class="modal-monthly-badge">Mock</span></div>
-        <div class="modal-monthly-scroll">
-          <table class="data-table modal-monthly-table">
-            <thead>
-              <tr>
-                <th>Month</th>
-                <th>MDN Sale Price</th>
-                <th>Avg DOM</th>
-                <th>Sold/List %</th>
-                <th>Price Reductions</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${history.slice().reverse().map((row, i, arr) => {
-                const prev = arr[i + 1];
-                const priceDir = prev ? (row.medianPrice > prev.medianPrice ? 'up' : row.medianPrice < prev.medianPrice ? 'down' : '') : '';
-                const domDir   = prev ? (row.dom < prev.dom ? 'up' : row.dom > prev.dom ? 'down' : '') : '';
-                const s2lDir   = prev ? (row.saleToList > prev.saleToList ? 'up' : row.saleToList < prev.saleToList ? 'down' : '') : '';
-                const prDir    = prev ? (row.priceReductions < prev.priceReductions ? 'up' : row.priceReductions > prev.priceReductions ? 'down' : '') : '';
-                return `<tr>
-                  <td>${row.month}</td>
-                  <td class="${priceDir}">$${row.medianPrice.toLocaleString()}</td>
-                  <td class="${domDir}">${row.dom}</td>
-                  <td class="${s2lDir}">${row.saleToList.toFixed(1)}%</td>
-                  <td class="${prDir}">${row.priceReductions.toFixed(1)}%</td>
-                </tr>`;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>`;
-      // Insert before signal
-      document.getElementById('modal-signal').before(tableWrap);
-    }
-
-    // AI signal
-    const signalEl = document.getElementById('modal-signal');
-    if (AI.hasKey()) {
-      AI.metricSignal(metric).then(sig => {
-        signalEl.textContent = sig || 'No signal available.';
-        signalEl.classList.remove('loading');
-      }).catch(() => {
-        signalEl.textContent = 'Signal unavailable.';
-        signalEl.classList.remove('loading');
-      });
-    } else {
-      signalEl.textContent = 'Connect Databricks in the sidebar to get AI signals.';
+  // AI signal
+  const signalEl = document.getElementById('modal-signal');
+  if (AI.hasKey()) {
+    AI.metricSignal(metric).then(sig => {
+      signalEl.textContent = sig || 'No signal available.';
       signalEl.classList.remove('loading');
-    }
-  };
-})();
+    }).catch(() => {
+      signalEl.textContent = 'Signal unavailable.';
+      signalEl.classList.remove('loading');
+    });
+  } else {
+    signalEl.textContent = 'Connect Databricks in the sidebar to get AI signals.';
+    signalEl.classList.remove('loading');
+  }
+}
+
+// Wire modal close handlers
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('metric-modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 // ── Section: Zip Code ────────────────────────────────────────────────────────
 
