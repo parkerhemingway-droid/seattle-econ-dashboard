@@ -40,19 +40,17 @@ body {
   border-bottom: 1px solid var(--border);
 }
 .logo-img-wrap {
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 8px 10px 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+  padding: 0 4px;
 }
 .logo-img {
   width: 100%;
   height: auto;
   display: block;
-  max-height: 52px;
+  max-height: 44px;
   object-fit: contain;
 }
 .logo-sub {
@@ -825,6 +823,8 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
 .luxury-type-bar-fill { height: 100%; background: #c9a84c; border-radius: 2px; }
 
 .luxury-source { font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; font-style: italic; }
+.luxury-forecast-assumptions { background: #1f2335; border: 1px solid rgba(218,218,218,0.1); border-radius: 8px; padding: 14px 16px; margin: 14px 0 0; font-size: 0.75rem; line-height: 1.7; }
+.luxury-forecast-assume-title { font-size: 0.68rem; font-weight: 600; color: #BCC8CE; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
 .luxury-chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
 .luxury-chart-card { background: #1f2335; border: 1px solid rgba(218,218,218,0.1); border-radius: 10px; padding: 16px 18px; margin: 14px 0 0; }
 .luxury-chart-title { font-size: 0.68rem; font-weight: 600; color: #BCC8CE; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 12px; }

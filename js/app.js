@@ -653,6 +653,24 @@ function renderLuxury() {
   });
   el.appendChild(typeGrid);
 
+  // ── Forecast ──
+  el.appendChild(mkTitle('12-Month Price & Activity Forecast — Jun 2026 – May 2027'));
+  el.appendChild(mkChartCard('Median Price Forecast vs. Historical', 'lux-fcast-price-chart', 220));
+  const fcastRow = document.createElement('div');
+  fcastRow.className = 'luxury-chart-row';
+  fcastRow.appendChild(mkChartCard('Closed Sales Forecast', 'lux-fcast-sales-chart'));
+  fcastRow.appendChild(mkChartCard('Inventory & Pending Forecast', 'lux-fcast-inv-chart'));
+  el.appendChild(fcastRow);
+
+  const assumWrap = document.createElement('div');
+  assumWrap.className = 'luxury-forecast-assumptions';
+  assumWrap.innerHTML = `<div class="luxury-forecast-assume-title">Forecast Assumptions</div>` +
+    d.forecastAssumptions.map(a => {
+      const color = a.startsWith('~') ? 'var(--text-muted)' : '#BCC8CE';
+      return `<div style="color:${color}">• ${a}</div>`;
+    }).join('');
+  el.appendChild(assumWrap);
+
   // ── Source note ──
   const src = document.createElement('div');
   src.className = 'luxury-source';
@@ -883,6 +901,171 @@ function renderLuxury() {
           scales: {
             x: { ...scaleBase, ticks: { ...scaleBase.ticks, callback: v => `$${v}M` } },
             y: scaleNoVGrid,
+          },
+        },
+      });
+    }
+
+    // ── Forecast charts ──────────────────────────────────────────────────────
+    const fcast = d.forecast;
+    const histLabels = months.map(m => m.month);
+    const fcastLabels = fcast.map(f => f.month);
+    const allLabels = [...histLabels, ...fcastLabels];
+    const C_GREY = '#607D8B';
+
+    // Forecast Chart 1 — median price: history line + forecast line + confidence band
+    const fPriceEl = document.getElementById('lux-fcast-price-chart');
+    if (fPriceEl) {
+      destroyChart('lux-fcast-price-chart');
+      const histPrices = months.map(m => m.medianPrice / 1e6);
+      const fcastPrices = fcast.map(f => f.medianPrice / 1e6);
+      // Confidence band: ±4% around forecast
+      const bandHigh = fcastPrices.map(v => +(v * 1.04).toFixed(3));
+      const bandLow  = fcastPrices.map(v => +(v * 0.96).toFixed(3));
+      chartRegistry['lux-fcast-price-chart'] = new Chart(fPriceEl.getContext('2d'), {
+        data: {
+          labels: allLabels,
+          datasets: [
+            {
+              type: 'line', label: 'Historical',
+              data: [...histPrices, ...Array(fcastLabels.length).fill(null)],
+              borderColor: C_BLUE, borderWidth: 2.5,
+              pointRadius: 3, pointBackgroundColor: '#1a1d27', pointBorderColor: C_BLUE, pointBorderWidth: 2,
+              tension: 0.4, fill: false,
+            },
+            {
+              type: 'line', label: 'Forecast',
+              data: [...Array(histLabels.length - 1).fill(null), histPrices[histPrices.length - 1], ...fcastPrices],
+              borderColor: C_AMBER, borderWidth: 2.5, borderDash: [6, 4],
+              pointRadius: 2, pointBackgroundColor: C_AMBER,
+              tension: 0.4, fill: false,
+            },
+            {
+              type: 'line', label: 'Upper bound (+4%)',
+              data: [...Array(histLabels.length - 1).fill(null), histPrices[histPrices.length - 1], ...bandHigh],
+              borderColor: C_AMBER + '44', borderWidth: 1, borderDash: [3, 4],
+              pointRadius: 0, tension: 0.4, fill: '+1', backgroundColor: C_AMBER + '18',
+            },
+            {
+              type: 'line', label: 'Lower bound (−4%)',
+              data: [...Array(histLabels.length - 1).fill(null), histPrices[histPrices.length - 1], ...bandLow],
+              borderColor: C_AMBER + '44', borderWidth: 1, borderDash: [3, 4],
+              pointRadius: 0, tension: 0.4, fill: false,
+            },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          layout: { padding: { top: 8, right: 8 } },
+          plugins: {
+            legend: {
+              display: true, position: 'top', align: 'end',
+              labels: {
+                color: tickColor, font: { size: 10 }, boxWidth: 10, padding: 10, usePointStyle: true,
+                filter: item => !item.text.includes('bound'),
+              },
+            },
+            tooltip: { ...tt, mode: 'index', intersect: false,
+              callbacks: { label: c => c.parsed.y != null ? ` ${c.dataset.label}: $${c.parsed.y.toFixed(2)}M` : null } },
+          },
+          scales: {
+            x: {
+              ...scaleNoVGrid,
+              ticks: { ...scaleBase.ticks, callback: (v, i) => i % 3 === 0 ? allLabels[i] : '' },
+            },
+            y: { ...scaleBase, ticks: { ...scaleBase.ticks, callback: v => `$${v.toFixed(1)}M` } },
+          },
+        },
+      });
+    }
+
+    // Forecast Chart 2 — closed sales: history bars + forecast bars (different opacity)
+    const fSalesEl = document.getElementById('lux-fcast-sales-chart');
+    if (fSalesEl) {
+      destroyChart('lux-fcast-sales-chart');
+      chartRegistry['lux-fcast-sales-chart'] = new Chart(fSalesEl.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: allLabels,
+          datasets: [
+            {
+              label: 'Historical', data: [...months.map(m => m.closedSales), ...Array(fcastLabels.length).fill(null)],
+              backgroundColor: C_BLUE + 'cc', borderWidth: 0, borderRadius: 4,
+            },
+            {
+              label: 'Forecast', data: [...Array(histLabels.length).fill(null), ...fcast.map(f => f.closedSales)],
+              backgroundColor: C_AMBER + 'bb', borderWidth: 1, borderColor: C_AMBER, borderRadius: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          layout: { padding: { top: 8, right: 8 } },
+          plugins: {
+            legend: { display: true, position: 'top', align: 'end',
+              labels: { color: tickColor, font: { size: 10 }, boxWidth: 10, padding: 10, usePointStyle: true } },
+            tooltip: { ...tt, mode: 'index', intersect: false },
+          },
+          scales: {
+            x: { ...scaleNoVGrid, ticks: { ...scaleBase.ticks, callback: (v, i) => i % 3 === 0 ? allLabels[i] : '' } },
+            y: { ...scaleBase, ticks: { ...scaleBase.ticks, callback: v => `${v} sales` } },
+          },
+        },
+      });
+    }
+
+    // Forecast Chart 3 — inventory (line) + pending (bars)
+    const fInvEl = document.getElementById('lux-fcast-inv-chart');
+    if (fInvEl) {
+      destroyChart('lux-fcast-inv-chart');
+      const histInv  = months.map(m => m.inventory);
+      const fcastInv = fcast.map(f => f.inventory);
+      chartRegistry['lux-fcast-inv-chart'] = new Chart(fInvEl.getContext('2d'), {
+        data: {
+          labels: allLabels,
+          datasets: [
+            {
+              type: 'line', label: 'Inventory (hist.)',
+              data: [...histInv, ...Array(fcastLabels.length).fill(null)],
+              borderColor: C_BLUE, borderWidth: 2, pointRadius: 2,
+              pointBackgroundColor: '#1a1d27', pointBorderColor: C_BLUE,
+              tension: 0.4, fill: false, yAxisID: 'yL',
+            },
+            {
+              type: 'line', label: 'Inventory (fcast)',
+              data: [...Array(histLabels.length - 1).fill(null), histInv[histInv.length-1], ...fcastInv],
+              borderColor: C_AMBER, borderWidth: 2, borderDash: [6,4], pointRadius: 2,
+              pointBackgroundColor: C_AMBER, tension: 0.4, fill: false, yAxisID: 'yL',
+            },
+            {
+              type: 'bar', label: 'Pending (hist.)',
+              data: [...months.map(m => m.pending), ...Array(fcastLabels.length).fill(null)],
+              backgroundColor: C_TEAL + 'aa', borderWidth: 0, borderRadius: 3, yAxisID: 'yR',
+            },
+            {
+              type: 'bar', label: 'Pending (fcast)',
+              data: [...Array(histLabels.length).fill(null), ...fcast.map(f => f.pending)],
+              backgroundColor: C_AMBER + '66', borderWidth: 1, borderColor: C_AMBER, borderRadius: 3, yAxisID: 'yR',
+            },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          layout: { padding: { top: 8, right: 8 } },
+          plugins: {
+            legend: { display: true, position: 'top', align: 'end',
+              labels: { color: tickColor, font: { size: 10 }, boxWidth: 10, padding: 8, usePointStyle: true } },
+            tooltip: { ...tt, mode: 'index', intersect: false },
+          },
+          scales: {
+            x: { ...scaleNoVGrid, ticks: { ...scaleBase.ticks, callback: (v, i) => i % 3 === 0 ? allLabels[i] : '' } },
+            yL: { type: 'linear', position: 'left', ...scaleBase,
+              ticks: { ...scaleBase.ticks, color: C_BLUE },
+              title: { display: true, text: 'Inventory', color: C_BLUE, font: { size: 9 } } },
+            yR: { type: 'linear', position: 'right',
+              ticks: { color: C_TEAL, font: tickFont, padding: 6 },
+              grid: { drawOnChartArea: false }, border: { display: false },
+              title: { display: true, text: 'Pending', color: C_TEAL, font: { size: 9 } } },
           },
         },
       });

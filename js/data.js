@@ -976,6 +976,38 @@ const LUXURY_DATA = {
   ],
 
   sources: 'NWMLS luxury tier (King County $3M+) · Redfin/Zillow Luxury Index · Compass Pacific NW · Sotheby\'s International Realty market report · Mock data modeled on Q2 2026 luxury market conditions',
+
+  // ── 12-month price & activity forecast (Jun 2026 – May 2027) ─────────────
+  // Drivers: Fed holding rates 4.25–4.5%, tech sector stable, limited $3M+ supply,
+  // seasonality (peak Jul–Aug, trough Nov–Jan), mild YoY appreciation anchored by
+  // inventory scarcity in Medina/Mercer Island and Bellevue West submarkets.
+  forecast: [
+    { month: 'Jun 26', medianPrice: 5310000, closedSales: 31, pending: 25, inventory: 308, dom: 40, priceReductions: 33, note: 'Seasonal peak approaching' },
+    { month: 'Jul 26', medianPrice: 5420000, closedSales: 35, pending: 29, inventory: 290, dom: 36, priceReductions: 30, note: 'Peak summer demand' },
+    { month: 'Aug 26', medianPrice: 5480000, closedSales: 37, pending: 30, inventory: 272, dom: 33, priceReductions: 27, note: 'Peak summer demand' },
+    { month: 'Sep 26', medianPrice: 5350000, closedSales: 29, pending: 23, inventory: 298, dom: 42, priceReductions: 32, note: 'Post-summer softening' },
+    { month: 'Oct 26', medianPrice: 5180000, closedSales: 24, pending: 18, inventory: 322, dom: 49, priceReductions: 36, note: 'Fall slowdown' },
+    { month: 'Nov 26', medianPrice: 5020000, closedSales: 19, pending: 13, inventory: 338, dom: 56, priceReductions: 39, note: 'Seasonal low' },
+    { month: 'Dec 26', medianPrice: 4890000, closedSales: 15, pending: 10, inventory: 302, dom: 62, priceReductions: 42, note: 'Holiday trough' },
+    { month: 'Jan 27', medianPrice: 4980000, closedSales: 17, pending: 12, inventory: 288, dom: 58, priceReductions: 40, note: 'New year rebound' },
+    { month: 'Feb 27', medianPrice: 5150000, closedSales: 22, pending: 18, inventory: 274, dom: 50, priceReductions: 36, note: 'Spring demand builds' },
+    { month: 'Mar 27', medianPrice: 5310000, closedSales: 28, pending: 23, inventory: 295, dom: 44, priceReductions: 32, note: 'Spring market opens' },
+    { month: 'Apr 27', medianPrice: 5420000, closedSales: 33, pending: 27, inventory: 310, dom: 41, priceReductions: 31, note: 'Strong spring' },
+    { month: 'May 27', medianPrice: 5490000, closedSales: 31, pending: 25, inventory: 316, dom: 40, priceReductions: 31, note: 'YoY: +4.6% price, +6.9% sales' },
+  ],
+  forecastAssumptions: [
+    '~ Fed funds rate holds 4.25–4.50% through mid-2027; no significant rate shock',
+    '~ 30-year mortgage rates range 6.4–6.9% — modest improvement vs. 2025 peak',
+    '~ Tech sector employment (Amazon, Microsoft, Google) stable to +2% YoY in King County',
+    '~ Active inventory stays constrained at 270–340 units (structural scarcity above $3M)',
+    '~ No major macro shock (recession, credit event, or equity market correction >20%)',
+    '~ Seasonal pattern: peak Jul–Aug, trough Nov–Jan, consistent with 5-year history',
+    '~ Price appreciation: +3% to +5% YoY anchored by Medina/Clyde Hill supply scarcity',
+    '~ Demand risk: rising ARM share and stretched affordability may dampen mid-tier ($3M–$5M)',
+    '~ Upside risk: Fed cuts ≥2x could accelerate demand and compress DOM below 35',
+    '~ Downside risk: Equity correction or tech layoffs could push inventory above 380 units',
+    'Forecast horizon: 12 months (Jun 2026 – May 2027)',
+  ],
 };
 
 // ── All Data Master List ─────────────────────────────────────────────────────
