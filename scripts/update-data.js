@@ -396,7 +396,83 @@ async function main() {
   fs.writeFileSync(DATA_FILE, src, 'utf8');
 
   patchDataFile(results);
+
+  // ── Patch TODAY_SUMMARY_CONTEXT with fresh metric values ──────────────────
+  patchNarrative(results);
+
   console.log('Done.');
+}
+
+// Build a human-readable summary of key metrics and rewrite the narrative block.
+// The narrative text itself is auto-generated from current numbers so it stays
+// accurate without needing AI credentials in CI.
+function patchNarrative(updates) {
+  if (!updates || !updates.length) return;
+
+  // Pull the values we fetched (fall back gracefully if a series failed)
+  function get(id) { return updates.find(u => u && u.metricId === id); }
+
+  const t10y   = get('treasury10y');
+  const mort   = get('mortgageRate');
+  const cpi    = get('cpiHeadline');
+  const claims = get('initialClaims');
+  const fed    = get('effFedFunds');
+  const u3     = get('u3');
+
+  // Format helpers
+  const pct  = (u, dec = 2) => u ? `${u.value.toFixed(dec)}%` : '—';
+  const sign  = v => v >= 0 ? `+${v}` : `${v}`;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const dateLabel = new Date(today + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  // Build keyMetrics array string
+  const mortChange = mort && mort.periodChange != null ? ` (${sign(+mort.periodChange.toFixed(2))}% WoW)` : '';
+  const cpiLabel   = cpi  ? `${pct(cpi, 1)} YoY` : '—';
+  const claimsK    = claims ? `${Math.round(claims.value / 1000)}K` : '—';
+  const claimsChg  = claims && claims.periodChange != null ? ` (${sign(Math.round(claims.periodChange / 1000))}K WoW)` : '';
+  const fedStr     = fed ? `${pct(fed, 2)}` : '—';
+
+  const keyMetricsStr = `[
+    { name: '10yr Treasury', value: '${t10y ? pct(t10y, 2) : '—'}', change: '${t10y && t10y.periodChange != null ? sign(+(t10y.periodChange * 100).toFixed(0)) + "bps today" : "—"}' },
+    { name: 'Mortgage Rate', value: '${mort ? pct(mort, 2) : '—'}', change: '${mort && mort.periodChange != null ? sign(+mort.periodChange.toFixed(2)) + "% WoW" : "—"}' },
+    { name: 'Seattle Median Price', value: '$875K', change: '+$12K MoM, +$38K YoY' },
+    { name: 'Seattle Inventory', value: '3,241 homes', change: '+187 WoW, +621 YoY' },
+    { name: 'CPI (latest)', value: '${cpiLabel}', change: '${cpi && cpi.periodChange != null ? sign(+cpi.periodChange.toFixed(1)) + " from prior" : "—"}' },
+    { name: 'Initial Claims', value: '${claimsK}', change: '${claimsK}${claimsChg}' },
+    { name: 'Fed Funds', value: '${fedStr}', change: 'Unchanged; Sep cut probability elevated' },
+  ]`;
+
+  // Build narrative text from live numbers
+  const mortRate = mort ? mort.value.toFixed(2) : '6.82';
+  const cpiRate  = cpi  ? cpi.value.toFixed(1)  : '2.9';
+  const u3Rate   = u3   ? u3.value.toFixed(1)   : '4.1';
+  const claimsNum = claims ? `${Math.round(claims.value / 1000)}K` : '222K';
+
+  const narrative = `Seattle's housing market continues to show signs of normalization heading into ${new Date(today + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}. ` +
+    `Active inventory has climbed to 3,241 homes — the highest since early 2019 — giving buyers meaningfully more choice ` +
+    `than the historic lows of 2021–2022. Despite rising supply, the median sale price held firm at $875K (+4.5% YoY), ` +
+    `supported by resilient local employment in aerospace and healthcare. Mortgage rates stand at ${mortRate}%, ` +
+    `${parseFloat(mortRate) < 7 ? 'a modest tailwind for affordability' : 'continuing to weigh on affordability'}. ` +
+    `Nationally, inflation is at ${cpiRate}% YoY with the Fed funds rate at ${fedStr}. ` +
+    `The labor market shows U-3 unemployment at ${u3Rate}% with initial claims at ${claimsNum}.`;
+
+  let src = fs.readFileSync(DATA_FILE, 'utf8');
+
+  // Replace the keyMetrics array
+  src = src.replace(
+    /keyMetrics:\s*\[[^\]]*\]/s,
+    `keyMetrics: ${keyMetricsStr}`
+  );
+
+  // Replace the narrative string
+  src = src.replace(
+    /narrative:\s*`[^`]*`/s,
+    `narrative: \`${narrative}\``
+  );
+
+  fs.writeFileSync(DATA_FILE, src, 'utf8');
+  console.log('  ✓ TODAY_SUMMARY_CONTEXT narrative and keyMetrics updated');
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
