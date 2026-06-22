@@ -349,8 +349,11 @@ function buildPipelineForecast() {
   wrap.appendChild(assumTitle);
   const assumBox = document.createElement('div');
   assumBox.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--yellow);border-radius:8px;padding:14px 16px;font-size:.8rem;color:var(--text-muted);line-height:1.7;';
-  assumBox.innerHTML = `<div style="font-size:.72rem;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">⚠ Mock Data — Model Assumptions</div>` +
-    PIPELINE_FORECAST.assumptions.map(a => `<div>• ${a}</div>`).join('');
+  assumBox.innerHTML = `<div style="font-size:.72rem;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">⚠ Model Forecast — Data Sources &amp; Assumptions</div>` +
+    PIPELINE_FORECAST.assumptions.map(a => {
+      const color = a.startsWith('✓') ? 'var(--green)' : a.startsWith('~') ? 'var(--yellow)' : 'var(--text-muted)';
+      return `<div style="color:${color}">• ${a}</div>`;
+    }).join('');
   wrap.appendChild(assumBox);
 
   // Draw both charts
