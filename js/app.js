@@ -490,6 +490,157 @@ function renderHousing() {
   return el;
 }
 
+// ── Section: Luxury Market ───────────────────────────────────────────────────
+
+function renderLuxury() {
+  const el = document.createElement('div');
+  const d = LUXURY_DATA;
+  const h = d.headline;
+
+  const fmtM = v => v >= 1000000 ? `$${(v/1000000).toFixed(2)}M` : `$${v.toLocaleString()}`;
+  const pctCls = v => v > 0 ? 'style="color:var(--green)"' : v < 0 ? 'style="color:var(--red)"' : '';
+  const sign = v => v > 0 ? `+${v}` : `${v}`;
+
+  el.innerHTML = `<div class="section-title">Luxury Market — $3M+</div>
+    <div class="section-subtitle">Greater Seattle ultra-premium residential — King, Snohomish & Pierce Counties</div>`;
+
+  // ── Hero stat bar ──
+  const hero = document.createElement('div');
+  hero.className = 'luxury-hero';
+  const heroStats = [
+    { label: 'Median Sale Price',   value: fmtM(h.medianPrice),          sub: `YoY ${sign(h.yoyPricePct)}%`, cls: h.yoyPricePct >= 0 ? 'up' : 'down' },
+    { label: 'Avg Sale Price',      value: fmtM(h.avgPrice),              sub: 'rolling 12-month', cls: '' },
+    { label: 'Active Inventory',    value: h.activeInventory.toString(),  sub: `${h.absorptionMonths} mo supply`, cls: '' },
+    { label: 'Avg Days on Market',  value: `${h.medianDOM} days`,         sub: 'median', cls: '' },
+    { label: 'Sale / List Ratio',   value: `${h.saleToList}%`,            sub: 'avg concession ~3.2%', cls: '' },
+    { label: 'Price Reductions',    value: `${h.priceReductions}%`,       sub: 'of active listings', cls: '' },
+    { label: 'Closed Sales',        value: h.closedSales.toString(),       sub: `May 2026`, cls: '' },
+    { label: 'New Listings',        value: h.newListings.toString(),       sub: `May 2026`, cls: '' },
+  ];
+  hero.innerHTML = heroStats.map(s => `
+    <div class="luxury-hero-stat">
+      <div class="luxury-hero-label">${s.label}</div>
+      <div class="luxury-hero-value ${s.cls}">${s.value}</div>
+      <div class="luxury-hero-sub">${s.sub}</div>
+    </div>`).join('');
+  el.appendChild(hero);
+
+  // ── Monthly trend table ──
+  el.innerHTML += `<div class="subsection-title">12-Month Trend</div>`;
+  const trendWrap = document.createElement('div');
+  trendWrap.className = 'luxury-table-wrap';
+  const months = d.monthly;
+  trendWrap.innerHTML = `<table class="data-table">
+    <thead>
+      <tr>
+        <th>Month</th><th>Median Price</th><th>Closed Sales</th><th>Avg DOM</th>
+        <th>Sale/List %</th><th>Inventory</th><th>Price Reductions</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${months.slice().reverse().map((row, i, arr) => {
+        const prev = arr[i + 1];
+        const pc = prev ? (row.medianPrice > prev.medianPrice ? 'up' : row.medianPrice < prev.medianPrice ? 'down' : '') : '';
+        const sc = prev ? (row.closedSales > prev.closedSales ? 'up' : row.closedSales < prev.closedSales ? 'down' : '') : '';
+        const dc = prev ? (row.dom < prev.dom ? 'up' : row.dom > prev.dom ? 'down' : '') : '';
+        const s2 = prev ? (row.saleToList > prev.saleToList ? 'up' : row.saleToList < prev.saleToList ? 'down' : '') : '';
+        const ic = prev ? (row.inventory < prev.inventory ? 'up' : row.inventory > prev.inventory ? 'down' : '') : '';
+        const rc = prev ? (row.priceReductions < prev.priceReductions ? 'up' : row.priceReductions > prev.priceReductions ? 'down' : '') : '';
+        return `<tr>
+          <td>${row.month}</td>
+          <td class="${pc}">${fmtM(row.medianPrice)}</td>
+          <td class="${sc}">${row.closedSales}</td>
+          <td class="${dc}">${row.dom}</td>
+          <td class="${s2}">${row.saleToList.toFixed(1)}%</td>
+          <td class="${ic}">${row.inventory}</td>
+          <td class="${rc}">${row.priceReductions}%</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+  el.appendChild(trendWrap);
+
+  // ── Price tier breakdowns ──
+  el.innerHTML += `<div class="subsection-title">Price Tier Breakdown</div>`;
+  const tierGrid = document.createElement('div');
+  tierGrid.className = 'luxury-tier-grid';
+  d.tiers.forEach(t => {
+    const cls = t.yoyPricePct > 0 ? 'up' : 'down';
+    tierGrid.innerHTML += `
+      <div class="luxury-tier-card">
+        <div class="luxury-tier-label">${t.label}</div>
+        <div class="luxury-tier-price">${fmtM(t.medianPrice)}<span class="luxury-tier-change ${cls}">${sign(t.yoyPricePct)}% YoY</span></div>
+        <div class="luxury-tier-stats">
+          <span title="Active listings">📦 ${t.inventory} active</span>
+          <span title="Closed sales last month">✓ ${t.closedSales} sold</span>
+          <span title="Avg days on market">⏱ ${t.dom}d DOM</span>
+          <span title="Sale-to-list ratio">⚖ ${t.saleToList}% S/L</span>
+          <span title="% with price reductions">✂ ${t.priceReductions}% cuts</span>
+        </div>
+      </div>`;
+  });
+  el.appendChild(tierGrid);
+
+  // ── Submarket breakdown ──
+  el.innerHTML += `<div class="subsection-title">Submarket Breakdown</div>`;
+  const subGrid = document.createElement('div');
+  subGrid.className = 'luxury-sub-grid';
+  d.submarkets.forEach(s => {
+    const cls = s.yoyPricePct > 0 ? 'up' : 'down';
+    const absorb = s.inventory && s.closedSales ? (s.inventory / s.closedSales).toFixed(1) : '—';
+    subGrid.innerHTML += `
+      <div class="luxury-sub-card">
+        <div class="luxury-sub-header">
+          <div>
+            <div class="luxury-sub-name">${s.name}</div>
+            <div class="luxury-sub-county">${s.county} County · ${s.zips.join(', ')}</div>
+          </div>
+          <div class="luxury-sub-price">
+            ${fmtM(s.medianPrice)}
+            <span class="${cls}">${sign(s.yoyPricePct)}%</span>
+          </div>
+        </div>
+        <div class="luxury-sub-stats">
+          <div class="luxury-sub-stat"><div class="luxury-sub-stat-val">${s.inventory}</div><div class="luxury-sub-stat-lbl">Active</div></div>
+          <div class="luxury-sub-stat"><div class="luxury-sub-stat-val">${s.closedSales}</div><div class="luxury-sub-stat-lbl">Sold/mo</div></div>
+          <div class="luxury-sub-stat"><div class="luxury-sub-stat-val">${absorb}mo</div><div class="luxury-sub-stat-lbl">Supply</div></div>
+          <div class="luxury-sub-stat"><div class="luxury-sub-stat-val">${s.dom}d</div><div class="luxury-sub-stat-lbl">DOM</div></div>
+          <div class="luxury-sub-stat"><div class="luxury-sub-stat-val">${s.saleToList}%</div><div class="luxury-sub-stat-lbl">S/L</div></div>
+          <div class="luxury-sub-stat"><div class="luxury-sub-stat-val ${s.priceReductions >= 40 ? 'down' : ''}">${s.priceReductions}%</div><div class="luxury-sub-stat-lbl">Cuts</div></div>
+        </div>
+        <div class="luxury-sub-notes">${s.notes}</div>
+      </div>`;
+  });
+  el.appendChild(subGrid);
+
+  // ── Property type breakdown ──
+  el.innerHTML += `<div class="subsection-title">By Property Type</div>`;
+  const typeGrid = document.createElement('div');
+  typeGrid.className = 'luxury-type-grid';
+  d.propertyTypes.forEach(t => {
+    typeGrid.innerHTML += `
+      <div class="luxury-type-card">
+        <div class="luxury-type-name">${t.type}</div>
+        <div class="luxury-type-share">${t.share}% of sales</div>
+        <div class="luxury-type-price">${fmtM(t.medianPrice)}</div>
+        <div class="luxury-type-meta">
+          <span>${t.dom}d DOM</span>
+          <span>${t.saleToList}% S/L</span>
+        </div>
+        <div class="luxury-type-bar"><div class="luxury-type-bar-fill" style="width:${Math.min(t.share * 2.8, 100)}%"></div></div>
+      </div>`;
+  });
+  el.appendChild(typeGrid);
+
+  // ── Source note ──
+  const src = document.createElement('div');
+  src.className = 'luxury-source';
+  src.textContent = `Source: ${d.sources}`;
+  el.appendChild(src);
+
+  return el;
+}
+
 // ── Section: Inflation ───────────────────────────────────────────────────────
 
 function renderInflation() {
@@ -1159,6 +1310,7 @@ let currentZip = null;
 const RENDERERS = {
   today: renderToday,
   housing: renderHousing,
+  luxury: renderLuxury,
   inflation: renderInflation,
   employment: renderEmployment,
   fed: renderFed,

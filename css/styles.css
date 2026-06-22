@@ -722,6 +722,102 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
 }
 .metric-card { cursor: pointer; }
 
+/* ── Luxury Market Section ── */
+.luxury-hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.luxury-hero-stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid #c9a84c;
+  border-radius: var(--card-radius);
+  padding: 14px 16px;
+  text-align: center;
+}
+.luxury-hero-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.luxury-hero-value { font-size: 1.4rem; font-weight: 800; color: var(--text); margin: 2px 0; }
+.luxury-hero-value.up { color: var(--green); }
+.luxury-hero-value.down { color: var(--red); }
+.luxury-hero-sub { font-size: 0.7rem; color: var(--text-muted); }
+
+.luxury-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 28px;
+}
+
+.luxury-tier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.luxury-tier-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid #c9a84c;
+  border-radius: var(--card-radius);
+  padding: 16px;
+}
+.luxury-tier-label { font-size: 0.72rem; font-weight: 700; color: #c9a84c; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.luxury-tier-price { font-size: 1.3rem; font-weight: 800; color: var(--text); margin-bottom: 10px; display: flex; align-items: baseline; gap: 8px; }
+.luxury-tier-change { font-size: 0.78rem; font-weight: 500; }
+.luxury-tier-change.up { color: var(--green); }
+.luxury-tier-change.down { color: var(--red); }
+.luxury-tier-stats { display: flex; flex-wrap: wrap; gap: 6px; font-size: 0.72rem; color: var(--text-muted); }
+.luxury-tier-stats span { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 7px; }
+
+.luxury-sub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.luxury-sub-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  padding: 16px 18px;
+}
+.luxury-sub-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 8px; }
+.luxury-sub-name { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+.luxury-sub-county { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+.luxury-sub-price { font-size: 1.1rem; font-weight: 800; color: #c9a84c; text-align: right; white-space: nowrap; }
+.luxury-sub-price span { display: block; font-size: 0.75rem; font-weight: 500; }
+.luxury-sub-price .up { color: var(--green); }
+.luxury-sub-price .down { color: var(--red); }
+.luxury-sub-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 10px; }
+.luxury-sub-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 4px; text-align: center; }
+.luxury-sub-stat-val { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+.luxury-sub-stat-val.down { color: var(--red); }
+.luxury-sub-stat-lbl { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 1px; }
+.luxury-sub-notes { font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; font-style: italic; border-top: 1px solid var(--border); padding-top: 8px; }
+
+.luxury-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.luxury-type-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  padding: 14px 16px;
+}
+.luxury-type-name { font-size: 0.8rem; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.luxury-type-share { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px; }
+.luxury-type-price { font-size: 1.15rem; font-weight: 800; color: #c9a84c; margin-bottom: 4px; }
+.luxury-type-meta { display: flex; gap: 8px; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 8px; }
+.luxury-type-bar { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+.luxury-type-bar-fill { height: 100%; background: #c9a84c; border-radius: 2px; }
+
+.luxury-source { font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; font-style: italic; }
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg); }

@@ -815,6 +815,129 @@ const RECENT_RELEASES = {
   ],
 };
 
+// ── Luxury Market ($3M+) ─────────────────────────────────────────────────────
+// Sourced from NWMLS / Redfin luxury tier data — King County $3M+ segment.
+// Mock data modeled on Compass, Sotheby's, and NWMLS luxury market reports.
+const LUXURY_DATA = {
+  // ── MSA-wide headline metrics ─────────────────────────────────────────────
+  headline: {
+    medianPrice:      5250000,
+    avgPrice:         7840000,
+    medianDOM:        42,
+    saleToList:       96.8,
+    priceReductions:  34,
+    activeInventory:  312,
+    newListings:      48,
+    closedSales:      29,
+    absorptionMonths: 10.8,
+    yoyPricePct:      +2.1,
+    date: '2026-06-01',
+  },
+
+  // ── Monthly trend (Jun 2025 – May 2026) ──────────────────────────────────
+  monthly: [
+    { month: 'Jun 25', medianPrice: 4950000, closedSales: 31, dom: 38, saleToList: 97.4, inventory: 278, priceReductions: 29 },
+    { month: 'Jul 25', medianPrice: 5100000, closedSales: 34, dom: 35, saleToList: 97.8, inventory: 265, priceReductions: 27 },
+    { month: 'Aug 25', medianPrice: 5350000, closedSales: 36, dom: 32, saleToList: 98.1, inventory: 248, priceReductions: 25 },
+    { month: 'Sep 25', medianPrice: 5200000, closedSales: 28, dom: 44, saleToList: 96.9, inventory: 290, priceReductions: 31 },
+    { month: 'Oct 25', medianPrice: 5050000, closedSales: 24, dom: 51, saleToList: 96.2, inventory: 318, priceReductions: 35 },
+    { month: 'Nov 25', medianPrice: 4880000, closedSales: 18, dom: 58, saleToList: 95.8, inventory: 334, priceReductions: 38 },
+    { month: 'Dec 25', medianPrice: 4720000, closedSales: 14, dom: 64, saleToList: 95.3, inventory: 298, priceReductions: 41 },
+    { month: 'Jan 26', medianPrice: 4850000, closedSales: 16, dom: 61, saleToList: 95.6, inventory: 285, priceReductions: 39 },
+    { month: 'Feb 26', medianPrice: 5050000, closedSales: 21, dom: 52, saleToList: 96.4, inventory: 271, priceReductions: 36 },
+    { month: 'Mar 26', medianPrice: 5180000, closedSales: 27, dom: 46, saleToList: 96.9, inventory: 294, priceReductions: 33 },
+    { month: 'Apr 26', medianPrice: 5290000, closedSales: 31, dom: 43, saleToList: 97.1, inventory: 308, priceReductions: 34 },
+    { month: 'May 26', medianPrice: 5250000, closedSales: 29, dom: 42, saleToList: 96.8, inventory: 312, priceReductions: 34 },
+  ],
+
+  // ── Price tier breakdowns ─────────────────────────────────────────────────
+  tiers: [
+    { label: '$3M – $5M',   medianPrice: 3820000, inventory: 148, closedSales: 18, dom: 36, saleToList: 97.8, priceReductions: 28, yoyPricePct: +3.1 },
+    { label: '$5M – $8M',   medianPrice: 6140000, inventory:  96, closedSales:  8, dom: 48, saleToList: 96.5, priceReductions: 36, yoyPricePct: +1.8 },
+    { label: '$8M – $12M',  medianPrice: 9650000, inventory:  48, closedSales:  2, dom: 68, saleToList: 95.1, priceReductions: 42, yoyPricePct: +0.4 },
+    { label: '$12M+',       medianPrice:14800000, inventory:  20, closedSales:  1, dom: 94, saleToList: 93.2, priceReductions: 55, yoyPricePct: -1.2 },
+  ],
+
+  // ── Submarket breakdowns ──────────────────────────────────────────────────
+  submarkets: [
+    {
+      name: 'Medina / Clyde Hill',
+      county: 'King', zips: ['98039','98004'],
+      medianPrice: 8950000, avgPrice: 12400000,
+      inventory: 28, closedSales: 4, dom: 62, saleToList: 95.4,
+      priceReductions: 46, yoyPricePct: +1.2,
+      notes: 'Lakefront and view estates; home to tech executives and billionaires. Tightest supply in the MSA.',
+    },
+    {
+      name: 'Mercer Island',
+      county: 'King', zips: ['98040'],
+      medianPrice: 4850000, avgPrice: 5920000,
+      inventory: 22, closedSales: 6, dom: 44, saleToList: 96.8,
+      priceReductions: 31, yoyPricePct: +2.8,
+      notes: 'Island exclusivity with quick access to Seattle and Bellevue. Strong demand from Boeing and Amazon C-suite.',
+    },
+    {
+      name: 'Bellevue West / Downtown',
+      county: 'King', zips: ['98004','98005'],
+      medianPrice: 4200000, avgPrice: 5650000,
+      inventory: 54, closedSales: 9, dom: 38, saleToList: 97.4,
+      priceReductions: 28, yoyPricePct: +3.4,
+      notes: 'High-rise penthouses and westside estates. Most liquid luxury submarket in the MSA.',
+    },
+    {
+      name: 'Madison Park / Capitol Hill',
+      county: 'King', zips: ['98112','98102'],
+      medianPrice: 3650000, avgPrice: 4280000,
+      inventory: 31, closedSales: 5, dom: 41, saleToList: 97.1,
+      priceReductions: 30, yoyPricePct: +2.1,
+      notes: 'Historic estates and waterfront properties on Lake Washington. Architecture-driven demand.',
+    },
+    {
+      name: 'Kirkland / Yarrow Point',
+      county: 'King', zips: ['98033','98004'],
+      medianPrice: 3950000, avgPrice: 5100000,
+      inventory: 38, closedSales: 4, dom: 52, saleToList: 96.6,
+      priceReductions: 35, yoyPricePct: +1.6,
+      notes: 'Lakefront and ridge estates. Growing tech demand from Redmond spillover.',
+    },
+    {
+      name: 'Queen Anne / Magnolia',
+      county: 'King', zips: ['98109','98119'],
+      medianPrice: 3380000, avgPrice: 3980000,
+      inventory: 29, closedSales: 3, dom: 55, saleToList: 96.2,
+      priceReductions: 38, yoyPricePct: +0.8,
+      notes: 'City views and Puget Sound panoramas. Slower pace than eastside but strong heritage buyer profile.',
+    },
+    {
+      name: 'Sammamish / Issaquah Highlands',
+      county: 'King', zips: ['98074','98027'],
+      medianPrice: 3150000, avgPrice: 3620000,
+      inventory: 42, closedSales: 5, dom: 39, saleToList: 97.6,
+      priceReductions: 25, yoyPricePct: +4.2,
+      notes: 'New-build luxury and large-lot estates. Fastest-growing luxury submarket; strong Amazon/Microsoft demand.',
+    },
+    {
+      name: 'Snohomish County Estates',
+      county: 'Snohomish', zips: ['98012','98077'],
+      medianPrice: 3050000, avgPrice: 3480000,
+      inventory: 24, closedSales: 2, dom: 71, saleToList: 95.9,
+      priceReductions: 44, yoyPricePct: -0.3,
+      notes: 'Acreage estates and equestrian properties north of Seattle. Slower pace; value vs. eastside.',
+    },
+  ],
+
+  // ── Property type breakdown ───────────────────────────────────────────────
+  propertyTypes: [
+    { type: 'Single-Family',       share: 72, medianPrice: 5480000, dom: 44, saleToList: 96.6 },
+    { type: 'Condo / Penthouse',   share: 18, medianPrice: 3950000, dom: 52, saleToList: 97.1 },
+    { type: 'Waterfront',          share: 14, medianPrice: 8200000, dom: 72, saleToList: 94.8 },
+    { type: 'New Construction',    share: 11, medianPrice: 5100000, dom: 28, saleToList: 98.4 },
+    { type: 'Teardown / Land',     share:  5, medianPrice: 3200000, dom: 88, saleToList: 93.5 },
+  ],
+
+  sources: 'NWMLS luxury tier (King County $3M+) · Redfin/Zillow Luxury Index · Compass Pacific NW · Sotheby\'s International Realty market report · Mock data modeled on Q2 2026 luxury market conditions',
+};
+
 // ── All Data Master List ─────────────────────────────────────────────────────
 const ALL_METRICS = {
   ...MARKETS,
