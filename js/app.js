@@ -522,6 +522,7 @@ function renderLuxury() {
     { label: 'Price Reductions',   value: `${h.priceReductions}%`,      sub: 'of active listings', cls: '' },
     { label: 'Closed Sales',       value: h.closedSales.toString(),      sub: 'May 2026', cls: '' },
     { label: 'New Listings',       value: h.newListings.toString(),      sub: 'May 2026', cls: '' },
+    { label: 'Pending Listings',   value: h.pendingListings.toString(),  sub: `${h.pendingRatio}% of active`, cls: '' },
   ];
   hero.innerHTML = heroStats.map(s => `
     <div class="luxury-hero-stat">
@@ -538,6 +539,7 @@ function renderLuxury() {
   trendChartRow.appendChild(mkChartCard('Median Sale Price', 'lux-price-chart'));
   trendChartRow.appendChild(mkChartCard('Closed Sales & Days on Market', 'lux-sales-chart'));
   el.appendChild(trendChartRow);
+  el.appendChild(mkChartCard('Listings Going Pending — Monthly Count &amp; Pending-to-Active Ratio (%)', 'lux-pending-chart', 200));
 
   // ── Monthly trend table ──
   const trendWrap = document.createElement('div');
@@ -546,7 +548,7 @@ function renderLuxury() {
   trendWrap.innerHTML = `<table class="data-table">
     <thead>
       <tr>
-        <th>Month</th><th>Median Price</th><th>Closed Sales</th><th>Avg DOM</th>
+        <th>Month</th><th>Median Price</th><th>Closed Sales</th><th>Pending</th><th>Avg DOM</th>
         <th>Sale/List %</th><th>Inventory</th><th>Price Reductions</th>
       </tr>
     </thead>
@@ -555,14 +557,17 @@ function renderLuxury() {
         const prev = arr[i + 1];
         const pc = prev ? (row.medianPrice > prev.medianPrice ? 'up' : row.medianPrice < prev.medianPrice ? 'down' : '') : '';
         const sc = prev ? (row.closedSales > prev.closedSales ? 'up' : row.closedSales < prev.closedSales ? 'down' : '') : '';
+        const pg = prev ? (row.pending > prev.pending ? 'up' : row.pending < prev.pending ? 'down' : '') : '';
         const dc = prev ? (row.dom < prev.dom ? 'up' : row.dom > prev.dom ? 'down' : '') : '';
         const s2 = prev ? (row.saleToList > prev.saleToList ? 'up' : row.saleToList < prev.saleToList ? 'down' : '') : '';
         const ic = prev ? (row.inventory < prev.inventory ? 'up' : row.inventory > prev.inventory ? 'down' : '') : '';
         const rc = prev ? (row.priceReductions < prev.priceReductions ? 'up' : row.priceReductions > prev.priceReductions ? 'down' : '') : '';
+        const pendRatio = ((row.pending / row.inventory) * 100).toFixed(1);
         return `<tr>
           <td>${row.month}</td>
           <td class="${pc}">${fmtM(row.medianPrice)}</td>
           <td class="${sc}">${row.closedSales}</td>
+          <td class="${pg}">${row.pending} <span style="color:var(--text-muted);font-size:0.75em">(${pendRatio}%)</span></td>
           <td class="${dc}">${row.dom}</td>
           <td class="${s2}">${row.saleToList.toFixed(1)}%</td>
           <td class="${ic}">${row.inventory}</td>
@@ -790,6 +795,62 @@ function renderLuxury() {
           scales: {
             x: { ...scaleBase, ticks: { ...scaleBase.ticks, callback: v => `$${v}M` } },
             y: scaleNoVGrid,
+          },
+        },
+      });
+    }
+
+    // Chart 3b — Pending listings (teal bars) + pending-to-active ratio (amber line)
+    const pendEl = document.getElementById('lux-pending-chart');
+    if (pendEl) {
+      destroyChart('lux-pending-chart');
+      chartRegistry['lux-pending-chart'] = new Chart(pendEl.getContext('2d'), {
+        data: {
+          labels: months.map(m => m.month),
+          datasets: [
+            {
+              type: 'bar', label: 'Listings Gone Pending',
+              data: months.map(m => m.pending),
+              backgroundColor: C_TEAL + 'cc', borderWidth: 0, borderRadius: 5, yAxisID: 'yL',
+            },
+            {
+              type: 'line', label: 'Pending / Active %',
+              data: months.map(m => +((m.pending / m.inventory) * 100).toFixed(1)),
+              borderColor: C_AMBER, borderWidth: 2.5,
+              pointRadius: 3, pointBackgroundColor: '#1a1d27', pointBorderColor: C_AMBER, pointBorderWidth: 2,
+              tension: 0.4, fill: false, yAxisID: 'yR',
+            },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          layout: { padding: { top: 8, right: 8 } },
+          plugins: {
+            legend: {
+              display: true, position: 'top', align: 'end',
+              labels: { color: tickColor, font: { size: 10 }, boxWidth: 10, boxHeight: 10, padding: 12, usePointStyle: true },
+            },
+            tooltip: { ...tt, displayColors: true, mode: 'index', intersect: false,
+              callbacks: {
+                label: c => c.datasetIndex === 0
+                  ? ` ${c.parsed.y} pending`
+                  : ` ${c.parsed.y}% of active`,
+              },
+            },
+          },
+          scales: {
+            x: scaleNoVGrid,
+            yL: {
+              type: 'linear', position: 'left', ...scaleBase,
+              ticks: { ...scaleBase.ticks, color: C_TEAL },
+              title: { display: true, text: 'Pending', color: C_TEAL, font: { size: 9 } },
+            },
+            yR: {
+              type: 'linear', position: 'right',
+              ticks: { color: C_AMBER, font: tickFont, padding: 6, callback: v => `${v}%` },
+              grid: { drawOnChartArea: false }, border: { display: false },
+              title: { display: true, text: 'Pend/Active', color: C_AMBER, font: { size: 9 } },
+            },
           },
         },
       });
