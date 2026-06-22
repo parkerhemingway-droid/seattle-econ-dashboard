@@ -1307,6 +1307,10 @@ document.getElementById('zip-go-btn').addEventListener('click', () => {
 document.getElementById('zip-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') navigateZip(e.target.value);
 });
+// Auto-navigate when exactly 5 digits are typed
+document.getElementById('zip-input').addEventListener('input', e => {
+  if (/^\d{5}$/.test(e.target.value)) navigateZip(e.target.value);
+});
 
 // Restore saved Databricks config into sidebar inputs
 AI.restoreInputs();
