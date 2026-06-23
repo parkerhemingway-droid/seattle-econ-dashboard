@@ -113,6 +113,7 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
   font-size: 0.8rem;
 }
 #save-key-btn:hover { opacity: 0.85; }
+#db-data-status { min-height: 18px; }
 
 /* ── Main Content ── */
 #main-content {

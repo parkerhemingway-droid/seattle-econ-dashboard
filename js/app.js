@@ -2033,6 +2033,9 @@ document.getElementById('save-key-btn').addEventListener('click', async () => {
     return;
   }
 
+  const dataEndpoint = (document.getElementById('db-data-endpoint-input')?.value || '').trim();
+  DatabricksData.saveDataEndpoint(dataEndpoint);
+
   AI.setConfig({ workspace, endpoint, token });
   document.getElementById('api-key-input').value = '';
   status.textContent = 'Testing connection…';
@@ -2075,6 +2078,7 @@ document.getElementById('zip-input').addEventListener('input', e => {
 
 // Restore saved Databricks config into sidebar inputs
 AI.restoreInputs();
+DatabricksData.restoreInput();
 
 // Single delegated listener for all card clicks → opens modal
 document.addEventListener('click', e => {
@@ -2094,6 +2098,22 @@ document.addEventListener('click', e => {
   openChartExpand(canvas.id, titleEl ? titleEl.textContent : '');
 });
 
-// Handle hash navigation on load
-const hash = window.location.hash.replace('#', '') || 'today';
-navigate(RENDERERS[hash] ? hash : 'today');
+// Async init — fetch live data from Databricks before first render
+(async () => {
+  const hash = window.location.hash.replace('#', '') || 'today';
+
+  if (DatabricksData.isConfigured()) {
+    DatabricksData.setStatus('loading');
+    const liveData = await DatabricksData.fetchAll();
+    if (liveData) {
+      DatabricksData.merge(liveData);
+      DatabricksData.setStatus('live', liveData.today || '');
+    } else {
+      DatabricksData.setStatus('error', 'endpoint unreachable');
+    }
+  } else {
+    DatabricksData.setStatus('static');
+  }
+
+  navigate(RENDERERS[hash] ? hash : 'today');
+})();
