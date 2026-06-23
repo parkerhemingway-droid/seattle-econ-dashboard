@@ -22,10 +22,18 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Update TODAY date in data.js
+        run: |
+          TODAY=$(date -u +%Y-%m-%d)
+          sed -i "s/const TODAY = '[0-9-]*';/const TODAY = '${TODAY}';/" js/data.js
+          echo "TODAY set to ${TODAY}"
+
       - name: Fetch FRED data and patch data.js
+        if: ${{ secrets.FRED_API_KEY != '' }}
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: node scripts/update-data.js
+        continue-on-error: true
 
       - name: Commit updated data if changed
         run: |
