@@ -29,7 +29,6 @@ jobs:
           echo "TODAY set to ${TODAY}"
 
       - name: Fetch FRED data and patch data.js
-        if: ${{ secrets.FRED_API_KEY != '' }}
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: node scripts/update-data.js
