@@ -61,10 +61,14 @@ function exportCsv(metric) {
     [metric.date, metric.value, metric.unit, metric.periodChange, metric.yoyChange],
   ];
   const blob = new Blob([rows.map(r => r.join(',')).join('\n')], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = url;
   a.download = `${metric.id}_${metric.date}.csv`;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ── Metric Card ──────────────────────────────────────────────────────────────
