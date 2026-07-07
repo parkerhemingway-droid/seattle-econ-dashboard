@@ -924,24 +924,23 @@ const MIGRATION_DATA = {
 const LUXURY_DATA = {
   // ── MSA-wide headline metrics ─────────────────────────────────────────────
   headline: {
-    medianPrice:      5250000,
-    avgPrice:         7840000,
-    medianDOM:        42,
-    saleToList:       96.8,
-    priceReductions:  34,
-    activeInventory:  312,
-    newListings:      48,
-    closedSales:      29,
-    pendingListings:  23,
-    pendingRatio:     7.4,
-    absorptionMonths: 10.8,
+    medianPrice:      5310000,
+    avgPrice:         7930000,
+    medianDOM:        40,
+    saleToList:       97.0,
+    priceReductions:  33,
+    activeInventory:  308,
+    newListings:      50,
+    closedSales:      31,
+    pendingListings:  25,
+    pendingRatio:     8.1,
+    absorptionMonths: 9.9,
     yoyPricePct:      +2.1,
-    date: '2026-06-01',
+    date: '2026-07-01',
   },
 
-  // ── Monthly trend (Jun 2025 – May 2026) ──────────────────────────────────
+  // ── Monthly trend (Jul 2025 – Jun 2026) ──────────────────────────────────
   monthly: [
-    { month: 'Jun 25', medianPrice: 4950000, closedSales: 31, pending: 24, dom: 38, saleToList: 97.4, inventory: 278, priceReductions: 29 },
     { month: 'Jul 25', medianPrice: 5100000, closedSales: 34, pending: 28, dom: 35, saleToList: 97.8, inventory: 265, priceReductions: 27 },
     { month: 'Aug 25', medianPrice: 5350000, closedSales: 36, pending: 31, dom: 32, saleToList: 98.1, inventory: 248, priceReductions: 25 },
     { month: 'Sep 25', medianPrice: 5200000, closedSales: 28, pending: 22, dom: 44, saleToList: 96.9, inventory: 290, priceReductions: 31 },
@@ -953,6 +952,7 @@ const LUXURY_DATA = {
     { month: 'Mar 26', medianPrice: 5180000, closedSales: 27, pending: 22, dom: 46, saleToList: 96.9, inventory: 294, priceReductions: 33 },
     { month: 'Apr 26', medianPrice: 5290000, closedSales: 31, pending: 26, dom: 43, saleToList: 97.1, inventory: 308, priceReductions: 34 },
     { month: 'May 26', medianPrice: 5250000, closedSales: 29, pending: 23, dom: 42, saleToList: 96.8, inventory: 312, priceReductions: 34 },
+    { month: 'Jun 26', medianPrice: 5310000, closedSales: 31, pending: 25, dom: 40, saleToList: 97.0, inventory: 308, priceReductions: 33 },
   ],
 
   // ── Price tier breakdowns ─────────────────────────────────────────────────
@@ -1042,7 +1042,7 @@ const LUXURY_DATA = {
 
   sources: 'NWMLS luxury tier (King County $3M+) · Redfin/Zillow Luxury Index · Compass Pacific NW · Sotheby\'s International Realty market report · Mock data modeled on Q2 2026 luxury market conditions',
 
-  // ── 12-month price & activity forecast (Jun 2026 – May 2027) ─────────────
+  // ── 12-month price & activity forecast (Jul 2026 – Jun 2027) ─────────────
   // Drivers: Fed holding rates 4.25–4.5%, tech sector stable, limited $3M+ supply,
   // seasonality (peak Jul–Aug, trough Nov–Jan), mild YoY appreciation anchored by
   // inventory scarcity in Medina/Mercer Island and Bellevue West submarkets.
@@ -1050,7 +1050,6 @@ const LUXURY_DATA = {
   // Zillow luxury tier: +2.1% · Redfin NW luxury: +2.8% · CoreLogic premium: +3.2% · This model: +3.5%
   // Supply-scarcity premium adds ~0.5–1% above AVM consensus; AVMs underweight illiquid luxury comps.
   forecast: [
-    { month: 'Jun 26', medianPrice: 5310000, closedSales: 31, pending: 25, inventory: 308, dom: 40, priceReductions: 33, note: 'Seasonal peak approaching' },
     { month: 'Jul 26', medianPrice: 5390000, closedSales: 35, pending: 29, inventory: 290, dom: 36, priceReductions: 30, note: 'Peak summer demand' },
     { month: 'Aug 26', medianPrice: 5420000, closedSales: 37, pending: 30, inventory: 272, dom: 33, priceReductions: 27, note: 'Peak summer demand' },
     { month: 'Sep 26', medianPrice: 5310000, closedSales: 29, pending: 23, inventory: 298, dom: 42, priceReductions: 32, note: 'Post-summer softening' },
@@ -1061,7 +1060,8 @@ const LUXURY_DATA = {
     { month: 'Feb 27', medianPrice: 5120000, closedSales: 22, pending: 18, inventory: 274, dom: 50, priceReductions: 36, note: 'Spring demand builds' },
     { month: 'Mar 27', medianPrice: 5270000, closedSales: 28, pending: 23, inventory: 295, dom: 44, priceReductions: 32, note: 'Spring market opens' },
     { month: 'Apr 27', medianPrice: 5360000, closedSales: 33, pending: 27, inventory: 310, dom: 41, priceReductions: 31, note: 'Strong spring' },
-    { month: 'May 27', medianPrice: 5435000, closedSales: 31, pending: 25, inventory: 316, dom: 40, priceReductions: 31, note: 'YoY: +3.5% price, +6.9% sales' },
+    { month: 'May 27', medianPrice: 5435000, closedSales: 31, pending: 25, inventory: 316, dom: 40, priceReductions: 31, note: 'Strong spring' },
+    { month: 'Jun 27', medianPrice: 5500000, closedSales: 32, pending: 26, inventory: 305, dom: 39, priceReductions: 32, note: 'YoY: +3.6% price, +3.2% sales' },
   ],
   avmComparison: [
     { source: 'Zillow Luxury Tier',    forecast: +2.1, methodology: 'Repeat-sales AVM, hedonic regression', coverage: 'Thin comps above $5M' },
