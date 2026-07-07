@@ -101,21 +101,9 @@ function buildMetricCard(metric) {
     </div>
   `;
 
-  // Modal wired via delegated listener below (see initClickDelegation)
-
-  // Wire flag button
-  card.querySelector('.flag-btn').addEventListener('click', e => {
-    const id = e.currentTarget.dataset.id;
-    if (flagged.has(id)) { flagged.delete(id); } else { flagged.add(id); }
-    saveFlagged();
-    // Re-render active section
-    navigate(currentSection);
-  });
-
-  // Wire CSV button
-  card.querySelector('.csv-btn').addEventListener('click', e => {
-    exportCsv(ALL_METRICS[e.currentTarget.dataset.id]);
-  });
+  // Card click, flag button, and CSV button are all handled by delegated
+  // listeners on `document` (see below). Per-card addEventListener would be
+  // destroyed whenever a section renderer reassigns an ancestor's innerHTML.
 
   return card;
 }
@@ -2083,6 +2071,25 @@ document.getElementById('zip-input').addEventListener('input', e => {
 // Restore saved Databricks config into sidebar inputs
 AI.restoreInputs();
 DatabricksData.restoreInput();
+
+// Delegated listener for flag buttons → toggle flag & re-render
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.flag-btn');
+  if (!btn) return;
+  e.stopPropagation();
+  const id = btn.dataset.id;
+  if (flagged.has(id)) { flagged.delete(id); } else { flagged.add(id); }
+  saveFlagged();
+  navigate(currentSection);
+});
+
+// Delegated listener for CSV buttons → export
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.csv-btn');
+  if (!btn) return;
+  e.stopPropagation();
+  exportCsv(ALL_METRICS[btn.dataset.id]);
+});
 
 // Single delegated listener for all card clicks → opens modal
 document.addEventListener('click', e => {
