@@ -823,6 +823,58 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
 .luxury-type-bar { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
 .luxury-type-bar-fill { height: 100%; background: #c9a84c; border-radius: 2px; }
 
+/* New Construction Starts ($3M+) — mirrors submarket grid/card */
+.luxury-nc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.luxury-nc-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--card-radius);
+  padding: 16px 18px;
+}
+.luxury-nc-card .luxury-sub-stats { grid-template-columns: repeat(4, 1fr); }
+
+/* Expandable-card affordance for all luxury data tiles (click → detail modal) */
+.luxury-tier-card,
+.luxury-sub-card,
+.luxury-type-card,
+.luxury-nc-card {
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.05s;
+}
+.luxury-tier-card:hover,
+.luxury-sub-card:hover,
+.luxury-type-card:hover,
+.luxury-nc-card:hover { border-color: var(--accent); }
+.luxury-tier-card:active,
+.luxury-sub-card:active,
+.luxury-type-card:active,
+.luxury-nc-card:active { transform: scale(0.996); }
+
+/* Data-quality badge */
+.luxury-dq-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  margin: 2px 0 16px;
+  cursor: help;
+}
+.luxury-dq-badge .luxury-dq-icon { font-weight: 800; }
+.luxury-dq-badge .luxury-dq-hint { font-weight: 400; opacity: 0.6; font-size: 0.68rem; }
+.luxury-dq-badge.pass { color: var(--green); background: rgba(52,211,153,0.08); border-color: rgba(52,211,153,0.35); }
+.luxury-dq-badge.warn { color: var(--yellow); background: rgba(234,179,8,0.08); border-color: rgba(234,179,8,0.35); }
+.luxury-dq-badge.fail { color: var(--red); background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.4); }
+
 .luxury-source { font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; font-style: italic; }
 .luxury-forecast-assumptions { background: #1f2335; border: 1px solid rgba(218,218,218,0.1); border-radius: 8px; padding: 14px 16px; margin: 14px 0 0; font-size: 0.75rem; line-height: 1.7; }
 .luxury-forecast-assume-title { font-size: 0.68rem; font-weight: 600; color: #BCC8CE; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }

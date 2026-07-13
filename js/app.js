@@ -624,6 +624,80 @@ function renderHousing() {
   return el;
 }
 
+// ── Data Quality: New Construction Starts ($3M+) ─────────────────────────────
+// Validates internal consistency & plausibility of the newConstruction numbers.
+// Returns { passed, warnings, failed, checks:[{name,status,detail}] }.
+const EASTSIDE_ZIPS = new Set(['98004','98005','98006','98007','98008','98033','98034','98039','98040','98052','98053','98074','98075','98027','98029']);
+const SEATTLE_ZIPS  = new Set(['98101','98102','98103','98104','98105','98106','98107','98108','98109','98112','98115','98116','98117','98118','98119','98121','98122','98125','98126','98136','98144','98177','98199']);
+
+function validateNewConstruction(nc) {
+  const checks = [];
+  const add = (name, status, detail) => checks.push({ name, status, detail });
+  const MIN = 3000000;
+
+  if (!nc || !Array.isArray(nc.areas) || !nc.areas.length) {
+    add('Data present', 'fail', 'newConstruction.areas is missing or empty');
+    return { passed: 0, warnings: 0, failed: 1, checks };
+  }
+
+  // 1. Every area avg & median value >= $3M (the whole premise)
+  const below = nc.areas.filter(a => a.avgValue < MIN || a.medianValue < MIN);
+  below.length
+    ? add('$3M+ threshold', 'fail', `${below.length} area(s) below $3M: ${below.map(a => a.name).join(', ')}`)
+    : add('$3M+ threshold', 'pass', `all ${nc.areas.length} areas have avg & median ≥ $3M`);
+
+  // 2. median <= avg (luxury tails skew avg up; reversal = data error)
+  const rev = nc.areas.filter(a => a.medianValue > a.avgValue);
+  rev.length
+    ? add('Median ≤ Avg', 'fail', `median exceeds avg in: ${rev.map(a => a.name).join(', ')}`)
+    : add('Median ≤ Avg', 'pass', 'median ≤ average value in every area');
+
+  // 3. Sum of area starts ≈ headline ttmStarts (±1%)
+  const sumStarts = nc.areas.reduce((s, a) => s + a.ttmStarts, 0);
+  const drift = nc.ttmStarts ? Math.abs(sumStarts - nc.ttmStarts) / nc.ttmStarts : 1;
+  drift <= 0.01
+    ? add('Area starts sum to headline', 'pass', `Σ areas = ${sumStarts} ≈ headline ${nc.ttmStarts}`)
+    : add('Area starts sum to headline', 'warn', `Σ areas = ${sumStarts} vs headline ${nc.ttmStarts} (${(drift * 100).toFixed(1)}% drift)`);
+
+  // 4. Each area's monthlyStarts sums to its ttmStarts
+  const badMonthly = nc.areas.filter(a => !Array.isArray(a.monthlyStarts) || a.monthlyStarts.reduce((s, v) => s + v, 0) !== a.ttmStarts);
+  badMonthly.length
+    ? add('Monthly starts reconcile', 'warn', `monthly ≠ ttmStarts in: ${badMonthly.map(a => a.name).join(', ')}`)
+    : add('Monthly starts reconcile', 'pass', 'each area\'s 12-month series sums to its TTM starts');
+
+  // 5. Zips valid 5-digit numeric
+  const badZip = nc.areas.filter(a => !Array.isArray(a.zips) || !a.zips.length || a.zips.some(z => !/^\d{5}$/.test(z)));
+  badZip.length
+    ? add('Zip format', 'fail', `invalid zip(s) in: ${badZip.map(a => a.name).join(', ')}`)
+    : add('Zip format', 'pass', 'all zips are valid 5-digit codes');
+
+  // 6. region ∈ {Eastside, Seattle}
+  const badRegion = nc.areas.filter(a => a.region !== 'Eastside' && a.region !== 'Seattle');
+  badRegion.length
+    ? add('Region domain', 'fail', `unexpected region in: ${badRegion.map(a => a.name).join(', ')}`)
+    : add('Region domain', 'pass', 'every area is Eastside or Seattle');
+
+  // 7. YoY within plausible band (-50%..+100%)
+  const wildYoy = nc.areas.filter(a => a.yoyStartsPct < -50 || a.yoyStartsPct > 100);
+  wildYoy.length
+    ? add('YoY plausibility', 'warn', `implausible YoY in: ${wildYoy.map(a => a.name).join(', ')}`)
+    : add('YoY plausibility', 'pass', 'all area YoY within −50%…+100%');
+
+  // 8. Region ↔ zip geography cross-check
+  const geoMismatch = nc.areas.filter(a => {
+    const set = a.region === 'Eastside' ? EASTSIDE_ZIPS : SEATTLE_ZIPS;
+    return a.zips.every(z => !set.has(z)); // none of its zips match its declared region
+  });
+  geoMismatch.length
+    ? add('Region ↔ zip geography', 'warn', `zips don't match region for: ${geoMismatch.map(a => a.name).join(', ')}`)
+    : add('Region ↔ zip geography', 'pass', 'each area\'s zips match its declared region');
+
+  const passed   = checks.filter(c => c.status === 'pass').length;
+  const warnings = checks.filter(c => c.status === 'warn').length;
+  const failed   = checks.filter(c => c.status === 'fail').length;
+  return { passed, warnings, failed, checks };
+}
+
 // ── Section: Luxury Market ───────────────────────────────────────────────────
 
 function renderLuxury() {
@@ -716,10 +790,10 @@ function renderLuxury() {
   el.appendChild(mkTitle('Price Tier Breakdown'));
   const tierGrid = document.createElement('div');
   tierGrid.className = 'luxury-tier-grid';
-  d.tiers.forEach(t => {
+  d.tiers.forEach((t, i) => {
     const cls = t.yoyPricePct > 0 ? 'up' : 'down';
     tierGrid.innerHTML += `
-      <div class="luxury-tier-card">
+      <div class="luxury-tier-card" data-tile="tier" data-tile-idx="${i}">
         <div class="luxury-tier-label">${t.label}</div>
         <div class="luxury-tier-price">${fmtM(t.medianPrice)}<span class="luxury-tier-change ${cls}">${sign(t.yoyPricePct)}% YoY</span></div>
         <div class="luxury-tier-stats">
@@ -738,11 +812,11 @@ function renderLuxury() {
   el.appendChild(mkTitle('Submarket Breakdown'));
   const subGrid = document.createElement('div');
   subGrid.className = 'luxury-sub-grid';
-  d.submarkets.forEach(s => {
+  d.submarkets.forEach((s, i) => {
     const cls = s.yoyPricePct > 0 ? 'up' : 'down';
     const absorb = s.inventory && s.closedSales ? (s.inventory / s.closedSales).toFixed(1) : '—';
     subGrid.innerHTML += `
-      <div class="luxury-sub-card">
+      <div class="luxury-sub-card" data-tile="sub" data-tile-idx="${i}">
         <div class="luxury-sub-header">
           <div>
             <div class="luxury-sub-name">${s.name}</div>
@@ -771,9 +845,9 @@ function renderLuxury() {
   el.appendChild(mkTitle('By Property Type'));
   const typeGrid = document.createElement('div');
   typeGrid.className = 'luxury-type-grid';
-  d.propertyTypes.forEach(t => {
+  d.propertyTypes.forEach((t, i) => {
     typeGrid.innerHTML += `
-      <div class="luxury-type-card">
+      <div class="luxury-type-card" data-tile="type" data-tile-idx="${i}">
         <div class="luxury-type-name">${t.type}</div>
         <div class="luxury-type-share">${t.share}% of sales</div>
         <div class="luxury-type-price">${fmtM(t.medianPrice)}</div>
@@ -785,6 +859,79 @@ function renderLuxury() {
       </div>`;
   });
   el.appendChild(typeGrid);
+
+  // ── New Construction Starts — $3M+ (Eastside & Seattle) ──
+  const nc = d.newConstruction;
+  if (nc && nc.areas && nc.areas.length) {
+    el.appendChild(mkTitle('New Construction Starts — $3M+ (Eastside & Seattle)'));
+
+    // Data-quality badge (validate at render, cache on the object)
+    const dq = validateNewConstruction(nc);
+    nc.dq = dq;
+    const dqStatus = dq.failed ? 'fail' : dq.warnings ? 'warn' : 'pass';
+    const dqIcon = dqStatus === 'pass' ? '✓' : dqStatus === 'warn' ? '⚠' : '✕';
+    const dqText = dqStatus === 'pass'
+      ? `Data quality: ${dq.passed} checks passed`
+      : `Data quality: ${dq.passed} passed · ${dq.warnings} warning${dq.warnings === 1 ? '' : 's'} · ${dq.failed} failed`;
+    const dqTitle = dq.checks.map(c => `${c.status === 'pass' ? '✓' : c.status === 'warn' ? '⚠' : '✕'} ${c.name} — ${c.detail}`).join('\n');
+    const dqBadge = document.createElement('div');
+    dqBadge.className = `luxury-dq-badge ${dqStatus}`;
+    dqBadge.title = dqTitle;
+    dqBadge.innerHTML = `<span class="luxury-dq-icon">${dqIcon}</span> ${dqText} <span class="luxury-dq-hint">(hover for detail)</span>`;
+    el.appendChild(dqBadge);
+
+    // Headline strip for the $3M+ new-construction segment
+    const eastside = nc.areas.filter(a => a.region === 'Eastside').reduce((s, a) => s + a.ttmStarts, 0);
+    const seattle  = nc.areas.filter(a => a.region === 'Seattle').reduce((s, a) => s + a.ttmStarts, 0);
+    const ncHero = document.createElement('div');
+    ncHero.className = 'luxury-hero';
+    ncHero.innerHTML = [
+      { label: 'TTM $3M+ Starts',   value: nc.ttmStarts.toString(),        sub: `YoY ${sign(nc.yoyStartsPct)}%`, cls: nc.yoyStartsPct >= 0 ? 'up' : 'down' },
+      { label: 'Eastside Starts',   value: eastside.toString(),            sub: 'trailing 12 mo', cls: '' },
+      { label: 'Seattle Starts',    value: seattle.toString(),             sub: 'trailing 12 mo', cls: '' },
+      { label: 'Avg Start Value',   value: fmtM(nc.avgStartValue),         sub: 'declared permit valuation', cls: '' },
+    ].map(s => `
+      <div class="luxury-hero-stat">
+        <div class="luxury-hero-label">${s.label}</div>
+        <div class="luxury-hero-value ${s.cls}">${s.value}</div>
+        <div class="luxury-hero-sub">${s.sub}</div>
+      </div>`).join('');
+    el.appendChild(ncHero);
+
+    // Per-area cards
+    const ncGrid = document.createElement('div');
+    ncGrid.className = 'luxury-nc-grid';
+    nc.areas.forEach((a, i) => {
+      const cls = a.yoyStartsPct > 0 ? 'up' : a.yoyStartsPct < 0 ? 'down' : '';
+      ncGrid.innerHTML += `
+        <div class="luxury-nc-card" data-tile="nc" data-tile-idx="${i}">
+          <div class="luxury-sub-header">
+            <div>
+              <div class="luxury-sub-name">${a.name}</div>
+              <div class="luxury-sub-county">${a.region} · ${a.county} County · ${a.zips.join(', ')}</div>
+            </div>
+            <div class="luxury-sub-price">
+              ${a.ttmStarts} <span style="font-size:.62rem;color:var(--text-muted)">starts</span>
+              <span class="${cls}">${sign(a.yoyStartsPct)}%</span>
+            </div>
+          </div>
+          <div class="luxury-sub-stats">
+            <div class="luxury-sub-stat"><div class="luxury-sub-stat-val">${fmtM(a.avgValue)}</div><div class="luxury-sub-stat-lbl">Avg Value</div></div>
+            <div class="luxury-sub-stat"><div class="luxury-sub-stat-val">${fmtM(a.medianValue)}</div><div class="luxury-sub-stat-lbl">Median</div></div>
+            <div class="luxury-sub-stat"><div class="luxury-sub-stat-val">${(a.medianSqft / 1000).toFixed(1)}k</div><div class="luxury-sub-stat-lbl">Med SqFt</div></div>
+            <div class="luxury-sub-stat"><div class="luxury-sub-stat-val">${a.permitToStartMonths}mo</div><div class="luxury-sub-stat-lbl">Permit→Start</div></div>
+          </div>
+          <div class="luxury-sub-notes">${a.notes}</div>
+        </div>`;
+    });
+    el.appendChild(ncGrid);
+    el.appendChild(mkChartCard('$3M+ New Construction Starts by Area (blue = Eastside, orange = Seattle)', 'lux-nc-chart', 260));
+
+    const ncSrc = document.createElement('div');
+    ncSrc.className = 'luxury-source';
+    ncSrc.textContent = `Source: ${nc.sources}`;
+    el.appendChild(ncSrc);
+  }
 
   // ── Forecast ──
   el.appendChild(mkTitle('12-Month Price & Activity Forecast — Jun 2026 – May 2027'));
@@ -1042,6 +1189,37 @@ function renderLuxury() {
           },
           scales: {
             x: { ...scaleBase, ticks: { ...scaleBase.ticks, callback: v => `$${v}M` } },
+            y: scaleNoVGrid,
+          },
+        },
+      });
+    }
+
+    // ── New Construction starts by area (bar) ────────────────────────────────
+    const ncEl = document.getElementById('lux-nc-chart');
+    if (ncEl && d.newConstruction && d.newConstruction.areas) {
+      destroyChart('lux-nc-chart');
+      const sortedNc = [...d.newConstruction.areas].sort((a, b) => b.ttmStarts - a.ttmStarts);
+      chartRegistry['lux-nc-chart'] = new Chart(ncEl.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: sortedNc.map(a => a.name),
+          datasets: [{
+            label: 'TTM $3M+ Starts',
+            data: sortedNc.map(a => a.ttmStarts),
+            backgroundColor: sortedNc.map(a => (a.region === 'Eastside' ? C_BLUE : C_ORANGE) + 'cc'),
+            borderWidth: 0, borderRadius: 5,
+          }],
+        },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: false,
+          layout: { padding: { top: 4, right: 20 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: { ...tt, callbacks: { label: c => ` ${c.parsed.x} starts` } },
+          },
+          scales: {
+            x: { ...scaleBase, ticks: { ...scaleBase.ticks, precision: 0 } },
             y: scaleNoVGrid,
           },
         },
@@ -1750,6 +1928,172 @@ function openMetricModal(metricId) {
   }
 }
 
+// Generic tile-expand modal — reuses the #metric-modal-overlay DOM for any
+// luxury card (tier / submarket / property-type / new-construction). Not bound
+// to ALL_METRICS. payload = { title, meta, stats:[{label,value,cls}],
+// series?:{labels,data,label,type}, source }.
+function openTileModal(payload) {
+  const overlay = document.getElementById('metric-modal-overlay');
+  if (!overlay || !payload) return;
+
+  document.getElementById('modal-title').textContent = payload.title || '';
+  document.getElementById('modal-meta').textContent  = payload.meta || '';
+
+  document.getElementById('modal-stats').innerHTML = (payload.stats || []).map(s => `
+    <div class="modal-stat">
+      <div class="modal-stat-label">${s.label}</div>
+      <div class="modal-stat-value ${s.cls || ''}">${s.value}</div>
+    </div>`).join('');
+
+  // Tiles have no AI signal; clear the signal line.
+  const signalEl = document.getElementById('modal-signal');
+  signalEl.textContent = '';
+  signalEl.classList.remove('loading');
+
+  document.getElementById('modal-source').textContent = payload.source ? `Source: ${payload.source}` : '';
+
+  // Remove any leftover monthly table from a prior metric-modal open.
+  const existingTable = document.getElementById('modal-monthly-table');
+  if (existingTable) existingTable.remove();
+
+  overlay.classList.add('open');
+
+  // Chart
+  destroyChart('modal-chart');
+  const canvas = document.getElementById('modal-chart');
+  const series = payload.series;
+  if (canvas && series && series.data && series.data.length) {
+    const color = '#60a5fa';
+    chartRegistry['modal-chart'] = new Chart(canvas, {
+      type: series.type || 'line',
+      data: {
+        labels: series.labels,
+        datasets: [{
+          label: series.label || '',
+          data: series.data,
+          borderColor: color,
+          backgroundColor: series.type === 'bar'
+            ? color + 'cc'
+            : ctx => {
+                const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, canvas.offsetHeight || 160);
+                g.addColorStop(0, color + '33');
+                g.addColorStop(1, color + '00');
+                return g;
+              },
+          borderWidth: series.type === 'bar' ? 0 : 2,
+          borderRadius: series.type === 'bar' ? 5 : 0,
+          pointRadius: series.type === 'bar' ? 0 : 0,
+          pointHoverRadius: 4,
+          tension: 0.35,
+          fill: series.type !== 'bar',
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: { backgroundColor: '#1a1d27', borderColor: '#2e3250', borderWidth: 1, titleColor: '#e2e8f0', bodyColor: '#8892aa' },
+        },
+        scales: {
+          x: { ticks: { color: '#8892aa', font: { size: 10 }, maxTicksLimit: 12 }, grid: { color: '#2e3250' } },
+          y: { ticks: { color: '#8892aa', font: { size: 10 }, precision: 0 }, grid: { color: '#2e3250' } },
+        },
+      },
+    });
+  }
+}
+
+// Build an openTileModal payload from a clicked luxury card.
+function buildTilePayload(tileType, idx) {
+  const d = LUXURY_DATA;
+  const fmtM = v => v >= 1000000 ? `$${(v / 1000000).toFixed(2)}M` : `$${v.toLocaleString()}`;
+  const sign = v => v > 0 ? `+${v}` : `${v}`;
+
+  if (tileType === 'tier') {
+    const t = d.tiers[idx];
+    if (!t) return null;
+    return {
+      title: `Luxury Tier — ${t.label}`,
+      meta: `${LUXURY_DATA.headline.date}  ·  King County $3M+`,
+      stats: [
+        { label: 'Median Price', value: fmtM(t.medianPrice) },
+        { label: 'YoY Price', value: `${sign(t.yoyPricePct)}%`, cls: t.yoyPricePct >= 0 ? 'up' : 'down' },
+        { label: 'Active Inventory', value: t.inventory },
+        { label: 'Closed / mo', value: t.closedSales },
+        { label: 'Avg DOM', value: `${t.dom}d` },
+        { label: 'Sale / List', value: `${t.saleToList}%` },
+        { label: 'Price Reductions', value: `${t.priceReductions}%` },
+      ],
+      series: { type: 'bar', labels: ['Inventory', 'Closed/mo'], data: [t.inventory, t.closedSales], label: 'Units' },
+      source: d.sources,
+    };
+  }
+
+  if (tileType === 'sub') {
+    const s = d.submarkets[idx];
+    if (!s) return null;
+    const absorb = s.inventory && s.closedSales ? (s.inventory / s.closedSales).toFixed(1) : '—';
+    return {
+      title: s.name,
+      meta: `${s.county} County · ${s.zips.join(', ')}`,
+      stats: [
+        { label: 'Median Price', value: fmtM(s.medianPrice) },
+        { label: 'Avg Price', value: fmtM(s.avgPrice) },
+        { label: 'YoY Price', value: `${sign(s.yoyPricePct)}%`, cls: s.yoyPricePct >= 0 ? 'up' : 'down' },
+        { label: 'Active Inventory', value: s.inventory },
+        { label: 'Closed / mo', value: s.closedSales },
+        { label: 'Months Supply', value: `${absorb}mo` },
+        { label: 'Avg DOM', value: `${s.dom}d` },
+        { label: 'Sale / List', value: `${s.saleToList}%` },
+        { label: 'Price Reductions', value: `${s.priceReductions}%` },
+      ],
+      series: { type: 'bar', labels: ['Median $M', 'Avg $M'], data: [+(s.medianPrice / 1e6).toFixed(2), +(s.avgPrice / 1e6).toFixed(2)], label: '$M' },
+      source: d.sources,
+    };
+  }
+
+  if (tileType === 'type') {
+    const t = d.propertyTypes[idx];
+    if (!t) return null;
+    return {
+      title: `Property Type — ${t.type}`,
+      meta: `Greater Seattle $3M+ · ${t.share}% of sales`,
+      stats: [
+        { label: 'Share of Sales', value: `${t.share}%` },
+        { label: 'Median Price', value: fmtM(t.medianPrice) },
+        { label: 'Avg DOM', value: `${t.dom}d` },
+        { label: 'Sale / List', value: `${t.saleToList}%` },
+      ],
+      series: null,
+      source: d.sources,
+    };
+  }
+
+  if (tileType === 'nc') {
+    const nc = d.newConstruction;
+    const a = nc && nc.areas[idx];
+    if (!a) return null;
+    return {
+      title: `New Construction $3M+ — ${a.name}`,
+      meta: `${a.region} · ${a.county} County · ${a.zips.join(', ')}`,
+      stats: [
+        { label: 'TTM Starts', value: a.ttmStarts },
+        { label: 'YoY Starts', value: `${sign(a.yoyStartsPct)}%`, cls: a.yoyStartsPct >= 0 ? 'up' : 'down' },
+        { label: 'Avg Value', value: fmtM(a.avgValue) },
+        { label: 'Median Value', value: fmtM(a.medianValue) },
+        { label: 'Median SqFt', value: a.medianSqft.toLocaleString() },
+        { label: 'Permit → Start', value: `${a.permitToStartMonths}mo` },
+      ],
+      series: { type: 'bar', labels: nc.ncMonths, data: a.monthlyStarts, label: 'Starts' },
+      source: nc.sources,
+    };
+  }
+
+  return null;
+}
+
 // Wire modal close handlers
 document.getElementById('modal-close').addEventListener('click', closeModal);
 document.getElementById('metric-modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
@@ -2107,6 +2451,14 @@ document.addEventListener('click', e => {
   if (!canvas) return;
   const titleEl = card.querySelector('.luxury-chart-title, .migration-chart-title');
   openChartExpand(canvas.id, titleEl ? titleEl.textContent : '');
+});
+
+// Delegated listener for luxury data tiles → generic detail modal
+document.addEventListener('click', e => {
+  const card = e.target.closest('.luxury-tier-card, .luxury-sub-card, .luxury-type-card, .luxury-nc-card');
+  if (!card) return;
+  const payload = buildTilePayload(card.dataset.tile, +card.dataset.tileIdx);
+  if (payload) openTileModal(payload);
 });
 
 // Async init — fetch live data from Databricks before first render

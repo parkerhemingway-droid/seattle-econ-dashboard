@@ -1042,6 +1042,74 @@ const LUXURY_DATA = {
 
   sources: 'NWMLS luxury tier (King County $3M+) · Redfin/Zillow Luxury Index · Compass Pacific NW · Sotheby\'s International Realty market report · Mock data modeled on Q2 2026 luxury market conditions',
 
+  // ── New Construction Starts — $3M+ (Eastside & Seattle) ───────────────────
+  // Trailing-12-month (Jul 2025 – Jun 2026) NEW construction starts valued $3M+.
+  // A "start" = permit issued for new SFR/MF with declared valuation ≥ $3M and
+  // footing/foundation inspection logged. Distinct from the all-tier
+  // PIPELINE_FORECAST — this is the ultra-premium ($3M+) new-build segment only.
+  // Mock data modeled on King County / City of Bellevue / Seattle SDCI permit
+  // valuations. monthlyStarts sum exactly to each area's ttmStarts.
+  newConstruction: {
+    asOf: '2026-07-01',
+    ttmStarts: 168,
+    yoyStartsPct: +11,
+    avgStartValue: 5350000,
+    ncMonths: ['Jul 25','Aug 25','Sep 25','Oct 25','Nov 25','Dec 25','Jan 26','Feb 26','Mar 26','Apr 26','May 26','Jun 26'],
+    areas: [
+      {
+        name: 'Medina / Clyde Hill', region: 'Eastside', county: 'King', zips: ['98039','98004'],
+        ttmStarts: 18, yoyStartsPct: +12, avgValue: 9800000, medianValue: 8500000, medianSqft: 6200,
+        permitToStartMonths: 5,
+        notes: 'Lakefront teardown-and-rebuild estates; the highest per-start valuations in the region. Supply constrained by lot scarcity.',
+        monthlyStarts: [2,1,2,1,2,1,2,1,2,1,2,1],
+      },
+      {
+        name: 'Mercer Island', region: 'Eastside', county: 'King', zips: ['98040'],
+        ttmStarts: 24, yoyStartsPct: +9, avgValue: 6100000, medianValue: 5400000, medianSqft: 5100,
+        permitToStartMonths: 4,
+        notes: 'Steady custom-home rebuilds on legacy island lots. Strong C-suite demand from Amazon and Boeing.',
+        monthlyStarts: [2,2,2,2,2,2,2,2,2,2,2,2],
+      },
+      {
+        name: 'Bellevue (West / Downtown / Bridle Trails)', region: 'Eastside', county: 'King', zips: ['98004','98005'],
+        ttmStarts: 41, yoyStartsPct: +18, avgValue: 5200000, medianValue: 4600000, medianSqft: 4700,
+        permitToStartMonths: 3,
+        notes: 'Highest-volume $3M+ start submarket — mix of luxury spec builds and downtown high-rise penthouse deliveries.',
+        monthlyStarts: [3,3,4,3,4,3,4,3,4,3,4,3],
+      },
+      {
+        name: 'Kirkland / Yarrow Point', region: 'Eastside', county: 'King', zips: ['98033','98004'],
+        ttmStarts: 22, yoyStartsPct: +6, avgValue: 4900000, medianValue: 4300000, medianSqft: 4500,
+        permitToStartMonths: 4,
+        notes: 'Waterfront and ridge-view custom builds. Redmond tech spillover sustaining demand.',
+        monthlyStarts: [2,2,2,2,2,2,2,2,2,2,1,1],
+      },
+      {
+        name: 'Sammamish / Issaquah Highlands', region: 'Eastside', county: 'King', zips: ['98074','98027'],
+        ttmStarts: 34, yoyStartsPct: +24, avgValue: 3900000, medianValue: 3600000, medianSqft: 4900,
+        permitToStartMonths: 2,
+        notes: 'Fastest-growing $3M+ new-build submarket — large-lot production luxury on remaining plateau parcels.',
+        monthlyStarts: [3,3,3,3,3,3,3,3,3,3,2,2],
+      },
+      {
+        name: 'Madison Park / Capitol Hill', region: 'Seattle', county: 'King', zips: ['98112','98102'],
+        ttmStarts: 16, yoyStartsPct: -4, avgValue: 5600000, medianValue: 4900000, medianSqft: 4300,
+        permitToStartMonths: 4,
+        notes: 'In-city luxury infill and Lake Washington waterfront rebuilds. Constrained by SDCI review timelines.',
+        monthlyStarts: [1,1,2,1,2,1,1,2,1,2,1,1],
+      },
+      {
+        name: 'Queen Anne / Magnolia', region: 'Seattle', county: 'King', zips: ['98109','98119'],
+        ttmStarts: 13, yoyStartsPct: +2, avgValue: 4400000, medianValue: 3900000, medianSqft: 3900,
+        permitToStartMonths: 3,
+        notes: 'View-lot custom homes and skinny-lot luxury builds. Thin, architecture-driven pipeline.',
+        monthlyStarts: [1,1,1,1,1,1,1,1,1,1,2,1],
+      },
+    ],
+    sources: 'King County / City of Bellevue / Seattle SDCI permit records (new SFR/MF, declared valuation $3M+) · NWMLS new-construction tier · Mock data modeled on 2026 permit valuations',
+    dq: null, // populated at render by validateNewConstruction()
+  },
+
   // ── 12-month price & activity forecast (Jul 2026 – Jun 2027) ─────────────
   // Drivers: Fed holding rates 4.25–4.5%, tech sector stable, limited $3M+ supply,
   // seasonality (peak Jul–Aug, trough Nov–Jan), mild YoY appreciation anchored by
