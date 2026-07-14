@@ -305,16 +305,33 @@ function patchEastsidePresentation(kingData) {
   html = html.replace(/(id="asof-date">)[^<]*(<)/, (m, a, b) => `${a}${asOf}${b}`);
   html = html.replace(/(id="live-anchor"[^>]*data-updated=")[^"]*(")/, (m, a, b) => `${a}${todayISO}${b}`);
 
-  // Inject the live King County permit total when we have it.
+  // Determine the King County permit total + month. Prefer the value fetched
+  // live this run; otherwise fall back to whatever kingPermits currently holds
+  // in js/data.js (the same figure the Housing tab shows) so the anchor never
+  // renders a blank em-dash.
+  let total = null, monthLabel = null, source = '';
   if (kingData && kingData.total != null && kingData.yyyymm) {
-    const yr = kingData.yyyymm.slice(0, 4);
-    const mo = parseInt(kingData.yyyymm.slice(4, 6), 10);
-    const monthLabel = `${MONTHS[mo - 1]} ${yr}`;
-    html = html.replace(/(id="kc-permits">)[^<]*(<)/, (m, a, b) => `${a}${kingData.total.toLocaleString('en-US')}${b}`);
-    html = html.replace(/(id="kc-month">)[^<]*(<)/,   (m, a, b) => `${a}${monthLabel}${b}`);
-    console.log(`  ✓ Eastside presentation: KC permits ${kingData.total} (${monthLabel}), as of ${asOf}`);
+    total = kingData.total;
+    monthLabel = `${MONTHS[parseInt(kingData.yyyymm.slice(4, 6), 10) - 1]} ${kingData.yyyymm.slice(0, 4)}`;
+    source = 'live';
   } else {
-    console.log(`  ✓ Eastside presentation: as-of date stamped ${asOf} (KC permits unavailable this run)`);
+    try {
+      const dataSrc = fs.readFileSync(DATA_FILE, 'utf8');
+      const m = dataSrc.match(/id: 'kingPermits'[\s\S]*?value:\s*([0-9.]+)[\s\S]*?date:\s*'(\d{4})-(\d{2})-\d{2}'/);
+      if (m) {
+        total = parseInt(m[1], 10);
+        monthLabel = `${MONTHS[parseInt(m[3], 10) - 1]} ${m[2]}`;
+        source = 'data.js fallback';
+      }
+    } catch (_) {}
+  }
+
+  if (total != null) {
+    html = html.replace(/(id="kc-permits">)[^<]*(<)/, (mm, a, b) => `${a}${total.toLocaleString('en-US')}${b}`);
+    html = html.replace(/(id="kc-month">)[^<]*(<)/,   (mm, a, b) => `${a}${monthLabel}${b}`);
+    console.log(`  ✓ Eastside presentation: KC permits ${total} (${monthLabel}, ${source}), as of ${asOf}`);
+  } else {
+    console.log(`  ✓ Eastside presentation: as-of date stamped ${asOf} (KC permits unavailable)`);
   }
 
   fs.writeFileSync(PRESO_FILE, html, 'utf8');
