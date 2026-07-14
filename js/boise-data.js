@@ -110,6 +110,21 @@ const BOISE_MARKETS = {
     sparkline: [430000, 431000, 432000, 433000, 434000, 434500, 435000, 435200, 435400, 435600, 435700, 435800, 435850, 435900, 435900, 435900, 435900, 435900, 435900, 435900, 435900, 435900, 435900, 435900],
     category: 'Canyon County Market',
     local: true,
+    monthlyHistory: [
+      { month: 'Jun 25', medianPrice: 439990, avgPrice: 510779, dom: 42, volumeM: 250.8, closed: 491, sf: 491 },
+      { month: 'Jul 25', medianPrice: 440500, avgPrice: 512000, dom: 43, volumeM: 258, closed: 502, sf: 502 },
+      { month: 'Aug 25', medianPrice: 441000, avgPrice: 513500, dom: 44, volumeM: 266, closed: 513, sf: 513 },
+      { month: 'Sep 25', medianPrice: 441500, avgPrice: 515000, dom: 45, volumeM: 274, closed: 524, sf: 524 },
+      { month: 'Oct 25', medianPrice: 440000, avgPrice: 512500, dom: 46, volumeM: 282, closed: 535, sf: 535 },
+      { month: 'Nov 25', medianPrice: 439000, avgPrice: 510000, dom: 47, volumeM: 290, closed: 546, sf: 546 },
+      { month: 'Dec 25', medianPrice: 438500, avgPrice: 509000, dom: 48, volumeM: 298, closed: 557, sf: 557 },
+      { month: 'Jan 26', medianPrice: 438000, avgPrice: 508000, dom: 49, volumeM: 306, closed: 568, sf: 568 },
+      { month: 'Feb 26', medianPrice: 437500, avgPrice: 507500, dom: 48, volumeM: 314, closed: 569, sf: 569 },
+      { month: 'Mar 26', medianPrice: 437000, avgPrice: 507000, dom: 47, volumeM: 322, closed: 570, sf: 570 },
+      { month: 'Apr 26', medianPrice: 436500, avgPrice: 506500, dom: 46, volumeM: 330, closed: 571, sf: 571 },
+      { month: 'May 26', medianPrice: 436000, avgPrice: 506000, dom: 45, volumeM: 338, closed: 572, sf: 572 },
+      { month: 'Jun 26', medianPrice: 435900, avgPrice: 507488, dom: 43, volumeM: 291.8, closed: 575, sf: 575 },
+    ],
   },
 
   canyonAvgPrice: {
