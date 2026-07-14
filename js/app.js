@@ -2229,8 +2229,8 @@ function renderBoise() {
 
   // Market overview narrative
   el.appendChild(buildNarrativeBox(
-    'Boise's housing market shows resilience with strong YoY appreciation and solid transaction volumes. Ada County median prices up 3.7% ($603.8K vs $582K YoY), while Canyon County markets reflect broader regional growth. Average prices near $700K in Ada County signal continued demand in mid-range segment.',
-    () => Promise.resolve('Data sourced from Intermountain MLS via Databricks gold_polaris schema (Jun 2026). Ada County data matches official reports within 0.1% (average price), suggesting high data quality. DOMs above reported levels likely reflect different calculation methodology (list-date vs pending-date vs close-date).') // Simplified static for demo
+    "Boise's housing market shows resilience with strong YoY appreciation and solid transaction volumes. Ada County median prices up 3.7% ($603.8K vs $582K YoY), while Canyon County markets reflect broader regional growth. Average prices near $700K in Ada County signal continued demand in mid-range segment.",
+    () => Promise.resolve("Data sourced from Intermountain MLS via Databricks gold_polaris schema (Jun 2026). Ada County data matches official reports within 0.1% (average price), suggesting high data quality. DOMs above reported levels likely reflect different calculation methodology (list-date vs pending-date vs close-date).")
   ));
 
   // Ada County subsection
