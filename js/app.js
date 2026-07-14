@@ -2234,7 +2234,11 @@ function renderBoise() {
   ));
 
   // Ada County subsection
-  el.innerHTML += `<div class="subsection-title">Ada County (Boise Proper) — Jun 2026</div>`;
+  const adaTitle = document.createElement('div');
+  adaTitle.className = 'subsection-title';
+  adaTitle.textContent = 'Ada County (Boise Proper) — Jun 2026';
+  el.appendChild(adaTitle);
+
   const adaGrid = document.createElement('div');
   adaGrid.className = 'card-grid';
   const adaMetrics = ['boiseMedianPrice', 'boiseAvgPrice', 'boiseSingleFamilyClosed', 'boiseDom', 'boiseDollarVolume'];
@@ -2245,7 +2249,11 @@ function renderBoise() {
   el.appendChild(adaGrid);
 
   // Canyon County subsection
-  el.innerHTML += `<div class="subsection-title">Canyon County (Meridian / Kuna) — Jun 2026</div>`;
+  const canyonTitle = document.createElement('div');
+  canyonTitle.className = 'subsection-title';
+  canyonTitle.textContent = 'Canyon County (Meridian / Kuna) — Jun 2026';
+  el.appendChild(canyonTitle);
+
   const canyonGrid = document.createElement('div');
   canyonGrid.className = 'card-grid';
   const canyonMetrics = ['canyonMedianPrice', 'canyonAvgPrice', 'canyonSingleFamilyClosed', 'canyonDom', 'canyonDollarVolume'];
