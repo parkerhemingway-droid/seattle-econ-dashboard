@@ -28,6 +28,15 @@ jobs:
           sed -i "s/const TODAY = '[0-9-]*';/const TODAY = '${TODAY}';/" js/data.js
           echo "TODAY set to ${TODAY}"
 
+      - name: Stamp Eastside presentation as-of date
+        run: |
+          ASOF=$(date -u +'%B %-d, %Y')
+          ISO=$(date -u +%Y-%m-%d)
+          F=presentations/eastside_nc_forecast.html
+          sed -i "s#\(id=\"asof-date\">\)[^<]*\(<\)#\1${ASOF}\2#" "$F"
+          sed -i "s#\(id=\"live-anchor\"[^>]*data-updated=\"\)[^\"]*\(\"\)#\1${ISO}\2#" "$F"
+          echo "Eastside presentation as-of set to ${ASOF}"
+
       - name: Fetch FRED data and patch data.js
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
@@ -38,10 +47,9 @@ jobs:
         run: |
           git config user.name  "seattle-econ-bot"
           git config user.email "bot@seattle-econ-dashboard"
-          git diff --quiet js/data.js || (
-            git add js/data.js &&
+          git add js/data.js presentations/eastside_nc_forecast.html
+          git diff --cached --quiet || \
             git commit -m "chore: auto-update economic data $(date -u '+%Y-%m-%d %H:%M UTC')"
-          )
 
       - name: Push changes
         uses: ad-m/github-push-action@v0.8.0

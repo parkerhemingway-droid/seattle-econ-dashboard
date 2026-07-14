@@ -2247,6 +2247,23 @@ function renderZip(zip) {
   return el;
 }
 
+function renderRaquel() {
+  const el = document.createElement('div');
+  el.innerHTML = `<div class="section-title">Raquel Kirkland Presentation</div>
+    <div class="section-subtitle">Greater Eastside — New Construction Inventory Forecast · Kirkland · Redmond · Woodinville · Sammamish ·
+      <a href="presentations/eastside_nc_forecast.html" target="_blank" style="color:var(--accent);text-decoration:none">open in new tab ↗</a></div>`;
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'width:100%;border:1px solid var(--border);border-radius:var(--card-radius);overflow:hidden;background:#0f172a';
+  wrap.innerHTML = `<iframe src="presentations/eastside_nc_forecast.html"
+    title="Eastside New Construction Forecast"
+    style="width:100%;height:calc(100vh - 150px);min-height:900px;border:0;display:block"
+    loading="lazy"></iframe>`;
+  el.appendChild(wrap);
+
+  return el;
+}
+
 // ── Routing ──────────────────────────────────────────────────────────────────
 
 let currentSection = 'today';
@@ -2263,6 +2280,7 @@ const RENDERERS = {
   recent: renderRecent,
   flagged: renderFlagged,
   alldata: renderAllData,
+  raquel: renderRaquel,
   help: renderHelp,
 };
 

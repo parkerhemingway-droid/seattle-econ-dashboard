@@ -282,6 +282,44 @@ async function findLatestBpsMonth(fetchFn) {
   return null;
 }
 
+// ── Eastside presentation — live King County permit anchor + as-of date ───────
+// The Eastside forecast (presentations/eastside_nc_forecast.html) is a fixed
+// analyst model with no live per-city feed. On each scheduled run we keep it
+// honest & current by (1) re-stamping the "as of" date and (2) injecting the
+// live King County permit total that this pipeline already fetches from Census.
+
+const PRESO_FILE = path.join(__dirname, '../presentations/eastside_nc_forecast.html');
+const MONTHS = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+
+function patchEastsidePresentation(kingData) {
+  let html;
+  try { html = fs.readFileSync(PRESO_FILE, 'utf8'); }
+  catch (e) { console.warn(`  ⚠ Eastside presentation not found: ${e.message}`); return; }
+
+  const now      = new Date();
+  const asOf     = `${MONTHS[now.getUTCMonth()]} ${now.getUTCDate()}, ${now.getUTCFullYear()}`;
+  const todayISO = now.toISOString().slice(0, 10);
+
+  // Always refresh the as-of date + updated stamp, even if permit fetch failed.
+  html = html.replace(/(id="asof-date">)[^<]*(<)/, (m, a, b) => `${a}${asOf}${b}`);
+  html = html.replace(/(id="live-anchor"[^>]*data-updated=")[^"]*(")/, (m, a, b) => `${a}${todayISO}${b}`);
+
+  // Inject the live King County permit total when we have it.
+  if (kingData && kingData.total != null && kingData.yyyymm) {
+    const yr = kingData.yyyymm.slice(0, 4);
+    const mo = parseInt(kingData.yyyymm.slice(4, 6), 10);
+    const monthLabel = `${MONTHS[mo - 1]} ${yr}`;
+    html = html.replace(/(id="kc-permits">)[^<]*(<)/, (m, a, b) => `${a}${kingData.total.toLocaleString('en-US')}${b}`);
+    html = html.replace(/(id="kc-month">)[^<]*(<)/,   (m, a, b) => `${a}${monthLabel}${b}`);
+    console.log(`  ✓ Eastside presentation: KC permits ${kingData.total} (${monthLabel}), as of ${asOf}`);
+  } else {
+    console.log(`  ✓ Eastside presentation: as-of date stamped ${asOf} (KC permits unavailable this run)`);
+  }
+
+  fs.writeFileSync(PRESO_FILE, html, 'utf8');
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -399,6 +437,11 @@ async function main() {
 
   // ── Patch TODAY_SUMMARY_CONTEXT with fresh metric values ──────────────────
   patchNarrative(results);
+
+  // ── Refresh Eastside presentation (as-of date + live KC permit anchor) ────
+  const kingData = (countyLatest && countyLatest.data && countyLatest.data['033'])
+    ? countyLatest.data['033'] : null;
+  patchEastsidePresentation(kingData);
 
   console.log('Done.');
 }
