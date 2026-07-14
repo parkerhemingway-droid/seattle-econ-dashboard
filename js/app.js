@@ -573,6 +573,98 @@ function buildPipelineForecast() {
 
 // ── Section: Housing ─────────────────────────────────────────────────────────
 
+// ── Seattle vs Eastside market breakout ──────────────────────────────────────
+// Aggregates zip-level market data (ZIP_DATA) into Seattle proper vs the
+// Eastside so the two sub-markets can be compared side by side. Rate metrics
+// (price, DOM, sale-to-list, reductions, YoY) are inventory-weighted averages;
+// counts (inventory, new listings, pending) are summed.
+const REGION_ZIPS = {
+  Seattle:  ['98101','98102','98103','98104','98105','98106','98107','98108','98109','98112',
+             '98115','98116','98117','98118','98119','98122','98125','98126','98133','98144'],
+  Eastside: ['98004','98005','98006','98033','98034','98052','98074'],
+};
+
+function aggregateRegion(zips) {
+  const rows = zips.map(z => ZIP_DATA[z]).filter(Boolean);
+  const invTotal = rows.reduce((s, r) => s + r.inventory, 0) || 1;
+  const wavg = key => rows.reduce((s, r) => s + r[key] * r.inventory, 0) / invTotal;
+  const sum  = key => rows.reduce((s, r) => s + r[key], 0);
+  return {
+    n: rows.length,
+    medianPrice: Math.round(wavg('medianPrice')),
+    yoyPricePct: wavg('yoyPricePct'),
+    inventory: sum('inventory'),
+    newListings: sum('newListings'),
+    pendingSales: sum('pendingSales'),
+    daysOnMarket: wavg('daysOnMarket'),
+    saleToList: wavg('saleToList'),
+    priceReductions: wavg('priceReductions'),
+  };
+}
+
+function buildRegionBreakout() {
+  const el = document.createElement('div');
+  const S = aggregateRegion(REGION_ZIPS.Seattle);
+  const E = aggregateRegion(REGION_ZIPS.Eastside);
+
+  const fmtM   = v => v >= 1000000 ? `$${(v / 1000000).toFixed(2)}M` : `$${Math.round(v).toLocaleString()}`;
+  const fmtMd  = v => (v >= 0 ? '+' : '−') + fmtM(Math.abs(v));
+  const sgn    = (v, d = 1) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
+  const pend   = r => r.pendingSales / r.inventory * 100;
+
+  // Two headline region cards (reuse the luxury hero stat styling).
+  const hero = document.createElement('div');
+  hero.className = 'luxury-hero';
+  const card = (label, r) => `
+    <div class="luxury-hero-stat">
+      <div class="luxury-hero-label">${label} · ${r.n} zips</div>
+      <div class="luxury-hero-value">${fmtM(r.medianPrice)}</div>
+      <div class="luxury-hero-sub ${r.yoyPricePct >= 0 ? 'up' : 'down'}">${sgn(r.yoyPricePct)}% YoY · ${r.inventory} active</div>
+    </div>`;
+  hero.innerHTML = card('🌆 Seattle proper', S) + card('🌲 Eastside', E);
+  el.appendChild(hero);
+
+  // Detailed comparison table.
+  const rows = [
+    { m: 'Median Price <span style="color:var(--text-muted)">(inv-weighted)</span>', s: fmtM(S.medianPrice), e: fmtM(E.medianPrice), d: fmtMd(E.medianPrice - S.medianPrice) },
+    { m: 'YoY Price Change', s: `${sgn(S.yoyPricePct)}%`, e: `${sgn(E.yoyPricePct)}%`, d: `${sgn(E.yoyPricePct - S.yoyPricePct)} pp`, cls: E.yoyPricePct >= S.yoyPricePct ? 'up' : 'down' },
+    { m: 'Active Inventory', s: S.inventory.toLocaleString(), e: E.inventory.toLocaleString(), d: sgn(E.inventory - S.inventory, 0) },
+    { m: 'New Listings', s: S.newListings.toLocaleString(), e: E.newListings.toLocaleString(), d: sgn(E.newListings - S.newListings, 0) },
+    { m: 'Pending Sales', s: S.pendingSales.toLocaleString(), e: E.pendingSales.toLocaleString(), d: sgn(E.pendingSales - S.pendingSales, 0) },
+    { m: 'Pending / Active', s: `${pend(S).toFixed(0)}%`, e: `${pend(E).toFixed(0)}%`, d: `${sgn(pend(E) - pend(S), 0)} pp` },
+    { m: 'Avg Days on Market', s: `${S.daysOnMarket.toFixed(0)}d`, e: `${E.daysOnMarket.toFixed(0)}d`, d: `${sgn(E.daysOnMarket - S.daysOnMarket, 0)}d` },
+    { m: 'Sale-to-List Ratio', s: `${S.saleToList.toFixed(1)}%`, e: `${E.saleToList.toFixed(1)}%`, d: `${sgn(E.saleToList - S.saleToList)} pp` },
+    { m: 'Price Reductions', s: `${S.priceReductions.toFixed(0)}%`, e: `${E.priceReductions.toFixed(0)}%`, d: `${sgn(E.priceReductions - S.priceReductions, 0)} pp` },
+  ];
+
+  const table = document.createElement('div');
+  table.className = 'luxury-table-wrap';
+  table.innerHTML = `<table class="data-table">
+    <thead><tr>
+      <th style="text-align:left">Metric</th>
+      <th>🌆 Seattle</th>
+      <th>🌲 Eastside</th>
+      <th>Eastside vs Seattle</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr>
+        <td style="text-align:left">${r.m}</td>
+        <td>${r.s}</td>
+        <td class="${r.cls || ''}">${r.e}</td>
+        <td style="color:var(--text-muted)">${r.d}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+  el.appendChild(table);
+
+  el.innerHTML += `<p style="font-size:.72rem;color:var(--text-muted);margin-top:6px">
+    Aggregated from ${S.n + E.n} zip codes of Zillow Research / Redfin estimates (Apr 2026).
+    Rate metrics are inventory-weighted averages; counts are summed. The Eastside skews
+    higher-price / faster-moving (higher sale-to-list, fewer days on market).</p>`;
+
+  return el;
+}
+
 function renderHousing() {
   const el = document.createElement('div');
   el.innerHTML = `<div class="section-title">Housing — Greater Seattle</div>
@@ -582,6 +674,10 @@ function renderHousing() {
     'Seattle housing inventory climbed to its highest level since 2019 while prices held near record highs. Affordability remains historically stretched at a 10.4x price-to-income ratio.',
     () => AI.housingNarrative()
   ));
+
+  // ── Seattle vs Eastside breakout ──
+  el.innerHTML += `<div class="subsection-title">Seattle vs Eastside — Market Breakout</div>`;
+  el.appendChild(buildRegionBreakout());
 
   const sections = [
     { title: 'Seattle Market Pulse', ids: ['seaMedianPrice', 'seaMedianListPrice', 'seaActiveInventory', 'seaWeeksSupply', 'seaNewListings', 'seaPendingSales', 'seaDaysOnMarket', 'seaPriceReductions', 'seaSaleTListRatio'] },
