@@ -1159,6 +1159,7 @@ const ALL_METRICS = {
   ...INFLATION,
   ...EMPLOYMENT,
   ...FED,
+  ...BOISE_MARKETS,
 };
 
 // Category grouping for All Data view
@@ -1167,6 +1168,8 @@ const CATEGORIES = {
   'Housing — Seattle': ['seaMedianPrice', 'seaMedianListPrice', 'seaActiveInventory', 'seaWeeksSupply',
     'seaNewListings', 'seaPendingSales', 'seaDaysOnMarket', 'seaPriceReductions',
     'seaSaleTListRatio', 'seaCaseShiller', 'kingCountyHomeowners', 'seaAffordabilityRatio'],
+  'Housing — Boise': ['boiseMedianPrice', 'boiseAvgPrice', 'boiseSingleFamilyClosed', 'boiseDom', 'boiseDollarVolume',
+    'canyonMedianPrice', 'canyonAvgPrice', 'canyonSingleFamilyClosed', 'canyonDom', 'canyonDollarVolume'],
   'Housing — National': ['existingHomeSales', 'newHomeSales'],
   'Mortgage Applications': ['mbaPurchaseIndex', 'mbaRefiIndex', 'mbaMarketComposite', 'mbaArmShare'],
   'Construction — Seattle MSA': ['seaPermits', 'kingPermits', 'piercePermits', 'snohomishPermits', 'seaCompletions', 'seaUnderConstruction', 'seaMultifamilyUnder', 'seaSingleFamilyUnder'],
