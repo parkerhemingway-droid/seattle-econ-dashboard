@@ -878,6 +878,22 @@ const AI_LEASING = {
       note: 'Musk’s AI company took a full floor of former Epic Games space — its Puget Sound entry.',
       chart: { kind: 'single', labels: ['Lincoln Square South'], values: [24800], unit: 'K', divisor: 1000 },
     },
+    {
+      id: 'databricks', name: 'Databricks', color: '#FF3621',
+      sf: 160000, sfLabel: '160,000 SF',
+      city: 'Bellevue', location: 'Four106 (380 106th Ave NE), Downtown Bellevue',
+      date: '2026', tag: 'Largest WA commitment yet',
+      note: 'Anchored the new Four106 tower; total Puget Sound footprint now exceeds 270K SF across multiple sites.',
+      chart: { kind: 'growth', labels: ['Four106 (new)', 'Total WA'], values: [160000, 270000], unit: 'K', divisor: 1000, approx: true },
+    },
+    {
+      id: 'uber', name: 'Uber', color: '#7DD3FC',
+      sf: 170000, sfLabel: '~170,000 SF',
+      city: 'Bellevue', location: 'Four106 (380 106th Ave NE), Downtown Bellevue',
+      date: 'Apr 2026', tag: 'Doubled Puget Sound footprint',
+      note: 'Leased a full block of Four106 (same tower as Databricks), more than doubling its regional footprint to 285K+ SF.',
+      chart: { kind: 'growth', labels: ['Four106 (new)', 'Total WA'], values: [170000, 285000], unit: 'K', divisor: 1000, approx: true },
+    },
   ],
 };
 
