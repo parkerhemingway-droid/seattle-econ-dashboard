@@ -165,6 +165,188 @@ function buildNarrativeBox(staticText, genFn) {
   return box;
 }
 
+// ── Section: Boise MLS ──────────────────────────────────────────────────────
+
+function renderBoise() {
+  const el = document.createElement('div');
+  el.className = 'section';
+
+  const data = BoiseData.getCachedData();
+  if (!data || !data.headline) {
+    el.innerHTML = '<p style="padding: 24px; color: var(--text-muted);">Boise data not loaded. Configure endpoint in sidebar.</p>';
+    return el;
+  }
+
+  const h = data.headline;
+  const byZip = data.by_zip || [];
+
+  // Title
+  const title = document.createElement('h1');
+  title.textContent = 'Boise MLS Market Analysis';
+  el.appendChild(title);
+
+  // Subtitle with date
+  const subtitle = document.createElement('p');
+  subtitle.style.cssText = 'font-size: 0.85rem; color: var(--text-muted); margin: -12px 0 24px 0;';
+  subtitle.textContent = `Ada & Canyon County, ID — As of ${h.metric_date}`;
+  el.appendChild(subtitle);
+
+  // Headline metrics (3 cards: Ada, Canyon, Combined)
+  const headlineRow = document.createElement('div');
+  headlineRow.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px;';
+
+  for (const [label, county] of [['Ada County', h.ada], ['Canyon County', h.canyon], ['Boise MSA (Combined)', h.combined]]) {
+    const card = document.createElement('div');
+    card.className = 'metric-card';
+    card.style.cursor = 'default';
+    card.innerHTML = `
+      <div class="metric-name">${label}</div>
+      <div class="metric-value">$${(county.median_list_price / 1000000).toFixed(2)}M</div>
+      <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">
+        <div>Median List Price</div>
+        <div style="margin-top: 8px;">
+          <span style="display: inline-block; margin-right: 12px;">Active: <strong>${county.active_listings}</strong></span>
+          <span style="display: inline-block;">DOM: <strong>${Math.round(county.median_dom)}</strong></span>
+        </div>
+      </div>
+    `;
+    headlineRow.appendChild(card);
+  }
+  el.appendChild(headlineRow);
+
+  // CSV export button
+  const csvBtn = document.createElement('button');
+  csvBtn.textContent = '📥 Download CSV';
+  csvBtn.style.cssText = 'padding: 8px 16px; background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; margin-bottom: 24px;';
+  csvBtn.addEventListener('click', () => {
+    BoiseData.exportZipTableCsv(h, byZip);
+  });
+  el.appendChild(csvBtn);
+
+  // Zip code table
+  const tableTitle = document.createElement('h2');
+  tableTitle.textContent = 'Zip Code Metrics';
+  tableTitle.style.marginTop = '0';
+  el.appendChild(tableTitle);
+
+  const table = document.createElement('table');
+  table.style.cssText = `
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin-top: 12px;
+  `;
+
+  // Header
+  const header = table.createTHead();
+  const headerRow = header.insertRow();
+  headerRow.style.cssText = 'background: var(--surface2); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10;';
+  const cols = ['Zip', 'City', 'Median List', 'Median Close', 'Active', 'Pending', 'Closed (30d)', 'DOM', 'Sale-to-List %'];
+  for (const col of cols) {
+    const th = document.createElement('th');
+    th.textContent = col;
+    th.style.cssText = 'padding: 8px; text-align: left; font-weight: 600; color: var(--text-muted); border-right: 1px solid var(--border);';
+    th.style.borderRight = col === cols[cols.length - 1] ? 'none' : '1px solid var(--border)';
+    headerRow.appendChild(th);
+  }
+
+  // Body
+  const body = table.createTBody();
+  for (const z of byZip) {
+    const row = body.insertRow();
+    row.style.cssText = 'border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s;';
+    row.addEventListener('mouseenter', () => row.style.background = 'var(--surface2)');
+    row.addEventListener('mouseleave', () => row.style.background = 'transparent');
+
+    const cells = [
+      z.zipcode,
+      z.city || '—',
+      `$${(z.median_list_price / 1000).toFixed(0)}K`,
+      `$${(z.median_close_price / 1000).toFixed(0)}K`,
+      z.active_listings,
+      z.pending_listings,
+      z.closed_sales_30d,
+      Math.round(z.median_dom),
+      z.sale_to_list_ratio ? z.sale_to_list_ratio.toFixed(1) : '—',
+    ];
+
+    for (let i = 0; i < cells.length; i++) {
+      const td = row.insertCell();
+      td.textContent = cells[i];
+      td.style.cssText = 'padding: 8px; border-right: 1px solid var(--border);';
+      td.style.borderRight = i === cells.length - 1 ? 'none' : '1px solid var(--border)';
+      if (i > 1) td.style.textAlign = 'right';
+    }
+
+    // Click to show detailed metrics for this zip
+    row.addEventListener('click', () => {
+      openBoiseZipDetail(z);
+    });
+  }
+
+  table.appendChild(body);
+  el.appendChild(table);
+
+  return el;
+}
+
+function openBoiseZipDetail(zipData) {
+  // Show a modal with full zip code details
+  const modal = document.getElementById('metric-modal-overlay');
+  const title = document.getElementById('modal-title');
+  const meta = document.getElementById('modal-meta');
+  const stats = document.getElementById('modal-stats');
+  const signal = document.getElementById('modal-signal');
+  const source = document.getElementById('modal-source');
+
+  title.textContent = `${zipData.zipcode} — ${zipData.city}, ${zipData.county} County`;
+  meta.textContent = 'Boise MLS Market';
+
+  stats.innerHTML = `
+    <div class="stat-row">
+      <div class="stat-label">Median List Price</div>
+      <div class="stat-value">$${(zipData.median_list_price / 1000).toFixed(0)}K</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label">Median Close Price</div>
+      <div class="stat-value">$${(zipData.median_close_price / 1000).toFixed(0)}K</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label">Active Listings</div>
+      <div class="stat-value">${zipData.active_listings}</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label">Pending Listings</div>
+      <div class="stat-value">${zipData.pending_listings}</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label">Closed Sales (30d)</div>
+      <div class="stat-value">${zipData.closed_sales_30d}</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label">Closed Sales (60d)</div>
+      <div class="stat-value">${zipData.closed_sales_60d}</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label">Median DOM</div>
+      <div class="stat-value">${Math.round(zipData.median_dom)} days</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label">Sale-to-List Ratio</div>
+      <div class="stat-value">${zipData.sale_to_list_ratio ? zipData.sale_to_list_ratio.toFixed(1) + '%' : '—'}</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label">Months of Supply</div>
+      <div class="stat-value">${zipData.months_supply ? zipData.months_supply.toFixed(1) : '—'}</div>
+    </div>
+  `;
+
+  signal.textContent = '';
+  source.innerHTML = '<small>Source: Compass IMLS Data (main.gold_mls.search_listings)</small>';
+
+  modal.classList.add('open');
+}
+
 // ── Section: Today ───────────────────────────────────────────────────────────
 
 function renderToday() {
@@ -2573,6 +2755,7 @@ const RENDERERS = {
   today: renderToday,
   housing: renderHousing,
   luxury: renderLuxury,
+  boise: renderBoise,
   inflation: renderInflation,
   employment: renderEmployment,
   fed: renderFed,
@@ -2689,7 +2872,9 @@ document.getElementById('save-key-btn').addEventListener('click', async () => {
   }
 
   const dataEndpoint = (document.getElementById('db-data-endpoint-input')?.value || '').trim();
+  const boiseEndpoint = (document.getElementById('db-boise-endpoint-input')?.value || '').trim();
   DatabricksData.saveDataEndpoint(dataEndpoint);
+  BoiseData.saveEndpoint(boiseEndpoint);
 
   AI.setConfig({ workspace, endpoint, token });
   document.getElementById('api-key-input').value = '';
@@ -2734,6 +2919,7 @@ document.getElementById('zip-input').addEventListener('input', e => {
 // Restore saved Databricks config into sidebar inputs
 AI.restoreInputs();
 DatabricksData.restoreInput();
+BoiseData.restoreInput();
 
 // Delegated listener for flag buttons → toggle flag & re-render
 document.addEventListener('click', e => {
@@ -2784,6 +2970,7 @@ document.addEventListener('click', e => {
 (async () => {
   const hash = window.location.hash.replace('#', '') || 'today';
 
+  // Fetch Seattle data
   if (DatabricksData.isConfigured()) {
     DatabricksData.setStatus('loading');
     const liveData = await DatabricksData.fetchAll();
@@ -2795,6 +2982,19 @@ document.addEventListener('click', e => {
     }
   } else {
     DatabricksData.setStatus('static');
+  }
+
+  // Fetch Boise data
+  if (BoiseData.isConfigured()) {
+    BoiseData.setStatus('loading');
+    const boiseData = await BoiseData.fetchAll();
+    if (boiseData) {
+      BoiseData.setStatus('live', boiseData.headline?.metric_date || '');
+    } else {
+      BoiseData.setStatus('error', 'endpoint unreachable');
+    }
+  } else {
+    BoiseData.setStatus('static');
   }
 
   navigate(RENDERERS[hash] ? hash : 'today');
