@@ -820,6 +820,67 @@ const UPCOMING_RELEASES = [
   { date: '2026-07-31', name: 'PCE Inflation (June)', prior: '2.5%', consensus: '2.4%', source: 'BEA' },
 ];
 
+// ── Luis/Ramiro Upcoming Listing — AI & Tech Office Leasing ("Who's Coming") ──
+// Company office-lease footprints across the Seattle / Bellevue market, sourced
+// from public reporting (GeekWire, Colliers, CoStar, The Registry). Each entry
+// drives an individual chart breakout in renderLuisRamiro(). SF values are in
+// square feet; Amazon is shown in millions on its own card scale.
+const AI_LEASING = {
+  asOf: 'July 2026',
+  sources: 'GeekWire · Colliers · CoStar · The Registry · King5',
+  note: 'Microsoft’s 2024 pullback freed 500,000+ SF at City Center Plaza that AI tenants are now backfilling — the engine behind this leasing wave.',
+  companies: [
+    {
+      id: 'amazon', name: 'Amazon', color: '#FF9900',
+      sf: 18000000, sfLabel: '~18M SF',
+      city: 'Seattle + Bellevue', location: 'Regional HQ footprint',
+      date: 'Standing', tag: 'Incumbent',
+      note: 'Still the local giant — 12M SF in Seattle, 6M SF in Bellevue.',
+      chart: { kind: 'split', labels: ['Seattle', 'Bellevue'], values: [12000000, 6000000], unit: 'M', divisor: 1000000 },
+    },
+    {
+      id: 'anthropic', name: 'Anthropic', color: '#E08A5B',
+      sf: 113000, sfLabel: '113,000 SF',
+      city: 'Seattle', location: 'Dexter Yard North, South Lake Union',
+      date: 'Jul 2026', tag: 'Largest Seattle deal of 2026',
+      note: 'The team behind Claude nearly doubled its space; Seattle’s largest office deal of the year.',
+      chart: { kind: 'growth', labels: ['Prior space', 'New lease'], values: [60000, 113000], unit: 'K', divisor: 1000 },
+    },
+    {
+      id: 'openai', name: 'OpenAI', color: '#10A37F',
+      sf: 296000, sfLabel: '296,000 SF',
+      city: 'Bellevue', location: 'City Center Plaza, Downtown Bellevue',
+      date: 'Feb 2026', tag: '~5× expansion',
+      note: 'Added 10 floors, growing roughly fivefold — room for 1,000+ employees, its largest office outside SF.',
+      chart: { kind: 'growth', labels: ['Initial (Jun ’25)', 'After expansion'], values: [69000, 296000], unit: 'K', divisor: 1000 },
+    },
+    {
+      id: 'apple', name: 'Apple', color: '#A2AAAD',
+      sf: 192703, sfLabel: '192,703 SF',
+      city: 'Seattle', location: 'Arbor Blocks West (333 8th Ave N), SLU',
+      date: 'Jan 2025', tag: 'Largest new Seattle lease since 2019',
+      note: 'Direct lease of former Meta space — the biggest new Seattle office agreement since 2019.',
+      chart: { kind: 'single', labels: ['Arbor Blocks West'], values: [192703], unit: 'K', divisor: 1000 },
+    },
+    {
+      id: 'stripe', name: 'Stripe', color: '#7A73FF',
+      sf: 44508, sfLabel: '+44,508 SF',
+      city: 'Seattle', location: 'Madison Centre, Downtown Seattle',
+      date: 'Q2 2026', tag: 'Roughly doubled footprint',
+      note: 'Payments firm expanded its Madison Centre hub, roughly doubling its space there.',
+      chart: { kind: 'growth', labels: ['Prior footprint', 'After Q2 2026'], values: [44508, 89016], unit: 'K', divisor: 1000, approx: true },
+    },
+    {
+      id: 'xai', name: 'xAI', color: '#B0B7C3',
+      sf: 24800, sfLabel: '~24,800 SF',
+      city: 'Bellevue', location: 'Lincoln Square South, Downtown Bellevue',
+      date: 'Feb 2026', tag: 'New market entry',
+      note: 'Musk’s AI company took a full floor of former Epic Games space — its Puget Sound entry.',
+      chart: { kind: 'single', labels: ['Lincoln Square South'], values: [24800], unit: 'K', divisor: 1000 },
+    },
+  ],
+};
+
 // ── Recent Releases (grouped by source) ─────────────────────────────────────
 const RECENT_RELEASES = {
   'Freddie Mac': [

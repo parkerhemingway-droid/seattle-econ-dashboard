@@ -2746,6 +2746,148 @@ function renderRaquel() {
   return el;
 }
 
+// ── Section: Luis/Ramiro Upcoming Listing ────────────────────────────────────
+// Individual chart breakouts of AI/tech office-lease footprints across the
+// Seattle/Bellevue market ("Who's Coming"). One Chart.js card per company.
+function renderLuisRamiro() {
+  const el = document.createElement('div');
+  const d = AI_LEASING;
+
+  el.innerHTML = `<div class="section-title">Luis/Ramiro Upcoming Listing</div>
+    <div class="section-subtitle">Who's Coming — AI &amp; tech office leasing across Seattle &amp; Bellevue · As of ${d.asOf}</div>`;
+
+  el.appendChild(buildNarrativeBox(d.note, () => AI.genericNarrative
+    ? AI.genericNarrative('AI office leasing wave in the Seattle/Bellevue market', d.note)
+    : Promise.resolve(null)));
+
+  // Headline stat bar: total newcomer SF + count.
+  const newcomers = d.companies.filter(c => c.id !== 'amazon');
+  const totalNewSf = newcomers.reduce((s, c) => s + c.sf, 0);
+  const hero = document.createElement('div');
+  hero.className = 'luxury-hero';
+  hero.innerHTML = [
+    { label: 'Newcomer / Expansion SF', value: `${(totalNewSf / 1000).toFixed(0)}K`, sub: `${newcomers.length} AI & tech leases` },
+    { label: 'Largest Single Footprint', value: '296K', sub: 'OpenAI · Bellevue' },
+    { label: 'Amazon Incumbent Base', value: '~18M', sub: 'Seattle + Bellevue' },
+    { label: 'Biggest Seattle Deal (2026)', value: '113K', sub: 'Anthropic · SLU' },
+  ].map(s => `
+    <div class="luxury-hero-stat">
+      <div class="luxury-hero-label">${s.label}</div>
+      <div class="luxury-hero-value">${s.value}</div>
+      <div class="luxury-hero-sub">${s.sub}</div>
+    </div>`).join('');
+  el.appendChild(hero);
+
+  // Individual chart breakouts — one card per company, two per row.
+  const title = document.createElement('div');
+  title.className = 'subsection-title';
+  title.textContent = 'Individual Breakouts';
+  el.appendChild(title);
+
+  const grid = document.createElement('div');
+  grid.className = 'luxury-chart-row';
+  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0;';
+
+  d.companies.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'luxury-chart-card';
+    card.style.cursor = 'default';
+    card.innerHTML = `
+      <div class="luxury-chart-title" style="display:flex;align-items:center;gap:8px">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${c.color}"></span>
+        <span style="font-weight:700">${c.name}</span>
+        <span style="margin-left:auto;font-size:.72rem;color:var(--text-muted)">${c.city}</span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin:2px 0 2px">
+        <span style="font-size:1.35rem;font-weight:800;color:${c.color}">${c.sfLabel}</span>
+        <span style="font-size:.7rem;color:var(--text-muted)">${c.date}</span>
+      </div>
+      <div style="font-size:.72rem;color:${c.color};font-weight:600;margin-bottom:2px">${c.tag}</div>
+      <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:8px">${c.location}</div>
+      <div class="luxury-chart-wrap" style="height:150px"><canvas id="lr-chart-${c.id}"></canvas></div>
+      <div style="font-size:.72rem;color:var(--text-muted);margin-top:8px;line-height:1.4">${c.note}</div>
+    `;
+    grid.appendChild(card);
+  });
+  el.appendChild(grid);
+
+  const src = document.createElement('div');
+  src.className = 'luxury-source';
+  src.textContent = `Sources: ${d.sources}. Figures from public reporting; Stripe prior footprint estimated from “roughly doubled” characterization.`;
+  el.appendChild(src);
+
+  // Draw the per-company charts after the cards are in the DOM.
+  setTimeout(() => {
+    const gridColor = 'rgba(218,218,218,0.08)';
+    const tickColor = '#8892aa';
+    d.companies.forEach(c => {
+      const canvas = document.getElementById(`lr-chart-${c.id}`);
+      if (!canvas) return;
+      destroyChart(`lr-chart-${c.id}`);
+      const ch = c.chart;
+      const div = ch.divisor || 1;
+      const isGrowth = ch.kind === 'growth';
+      // Growth cards fade the "before" bar; split/single are solid.
+      const colors = ch.values.map((_, i) =>
+        isGrowth && i === 0 ? c.color + '66' : c.color + 'dd');
+      chartRegistry[`lr-chart-${c.id}`] = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: ch.labels,
+          datasets: [{
+            data: ch.values.map(v => +(v / div).toFixed(v / div < 10 ? 1 : 0)),
+            backgroundColor: colors,
+            borderColor: c.color,
+            borderWidth: ch.kind === 'growth' ? 1 : 0,
+            borderRadius: 4,
+            maxBarThickness: 64,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          layout: { padding: { top: 20 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1a1d27', borderColor: '#2e3250', borderWidth: 1,
+              titleColor: '#e2e8f0', bodyColor: '#8892aa', padding: 10, cornerRadius: 4,
+              callbacks: { label: ctx => ` ${ctx.parsed.y}${ch.unit} SF${ch.approx ? ' (est.)' : ''}` },
+            },
+          },
+          scales: {
+            x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { display: false }, border: { display: false } },
+            y: {
+              beginAtZero: true,
+              grace: '12%',
+              ticks: { color: tickColor, font: { size: 10 }, callback: v => `${v}${ch.unit}` },
+              grid: { color: gridColor, drawTicks: false }, border: { display: false },
+            },
+          },
+        },
+        plugins: [{
+          id: `valLabels-${c.id}`,
+          afterDatasetsDraw(chart) {
+            const { ctx, scales: { x, y } } = chart;
+            ctx.save();
+            ctx.font = '700 11px -apple-system, sans-serif';
+            ctx.fillStyle = '#e2e8f0';
+            ctx.textAlign = 'center';
+            ch.values.forEach((v, i) => {
+              const val = +(v / div).toFixed(v / div < 10 ? 1 : 0);
+              ctx.fillText(`${val}${ch.unit}`, x.getPixelForValue(i), y.getPixelForValue(val) - 6);
+            });
+            ctx.restore();
+          },
+        }],
+      });
+    });
+  }, 60);
+
+  return el;
+}
+
 // ── Routing ──────────────────────────────────────────────────────────────────
 
 let currentSection = 'today';
@@ -2765,6 +2907,7 @@ const RENDERERS = {
   flagged: renderFlagged,
   alldata: renderAllData,
   raquel: renderRaquel,
+  luisramiro: renderLuisRamiro,
   help: renderHelp,
 };
 
