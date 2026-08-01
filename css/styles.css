@@ -119,6 +119,10 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
 #main-content {
   margin-left: var(--sidebar-w);
   flex: 1;
+  /* flex items default to min-width:auto, which lets wide content (scrolling
+     tables, chip rows) stretch the page instead of scrolling inside their own
+     wrapper. min-width:0 keeps overflow-x:auto children honest. */
+  min-width: 0;
   padding: 28px 32px;
   max-width: 1400px;
 }
@@ -965,4 +969,158 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
 @media (max-width: 768px) {
   #sidebar { transform: translateX(-100%); }
   #main-content { margin-left: 0; padding: 16px; }
+}
+
+/* ── Boise: IMLS Area / ZIP cross-reference ── */
+.imls-section { margin-top: 8px; min-width: 0; }
+
+.imls-filters { margin: 20px 0 12px; min-width: 0; }
+
+/* Toggle is desktop-hidden; the panel is always open on wide screens */
+.imls-filter-toggle {
+  display: none;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.imls-filter-toggle:active { background: var(--surface); }
+.imls-filter-count { color: var(--text-muted); font-weight: 500; font-size: 0.78rem; }
+
+.imls-filter-group { margin-bottom: 14px; }
+.imls-filter-label {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 7px;
+}
+
+.imls-tile-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.imls-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 92px;
+  padding: 9px 13px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.imls-tile:hover { border-color: var(--accent); }
+.imls-tile.active {
+  background: rgba(79, 142, 247, 0.14);
+  border-color: var(--accent);
+}
+.imls-tile-label { font-size: 0.82rem; font-weight: 600; }
+.imls-tile-sub   { font-size: 0.66rem; color: var(--text-muted); }
+.imls-tile.active .imls-tile-sub { color: var(--text); }
+
+/* Area chips scroll horizontally rather than wrapping into a tall block */
+.imls-tile-row-chips {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+.imls-tile-row-chips .imls-chip { flex: 0 0 auto; scroll-snap-align: start; min-width: 78px; }
+
+.imls-search-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.imls-search {
+  flex: 1 1 260px;
+  min-width: 0;
+  padding: 9px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+.imls-search:focus { outline: none; border-color: var(--accent); }
+.imls-reset, .imls-csv {
+  padding: 9px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.imls-csv { background: var(--accent); border-color: var(--accent); color: #fff; }
+.imls-reset:hover { border-color: var(--accent); }
+.imls-csv:hover { filter: brightness(1.1); }
+
+.imls-table-wrap { overflow-x: auto; margin-bottom: 8px; }
+.imls-table tbody tr { cursor: default; }
+.imls-row[hidden] { display: none; }
+.imls-zip-cell { font-variant-numeric: tabular-nums; font-weight: 600; }
+.imls-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.imls-hood { display: block; font-size: 0.7rem; color: var(--text-muted); }
+
+.imls-area-cell { line-height: 1.9; }
+.imls-area-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 2px 7px;
+  margin-right: 5px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.imls-area-pill em { font-style: normal; color: var(--text-muted); font-size: 0.66rem; }
+.imls-area-none { font-size: 0.72rem; color: var(--yellow); }
+
+.imls-dim { opacity: 0.32; }
+.imls-empty { padding: 18px; color: var(--text-muted); font-size: 0.85rem; }
+
+/* Mobile: collapse filters behind a tile-grid panel */
+@media (max-width: 768px) {
+  .imls-filter-toggle { display: flex; }
+  .imls-filter-panel {
+    display: none;
+    margin-top: 10px;
+    padding: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--card-radius);
+  }
+  .imls-filters.open .imls-filter-panel { display: block; }
+
+  /* County/coverage filters become a 2-up tile grid, thumb-sized */
+  .imls-tile-row[data-group="county"] {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .imls-tile-row[data-group="county"] .imls-tile { min-width: 0; padding: 12px; }
+  .imls-tile-label { font-size: 0.88rem; }
+
+  /* Column flex turns flex-basis into a height — pin it back to auto */
+  .imls-search-row { flex-direction: column; }
+  .imls-reset, .imls-csv, .imls-search { width: 100%; flex: 0 0 auto; }
+
+  /* Keep the ZIP table readable on a phone */
+  .imls-table { font-size: 0.78rem; }
+  .imls-table th, .imls-table td { padding: 7px 8px; }
 }

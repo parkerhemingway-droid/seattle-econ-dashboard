@@ -167,129 +167,6 @@ function buildNarrativeBox(staticText, genFn) {
 
 // ── Section: Boise MLS ──────────────────────────────────────────────────────
 
-function renderBoise() {
-  const el = document.createElement('div');
-  el.className = 'section';
-
-  const data = BoiseData.getCachedData();
-  if (!data || !data.headline) {
-    el.innerHTML = '<p style="padding: 24px; color: var(--text-muted);">Boise data not loaded. Configure endpoint in sidebar.</p>';
-    return el;
-  }
-
-  const h = data.headline;
-  const byZip = data.by_zip || [];
-
-  // Title
-  const title = document.createElement('h1');
-  title.textContent = 'Boise MLS Market Analysis';
-  el.appendChild(title);
-
-  // Subtitle with date
-  const subtitle = document.createElement('p');
-  subtitle.style.cssText = 'font-size: 0.85rem; color: var(--text-muted); margin: -12px 0 24px 0;';
-  subtitle.textContent = `Ada & Canyon County, ID — As of ${h.metric_date}`;
-  el.appendChild(subtitle);
-
-  // Headline metrics (3 cards: Ada, Canyon, Combined)
-  const headlineRow = document.createElement('div');
-  headlineRow.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px;';
-
-  for (const [label, county] of [['Ada County', h.ada], ['Canyon County', h.canyon], ['Boise MSA (Combined)', h.combined]]) {
-    const card = document.createElement('div');
-    card.className = 'metric-card';
-    card.style.cursor = 'default';
-    card.innerHTML = `
-      <div class="metric-name">${label}</div>
-      <div class="metric-value">$${(county.median_list_price / 1000000).toFixed(2)}M</div>
-      <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">
-        <div>Median List Price</div>
-        <div style="margin-top: 8px;">
-          <span style="display: inline-block; margin-right: 12px;">Active: <strong>${county.active_listings}</strong></span>
-          <span style="display: inline-block;">DOM: <strong>${Math.round(county.median_dom)}</strong></span>
-        </div>
-      </div>
-    `;
-    headlineRow.appendChild(card);
-  }
-  el.appendChild(headlineRow);
-
-  // CSV export button
-  const csvBtn = document.createElement('button');
-  csvBtn.textContent = '📥 Download CSV';
-  csvBtn.style.cssText = 'padding: 8px 16px; background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; margin-bottom: 24px;';
-  csvBtn.addEventListener('click', () => {
-    BoiseData.exportZipTableCsv(h, byZip);
-  });
-  el.appendChild(csvBtn);
-
-  // Zip code table
-  const tableTitle = document.createElement('h2');
-  tableTitle.textContent = 'Zip Code Metrics';
-  tableTitle.style.marginTop = '0';
-  el.appendChild(tableTitle);
-
-  const table = document.createElement('table');
-  table.style.cssText = `
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-    margin-top: 12px;
-  `;
-
-  // Header
-  const header = table.createTHead();
-  const headerRow = header.insertRow();
-  headerRow.style.cssText = 'background: var(--surface2); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10;';
-  const cols = ['Zip', 'City', 'Median List', 'Median Close', 'Active', 'Pending', 'Closed (30d)', 'DOM', 'Sale-to-List %'];
-  for (const col of cols) {
-    const th = document.createElement('th');
-    th.textContent = col;
-    th.style.cssText = 'padding: 8px; text-align: left; font-weight: 600; color: var(--text-muted); border-right: 1px solid var(--border);';
-    th.style.borderRight = col === cols[cols.length - 1] ? 'none' : '1px solid var(--border)';
-    headerRow.appendChild(th);
-  }
-
-  // Body
-  const body = table.createTBody();
-  for (const z of byZip) {
-    const row = body.insertRow();
-    row.style.cssText = 'border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s;';
-    row.addEventListener('mouseenter', () => row.style.background = 'var(--surface2)');
-    row.addEventListener('mouseleave', () => row.style.background = 'transparent');
-
-    const cells = [
-      z.zipcode,
-      z.city || '—',
-      `$${(z.median_list_price / 1000).toFixed(0)}K`,
-      `$${(z.median_close_price / 1000).toFixed(0)}K`,
-      z.active_listings,
-      z.pending_listings,
-      z.closed_sales_30d,
-      Math.round(z.median_dom),
-      z.sale_to_list_ratio ? z.sale_to_list_ratio.toFixed(1) : '—',
-    ];
-
-    for (let i = 0; i < cells.length; i++) {
-      const td = row.insertCell();
-      td.textContent = cells[i];
-      td.style.cssText = 'padding: 8px; border-right: 1px solid var(--border);';
-      td.style.borderRight = i === cells.length - 1 ? 'none' : '1px solid var(--border)';
-      if (i > 1) td.style.textAlign = 'right';
-    }
-
-    // Click to show detailed metrics for this zip
-    row.addEventListener('click', () => {
-      openBoiseZipDetail(z);
-    });
-  }
-
-  table.appendChild(body);
-  el.appendChild(table);
-
-  return el;
-}
-
 function openBoiseZipDetail(zipData) {
   // Show a modal with full zip code details
   const modal = document.getElementById('metric-modal-overlay');
@@ -2584,15 +2461,19 @@ function renderBoise() {
     <p style="margin-top: 16px; color: var(--text-muted); font-size: 0.9rem;"><strong>Insight:</strong> Ada County attracts more high-value buyers, while Canyon County focuses on affordable first-time buyer market. Explains 38% average price premium in Ada despite only 33% median premium.</p>`;
   el.appendChild(tierBox);
 
+  // IMLS Area ↔ ZIP cross-reference (searchable, with filter tiles)
+  el.appendChild(buildBoiseImlsSection());
+
   // Data quality note
   const note = document.createElement('div');
   note.className = 'narrative-box';
   note.style.marginTop = '32px';
   note.innerHTML = `<h3>Data Quality & Methodology</h3>
-    <p><strong>Source:</strong> Intermountain Multiple Listing Service (official IMLS June 2026 reports)</p>
+    <p><strong>Source:</strong> Intermountain Multiple Listing Service (official IMLS June 2026 reports) · Area/ZIP crosswalk from <a href="https://imlsmembers.com/areas" target="_blank" rel="noopener">imlsmembers.com/areas</a></p>
     <p><strong>Date Range:</strong> June 2025 – June 2026 (12 months of historical data with monthly detail)</p>
     <p><strong>Accuracy Level:</strong> <strong style="color: var(--green);">EXCELLENT (100% reconciliation)</strong> — All metrics verified against official IMLS PDFs. Median price, average price, unit count, DOM, and dollar volume all match exactly.</p>
-    <p><strong>Geographic Scope:</strong> Ada County = all single-family sales in Ada County; Canyon County = Kuna, Meridian, and surrounding areas (ZIPs 83634, 83642, 83646)</p>
+    <p><strong>Geographic Scope:</strong> Ada County = all single-family sales in Ada County, including Boise, Garden City, Meridian (83642 / 83646), Eagle (83616), Star (83669) and Kuna (83634). Canyon County = Nampa (83651 / 83686 / 83687), Caldwell (83605 / 83607), Middleton (83644) and surrounding communities.</p>
+    <p style="color:var(--yellow)"><strong>Correction (Jul 2026):</strong> an earlier version of this note listed ZIPs 83634, 83642 and 83646 under Canyon County. Kuna and Meridian are in <strong>Ada</strong> County — the county roll-ups above were always computed from the MLS county field and are unaffected, but the ZIP list was wrong and has been fixed.</p>
     <p><strong>Calculation Method:</strong> DOM = days from listing date to pending status (Intermountain MLS standard)</p>
     <p><a href="#help">See Help & Sources</a> for full IMLS data documentation and methodology.</p>`;
   el.appendChild(note);
@@ -2604,6 +2485,294 @@ function renderBoise() {
   }, 50);
 
   return el;
+}
+
+// ── Boise: IMLS Area ↔ ZIP cross-reference, filter tiles & CSV ───────────────
+
+function buildBoiseImlsSection() {
+  const wrap = document.createElement('div');
+  wrap.className = 'imls-section';
+
+  // Live ZIP-level metrics if the Boise serving endpoint is wired up
+  const live    = (typeof BoiseData !== 'undefined' && BoiseData.getCachedData()) || null;
+  const liveZip = {};
+  (live && live.by_zip ? live.by_zip : []).forEach(z => { liveZip[String(z.zipcode)] = z; });
+  const hasLive = Object.keys(liveZip).length > 0;
+
+  const xref = imlsCrossReference(hasLive ? Object.keys(liveZip) : IMLS_ALL_ZIPS);
+
+  // ── Heading + coverage narrative ──
+  const title = document.createElement('div');
+  title.className = 'subsection-title';
+  title.style.marginTop = '40px';
+  title.textContent = 'IMLS Area ↔ ZIP Cross-Reference';
+  wrap.appendChild(title);
+
+  const intro = document.createElement('div');
+  intro.className = 'narrative-box';
+  intro.innerHTML = `<h3>How IMLS areas map to ZIP codes</h3>
+    <p>Intermountain MLS publishes market statistics by <strong>Area</strong>, not by ZIP. The two do not line up one-to-one:
+    an area spans several ZIPs, and a ZIP can sit inside several areas. The table below is the published
+    crosswalk — the percentage is that area's share of listings falling in the given ZIP.</p>
+    <p style="margin-top:12px"><strong>Coverage:</strong> the published area list covers
+    <strong>${IMLS_MAPPED_ZIPS.length} ZIPs</strong> across <strong>${IMLS_AREAS.length} areas</strong>.
+    Every one of them is in <strong>Ada County</strong> — the Boise / Garden City / Meridian / Eagle / Star / Kuna core.</p>
+    <p style="margin-top:12px;color:var(--yellow)"><strong>Gap:</strong> no Canyon County ZIP
+    (Nampa 83651 · 83686 · 83687, Caldwell 83605 · 83607, Middleton 83644) appears in the area crosswalk,
+    so the ${IMLS_CANYON_ZIPS.length} Canyon ZIPs this dashboard tracks have <strong>no IMLS area assignment</strong>.
+    Canyon figures on this page are county roll-ups from the MLS county field, not area roll-ups.</p>
+    ${hasLive
+      ? `<p style="margin-top:12px"><strong>Live data:</strong> ${xref.matched.length} of ${IMLS_MAPPED_ZIPS.length} mapped ZIPs have metrics from the serving endpoint${xref.missingData.length ? `; missing ${xref.missingData.join(', ')}` : ''}.</p>`
+      : `<p style="margin-top:12px;color:var(--text-muted)"><strong>Note:</strong> ZIP-level metrics require the Boise serving endpoint (set <em>Boise Endpoint Name</em> in the sidebar). Until then this table shows the geography crosswalk only.</p>`}`;
+  wrap.appendChild(intro);
+
+  // ── Filter tiles ──
+  const filters = document.createElement('div');
+  filters.className = 'imls-filters';
+
+  const adaCount    = IMLS_ADA_ZIPS.length;
+  const canyonCount = IMLS_CANYON_ZIPS.length;
+
+  const countyTiles = [
+    { key: 'all',    label: 'All ZIPs', sub: `${IMLS_ALL_ZIPS.length} total` },
+    { key: 'Ada',    label: 'Ada',      sub: `${adaCount} ZIPs` },
+    { key: 'Canyon', label: 'Canyon',   sub: `${canyonCount} ZIPs` },
+    { key: 'mapped', label: 'IMLS-mapped', sub: `${IMLS_MAPPED_ZIPS.length} ZIPs` },
+    { key: 'unmapped', label: 'No area', sub: `${IMLS_ALL_ZIPS.length - IMLS_MAPPED_ZIPS.length} ZIPs` },
+  ];
+
+  filters.innerHTML = `
+    <button class="imls-filter-toggle" type="button" aria-expanded="false">
+      <span>⚙︎ Filters</span><span class="imls-filter-count"></span>
+    </button>
+    <div class="imls-filter-panel">
+      <div class="imls-filter-group">
+        <div class="imls-filter-label">County / coverage</div>
+        <div class="imls-tile-row" data-group="county">
+          ${countyTiles.map((t, i) => `
+            <button type="button" class="imls-tile${i === 0 ? ' active' : ''}" data-value="${t.key}">
+              <span class="imls-tile-label">${t.label}</span>
+              <span class="imls-tile-sub">${t.sub}</span>
+            </button>`).join('')}
+        </div>
+      </div>
+      <div class="imls-filter-group">
+        <div class="imls-filter-label">IMLS area</div>
+        <div class="imls-tile-row imls-tile-row-chips" data-group="area">
+          <button type="button" class="imls-tile imls-chip active" data-value="all">
+            <span class="imls-tile-label">All areas</span>
+          </button>
+          ${IMLS_AREAS.map(a => `
+            <button type="button" class="imls-tile imls-chip" data-value="${a.code}">
+              <span class="imls-tile-label">${a.code}</span>
+              <span class="imls-tile-sub">${a.name}</span>
+            </button>`).join('')}
+        </div>
+      </div>
+      <div class="imls-filter-group">
+        <div class="imls-filter-label">Search</div>
+        <div class="imls-search-row">
+          <input type="search" class="imls-search" placeholder="ZIP, city, neighborhood or area name" inputmode="numeric" autocomplete="off">
+          <button type="button" class="imls-reset">Reset</button>
+          <button type="button" class="imls-csv">📥 CSV</button>
+        </div>
+      </div>
+    </div>`;
+  wrap.appendChild(filters);
+
+  // ── ZIP table ──
+  const tableWrap = document.createElement('div');
+  tableWrap.className = 'imls-table-wrap';
+
+  const metricCols = hasLive
+    ? '<th>Median List</th><th>Median Close</th><th>Active</th><th>DOM</th>'
+    : '';
+
+  const rowsHtml = IMLS_ALL_ZIPS.map(zip => {
+    const meta   = imlsZipMeta(zip);
+    const areas  = imlsAreasForZip(zip);
+    const m      = liveZip[zip];
+    const codes  = areas.map(a => a.code).join(' ');
+    const search = [zip, meta.city, meta.label, ...areas.map(a => `${a.code} ${a.name}`)].join(' ').toLowerCase();
+
+    const areaCell = areas.length
+      ? areas.map(a => `<span class="imls-area-pill" title="${a.name}">${a.code}<em>${a.pct}%</em></span>`).join('')
+      : '<span class="imls-area-none">— no IMLS area</span>';
+
+    const metricCells = hasLive
+      ? `<td class="num">${m && m.median_list_price ? '$' + Math.round(m.median_list_price / 1000) + 'K' : '—'}</td>
+         <td class="num">${m && m.median_close_price ? '$' + Math.round(m.median_close_price / 1000) + 'K' : '—'}</td>
+         <td class="num">${m ? m.active_listings : '—'}</td>
+         <td class="num">${m && m.median_dom ? Math.round(m.median_dom) : '—'}</td>`
+      : '';
+
+    return `<tr class="imls-row" data-zip="${zip}" data-county="${meta.county}"
+                data-mapped="${areas.length ? '1' : '0'}" data-areas="${codes}" data-search="${search}">
+      <td class="imls-zip-cell">${zip}</td>
+      <td>${meta.city}${meta.label && meta.label !== meta.city ? `<span class="imls-hood">${meta.label}</span>` : ''}</td>
+      <td>${meta.county}</td>
+      <td class="imls-area-cell">${areaCell}</td>
+      ${metricCells}
+    </tr>`;
+  }).join('');
+
+  tableWrap.innerHTML = `<table class="data-table imls-table">
+    <thead><tr>
+      <th>ZIP</th><th>City / Neighborhood</th><th>County</th><th>IMLS Area(s)</th>${metricCols}
+    </tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+  <div class="imls-empty" hidden>No ZIPs match these filters.</div>`;
+  wrap.appendChild(tableWrap);
+
+  // ── Area reference table ──
+  const areaTitle = document.createElement('div');
+  areaTitle.className = 'subsection-title';
+  areaTitle.style.marginTop = '36px';
+  areaTitle.textContent = 'IMLS Area Reference';
+  wrap.appendChild(areaTitle);
+
+  const areaWrap = document.createElement('div');
+  areaWrap.className = 'imls-table-wrap';
+  areaWrap.innerHTML = `<table class="data-table imls-area-table">
+    <thead><tr><th>Area</th><th>Name</th><th>ZIP distribution</th><th>Primary city</th></tr></thead>
+    <tbody>${IMLS_AREAS.map(a => {
+      const primary = imlsZipMeta(a.zips[0][0]);
+      return `<tr data-area="${a.code}">
+        <td class="imls-zip-cell">${a.code}</td>
+        <td>${a.name}</td>
+        <td>${a.zips.map(([z, p]) => `<span class="imls-area-pill">${z}<em>${p}%</em></span>`).join('')}</td>
+        <td>${primary ? primary.city : '—'}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+  wrap.appendChild(areaWrap);
+
+  // ── Filter behaviour ──
+  const state = { county: 'all', area: 'all', q: '' };
+  const rows      = () => Array.from(wrap.querySelectorAll('.imls-row'));
+  const searchEl  = wrap.querySelector('.imls-search');
+  const emptyEl   = wrap.querySelector('.imls-empty');
+  const toggle    = wrap.querySelector('.imls-filter-toggle');
+  const countEl   = wrap.querySelector('.imls-filter-count');
+
+  function visibleRows() {
+    return rows().filter(r => {
+      if (state.county === 'Ada' || state.county === 'Canyon') {
+        if (r.dataset.county !== state.county) return false;
+      } else if (state.county === 'mapped'   && r.dataset.mapped !== '1') {
+        return false;
+      } else if (state.county === 'unmapped' && r.dataset.mapped !== '0') {
+        return false;
+      }
+      if (state.area !== 'all' && !r.dataset.areas.split(' ').includes(state.area)) return false;
+      if (state.q && !r.dataset.search.includes(state.q)) return false;
+      return true;
+    });
+  }
+
+  function apply() {
+    const vis = new Set(visibleRows());
+    rows().forEach(r => { r.hidden = !vis.has(r); });
+    emptyEl.hidden = vis.size > 0;
+    countEl.textContent = `${vis.size} ZIP${vis.size === 1 ? '' : 's'}`;
+    // Dim area-reference rows that fall outside the current area filter
+    areaWrap.querySelectorAll('tr[data-area]').forEach(tr => {
+      tr.classList.toggle('imls-dim', state.area !== 'all' && tr.dataset.area !== state.area);
+    });
+  }
+
+  wrap.querySelectorAll('.imls-tile-row').forEach(row => {
+    row.addEventListener('click', e => {
+      const tile = e.target.closest('.imls-tile');
+      if (!tile) return;
+      row.querySelectorAll('.imls-tile').forEach(t => t.classList.toggle('active', t === tile));
+      state[row.dataset.group] = tile.dataset.value;
+      apply();
+    });
+  });
+
+  searchEl.addEventListener('input', () => {
+    state.q = searchEl.value.trim().toLowerCase();
+    apply();
+  });
+
+  wrap.querySelector('.imls-reset').addEventListener('click', () => {
+    state.county = 'all'; state.area = 'all'; state.q = '';
+    searchEl.value = '';
+    wrap.querySelectorAll('.imls-tile-row').forEach(row => {
+      row.querySelectorAll('.imls-tile').forEach((t, i) => t.classList.toggle('active', i === 0));
+    });
+    apply();
+  });
+
+  toggle.addEventListener('click', () => {
+    const open = filters.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', String(open));
+  });
+
+  wrap.querySelector('.imls-csv').addEventListener('click', () => {
+    exportImlsCsv(visibleRows().map(r => r.dataset.zip), liveZip, hasLive);
+  });
+
+  // Open a ZIP's detail modal when live metrics exist for it
+  tableWrap.addEventListener('click', e => {
+    const tr = e.target.closest('.imls-row');
+    if (!tr) return;
+    const z = liveZip[tr.dataset.zip];
+    if (z) openBoiseZipDetail(z);
+  });
+
+  apply();
+  return wrap;
+}
+
+function exportImlsCsv(zips, liveZip, hasLive) {
+  const header = ['ZIP', 'City', 'Neighborhood', 'County', 'IMLS Areas', 'Area Shares'];
+  if (hasLive) header.push('Median List', 'Median Close', 'Active', 'Pending', 'Closed 30d', 'Median DOM', 'Sale-to-List %');
+
+  const rows = [
+    ['Boise MSA — IMLS Area / ZIP Cross-Reference'],
+    ['Source: Intermountain MLS area crosswalk (imlsmembers.com/areas)'],
+    [`Exported ${new Date().toISOString().slice(0, 10)} · ${zips.length} ZIPs`],
+    [],
+    header,
+  ];
+
+  zips.forEach(zip => {
+    const meta  = imlsZipMeta(zip) || { city: '', label: '', county: '' };
+    const areas = imlsAreasForZip(zip);
+    const row = [
+      zip, meta.city, meta.label, meta.county,
+      areas.map(a => `${a.code} ${a.name}`).join('; ') || 'No IMLS area',
+      areas.map(a => `${a.code}=${a.pct}%`).join('; ') || '',
+    ];
+    if (hasLive) {
+      const m = liveZip[zip];
+      row.push(
+        m && m.median_list_price  ? Math.round(m.median_list_price)  : '',
+        m && m.median_close_price ? Math.round(m.median_close_price) : '',
+        m ? m.active_listings  : '',
+        m ? m.pending_listings : '',
+        m ? m.closed_sales_30d : '',
+        m && m.median_dom ? Math.round(m.median_dom) : '',
+        m && m.sale_to_list_ratio ? m.sale_to_list_ratio.toFixed(2) : '',
+      );
+    }
+    rows.push(row);
+  });
+
+  const csv = rows.map(r => r.map(v => {
+    const s = v === null || v === undefined ? '' : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }).join(',')).join('\n');
+
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `boise-imls-area-zip-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 // ── Section: Zip Code ────────────────────────────────────────────────────────
@@ -2804,7 +2973,7 @@ function renderLuisRamiro() {
       </div>
       <div style="font-size:.72rem;color:${c.color};font-weight:600;margin-bottom:2px">${c.tag}</div>
       <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:8px">${c.location}</div>
-      <div class="luxury-chart-wrap" style="height:150px"><canvas id="lr-chart-${c.id}"></canvas></div>
+      <div class="luxury-chart-wrap" style="height:170px"><canvas id="lr-chart-${c.id}"></canvas></div>
       <div style="font-size:.72rem;color:var(--text-muted);margin-top:8px;line-height:1.4">${c.note}</div>
     `;
     grid.appendChild(card);
@@ -2857,7 +3026,11 @@ function renderLuisRamiro() {
             },
           },
           scales: {
-            x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { display: false }, border: { display: false } },
+            x: {
+              ticks: { color: tickColor, font: { size: 10 } },
+              grid: { display: false }, border: { display: false },
+              title: { display: true, text: `📅 ${c.date}`, color: '#aeb6c9', font: { size: 10, weight: '600' }, padding: { top: 6 } },
+            },
             y: {
               beginAtZero: true,
               grace: '12%',
@@ -2903,7 +3076,6 @@ const RENDERERS = {
   fed: renderFed,
   upcoming: renderUpcoming,
   recent: renderRecent,
-  boise: renderBoise,
   flagged: renderFlagged,
   alldata: renderAllData,
   raquel: renderRaquel,
