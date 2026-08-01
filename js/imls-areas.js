@@ -1,6 +1,7 @@
 // Intermountain MLS (IMLS) Area → ZIP crosswalk
-// Source: IMLS "Areas" reference (imlsmembers.com/areas) + Group One Sotheby's
-//         Market Statistics area/ZIP distribution report.
+// Source: IMLS "Areas" reference (imlsmembers.com/areas); intra-area ZIP
+//         percentages updated 2026-07-31 from live Boise MLS listing
+//         distribution in Databricks (main.gold_mls.search_listings).
 //
 // IMLS reports market statistics by AREA, not by ZIP. Areas map many-to-many
 // onto ZIPs: an area spans several ZIPs, and a ZIP can appear in several areas.
@@ -14,23 +15,23 @@
 // inventory has no IMLS area assignment here.
 
 const IMLS_AREAS = [
-  { code: '100',  name: 'North Boise',                zips: [['83702', 82], ['83703', 17]] },
-  { code: '200',  name: 'Northeast Boise',            zips: [['83716', 54], ['83712', 44]] },
-  { code: '300',  name: 'Southeast Boise',            zips: [['83706', 58], ['83716', 39]] },
-  { code: '400',  name: 'Boise Bench',                zips: [['83705', 69], ['83709', 15], ['83706', 12]] },
-  { code: '500',  name: 'Southwest Boise',            zips: [['83709', 96]] },
-  { code: '550',  name: 'S.W. Boise — Meridian Dist.', zips: [['83709', 86], ['83642', 13]] },
-  { code: '600',  name: 'West Boise',                 zips: [['83704', 78], ['83709', 13], ['83713', 6]] },
-  { code: '650',  name: 'West Boise — Meridian Dist.', zips: [['83713', 57], ['83704', 25], ['83714', 6]] },
-  { code: '700',  name: 'Garden City — Meridian Dist.', zips: [['83714', 97]] },
-  { code: '800',  name: 'Northwest Boise / Garden City', zips: [['83714', 63], ['83703', 35]] },
-  { code: '900',  name: 'Eagle',                      zips: [['83616', 96]] },
-  { code: '950',  name: 'Star — Meridian Dist.',      zips: [['83669', 97]] },
-  { code: '1000', name: 'S.E. Meridian',              zips: [['83642', 99]] },
-  { code: '1010', name: 'S.W. Meridian',              zips: [['83642', 97]] },
-  { code: '1020', name: 'N.E. Meridian',              zips: [['83646', 60], ['83642', 34], ['83713', 5]] },
-  { code: '1030', name: 'N.W. Meridian',              zips: [['83646', 63], ['83642', 37]] },
-  { code: '1100', name: 'Kuna',                       zips: [['83634', 93], ['83642', 6]] },
+  { code: '100',  name: 'North Boise',                zips: [['83702', 59], ['83703', 41]] },
+  { code: '200',  name: 'Northeast Boise',            zips: [['83716', 55], ['83712', 45]] },
+  { code: '300',  name: 'Southeast Boise',            zips: [['83706', 62], ['83716', 38]] },
+  { code: '400',  name: 'Boise Bench',                zips: [['83709', 51], ['83706', 25], ['83705', 24]] },
+  { code: '500',  name: 'Southwest Boise',            zips: [['83709', 100]] },
+  { code: '550',  name: 'S.W. Boise — Meridian Dist.', zips: [['83642', 54], ['83709', 46]] },
+  { code: '600',  name: 'West Boise',                 zips: [['83709', 49], ['83704', 36], ['83713', 15]] },
+  { code: '650',  name: 'West Boise — Meridian Dist.', zips: [['83704', 37], ['83714', 37], ['83713', 26]] },
+  { code: '700',  name: 'Garden City — Meridian Dist.', zips: [['83714', 100]] },
+  { code: '800',  name: 'Northwest Boise / Garden City', zips: [['83714', 65], ['83703', 35]] },
+  { code: '900',  name: 'Eagle',                      zips: [['83616', 100]] },
+  { code: '950',  name: 'Star — Meridian Dist.',      zips: [['83669', 100]] },
+  { code: '1000', name: 'S.E. Meridian',              zips: [['83642', 100]] },
+  { code: '1010', name: 'S.W. Meridian',              zips: [['83642', 100]] },
+  { code: '1020', name: 'N.E. Meridian',              zips: [['83646', 44], ['83642', 41], ['83713', 15]] },
+  { code: '1030', name: 'N.W. Meridian',              zips: [['83646', 55], ['83642', 45]] },
+  { code: '1100', name: 'Kuna',                       zips: [['83642', 65], ['83634', 35]] },
 ];
 
 // ── ZIP metadata ─────────────────────────────────────────────────────────────
