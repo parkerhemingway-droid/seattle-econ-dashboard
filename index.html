@@ -8,6 +8,16 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  <!-- Mobile-only top bar: section dropdown + drawer toggle for the sidebar.
+       Hidden at >768px, where the sidebar itself is always visible. -->
+  <div id="mobile-topbar">
+    <button id="sidebar-toggle" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+      <span class="hamburger-bars" aria-hidden="true"></span>
+    </button>
+    <select id="mobile-nav-select" aria-label="Select section"></select>
+  </div>
+  <div id="sidebar-backdrop" hidden></div>
+
   <aside id="sidebar">
     <div class="sidebar-header">
       <div class="logo-img-wrap">

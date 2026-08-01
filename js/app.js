@@ -3090,6 +3090,7 @@ function navigate(section) {
     a.classList.toggle('active', a.dataset.section === section);
   });
   document.getElementById('zip-input').value = '';
+  syncMobileNav(section);
   const main = document.getElementById('main-content');
   main.innerHTML = '';
   const renderer = RENDERERS[section] || renderToday;
@@ -3103,6 +3104,7 @@ function navigateZip(zip) {
   currentZip = zip;
   document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
   document.getElementById('zip-input').value = zip;
+  syncMobileNavZip(zip);
   const main = document.getElementById('main-content');
   main.innerHTML = '';
   main.appendChild(renderZip(zip));
@@ -3154,6 +3156,98 @@ function renderSearchResults(query) {
     });
   });
 }
+
+// ── Mobile navigation ────────────────────────────────────────────────────────
+// Under 768px the sidebar is off-canvas, so a fixed top bar carries a native
+// <select> for sections plus a toggle that slides the sidebar in as a drawer.
+// Options are built from the existing .nav-link elements so the sidebar stays
+// the single source of truth for what sections exist.
+
+function buildMobileNavSelect() {
+  const sel = document.getElementById('mobile-nav-select');
+  if (!sel) return;
+  document.querySelectorAll('.nav-link').forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.dataset.section;
+    opt.textContent = a.textContent.trim();
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', () => {
+    if (sel.value) navigate(sel.value);
+  });
+}
+
+// Zip views aren't in the section list, so they get a transient option that is
+// removed as soon as the user navigates back to a real section.
+function syncMobileNav(section) {
+  const sel = document.getElementById('mobile-nav-select');
+  if (!sel) return;
+  const zipOpt = sel.querySelector('option[data-zip]');
+  if (zipOpt) zipOpt.remove();
+  sel.value = section;
+}
+
+function syncMobileNavZip(zip) {
+  const sel = document.getElementById('mobile-nav-select');
+  if (!sel) return;
+  let zipOpt = sel.querySelector('option[data-zip]');
+  if (!zipOpt) {
+    zipOpt = document.createElement('option');
+    zipOpt.dataset.zip = '1';
+    zipOpt.value = '__zip';
+    sel.insertBefore(zipOpt, sel.firstChild);
+  }
+  zipOpt.textContent = `ZIP ${zip}`;
+  sel.value = '__zip';
+}
+
+function setSidebarOpen(open) {
+  const sidebar  = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const toggle   = document.getElementById('sidebar-toggle');
+  if (!sidebar) return;
+  sidebar.classList.toggle('open', open);
+  if (backdrop) backdrop.hidden = !open;
+  if (toggle) {
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  }
+  // Stop the page behind the drawer from scrolling
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+
+function initMobileNav() {
+  buildMobileNavSelect();
+
+  const toggle   = document.getElementById('sidebar-toggle');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const sidebar  = document.getElementById('sidebar');
+
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      setSidebarOpen(!sidebar.classList.contains('open'));
+    });
+  }
+  if (backdrop) backdrop.addEventListener('click', () => setSidebarOpen(false));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') setSidebarOpen(false);
+  });
+
+  // Any navigation from inside the drawer should dismiss it
+  document.querySelectorAll('#sidebar .nav-link').forEach(a => {
+    a.addEventListener('click', () => setSidebarOpen(false));
+  });
+  const zipGo = document.getElementById('zip-go-btn');
+  if (zipGo) zipGo.addEventListener('click', () => setSidebarOpen(false));
+
+  // Never leave the drawer latched open when rotating/resizing to desktop
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) setSidebarOpen(false);
+  });
+}
+
+initMobileNav();
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 

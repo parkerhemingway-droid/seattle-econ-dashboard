@@ -965,10 +965,103 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
+/* ── Mobile top bar ───────────────────────────────────────────────────────────
+   Desktop-hidden. On phones the sidebar slides off-canvas, so this bar carries
+   the section dropdown plus a toggle that brings the full sidebar back in
+   (zip drill-down, metric search and Databricks config all live there). */
+#mobile-topbar {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 120;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+#sidebar-toggle {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  cursor: pointer;
+}
+#sidebar-toggle:active { background: var(--surface); }
+
+/* Three bars drawn from one element (border box + ::before/::after siblings
+   would need extra markup; a repeating gradient keeps it to one node) */
+.hamburger-bars {
+  width: 17px;
+  height: 11px;
+  background: linear-gradient(var(--text) 0 0) top   / 100% 1.5px no-repeat,
+              linear-gradient(var(--text) 0 0) center/ 100% 1.5px no-repeat,
+              linear-gradient(var(--text) 0 0) bottom/ 100% 1.5px no-repeat;
+}
+
+#mobile-nav-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  /* 16px exactly — anything smaller makes iOS Safari zoom the page on focus */
+  font-size: 16px;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  padding: 10px 34px 10px 12px;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+                    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 17px) calc(50% + 2px), calc(100% - 12px) calc(50% + 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+#mobile-nav-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+#sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 125;
+  background: rgba(0, 0, 0, 0.55);
+}
+#sidebar-backdrop[hidden] { display: none; }
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
-  #sidebar { transform: translateX(-100%); }
-  #main-content { margin-left: 0; padding: 16px; }
+  #mobile-topbar { display: flex; }
+
+  #sidebar {
+    width: min(86vw, 300px);
+    z-index: 130;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+  }
+  #sidebar.open { transform: translateX(0); }
+
+  #main-content {
+    margin-left: 0;
+    padding: 16px;
+    padding-top: 72px; /* clear the fixed top bar */
+  }
+}
+
+@media (min-width: 769px) {
+  /* Drawer state must never leak into the desktop layout */
+  #sidebar-backdrop { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #sidebar { transition: none; }
 }
 
 /* ── Boise: IMLS Area / ZIP cross-reference ── */
