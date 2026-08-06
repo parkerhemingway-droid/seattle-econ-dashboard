@@ -1415,3 +1415,38 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
 .ar-chart .ar-panel-label {
   fill: var(--text-muted); font-size: 8px; font-weight: 700; letter-spacing: 0.09em;
 }
+
+/* ── Scope control bar (segment filter + PDF export) ── */
+.ar-controls {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin: 18px 0 4px; padding: 11px 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+}
+.ar-controls-label {
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.09em; color: var(--text-muted);
+}
+.ar-pdf-btn {
+  display: inline-flex; align-items: center; gap: 7px; margin-left: auto;
+  background: var(--mr-blue); color: #fff; border: none; border-radius: 6px;
+  font: inherit; font-size: 0.74rem; font-weight: 700;
+  padding: 6px 13px; cursor: pointer;
+}
+.ar-pdf-btn:hover { background: #2a94ff; }
+.ar-pdf-btn:active { transform: translateY(1px); }
+.ar-pdf-btn svg { flex: none; }
+.ar-pdf-hint { font-size: 0.66rem; color: var(--text-muted); }
+
+/* Scope filtering. Blocks tag themselves with the segment they belong to;
+   'all' shows everything, and the Total block is never hidden because it is
+   the county baseline every segment is measured against. */
+.ar-scope-new      .ar-seg[data-seg="existing"],
+.ar-scope-existing .ar-seg[data-seg="new"] { display: none; }
+.ar-existing-only[hidden] { display: none; }
+
+@media (max-width: 768px) {
+  .ar-controls { gap: 9px; }
+  .ar-pdf-btn { margin-left: 0; }
+  .ar-pdf-hint { display: none; }
+}

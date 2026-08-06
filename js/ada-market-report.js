@@ -64,6 +64,34 @@ function arBrandLockup() {
   </div>`;
 }
 
+// ── Scope: which product segment the whole report is filtered to ─────────────
+// 'all' shows New and Existing side by side; 'new' / 'existing' narrow every
+// section to that segment. The Total block is kept under every scope — it is
+// the county baseline the segment is read against, and dropping it would leave
+// the shares ("% of sales") without a denominator on the page.
+const AR_SCOPES = [
+  { key: 'all',      label: 'All Product' },
+  { key: 'new',      label: 'New Construction' },
+  { key: 'existing', label: 'Existing' }
+];
+
+function arScopeBar() {
+  const btns = AR_SCOPES.map(s =>
+    `<button class="ar-toggle-btn${s.key === 'all' ? ' active' : ''}" data-scope="${s.key}"
+       aria-pressed="${s.key === 'all'}">${s.label}</button>`).join('');
+  return `<div class="ar-controls">
+    <span class="ar-controls-label">View</span>
+    <span class="ar-toggle" role="group" aria-label="Product segment">${btns}</span>
+    <button class="ar-pdf-btn" id="ar-pdf" type="button">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>Download PDF</button>
+    <span class="ar-pdf-hint">Letter landscape &middot; choose “Save as PDF”</span>
+  </div>`;
+}
+
 // ── Section 1: summary statistics ────────────────────────────────────────────
 // The source report carries Jul-25 and YTD-25 columns, but 949 of the 991
 // July-2025 Ada closings have no close_price recorded (95.8%). Every 2025 price
@@ -102,7 +130,7 @@ function arSummaryTable(key) {
     </tr>`;
   }).join('');
 
-  return `<div class="ar-tablecard">
+  return `<div class="ar-tablecard ar-seg" data-seg="${key}">
     <div class="ar-tablecard-head">
       <span class="ar-swatch" style="background:${s.color}"></span>
       <span class="ar-tablecard-title">${s.label}</span>
@@ -136,7 +164,7 @@ function arKpiRow() {
   };
   return ['total', 'existing', 'new'].map(key => {
     const s = AR_SERIES[key], m = pick(key);
-    return `<div class="ar-kpi" style="--ar-accent:${s.color}">
+    return `<div class="ar-kpi ar-seg" data-seg="${key}" style="--ar-accent:${s.color}">
       <div class="ar-kpi-label"><span class="ar-swatch" style="background:${s.color}"></span>${s.label}</div>
       <div class="ar-kpi-value">${arNum(m.sold.vals[0])}<span class="ar-kpi-unit">sold · Jul-26</span></div>
       <div class="ar-kpi-delta">${arDelta(m.sold.pct ? m.sold.pct[0] : null)} vs Jul-25 units</div>
@@ -157,57 +185,98 @@ function arKpiRow() {
 // units. Those cells are flagged rather than silently shown.
 const AR_SUSPECT_AREAS = { '1000': true, '1010': true };
 
-function arAreaSection() {
-  const maxSold = Math.max(...ADA_REPORT.areas.map(a => a.total.sold));
-  const rows = ADA_REPORT.areas.map(a => {
+// Under 'all' the bar cell splits new vs existing. Under a single segment it
+// shows that segment's share of its own county total, so bar length stays
+// comparable down the column instead of silently changing meaning.
+function arAreaSection(scope = 'all') {
+  const T = ADA_REPORT.areaTotals;
+  const seg = a => scope === 'new' ? a.new : scope === 'existing' ? a.existing : a.total;
+  // Ordered by the metric on display; sorting by total under a segment scope
+  // yields a column that looks ranked but isn't.
+  const areas = ADA_REPORT.areas.slice().sort((a, b) => seg(b).sold - seg(a).sold);
+  const segT = scope === 'new' ? T.new : scope === 'existing' ? T.existing : T.total;
+  const maxSold = Math.max(...areas.map(a => seg(a).sold), 1);
+  const segColor = scope === 'new' ? MR.blue : scope === 'existing' ? MR.slate : MR.purple;
+
+  const rows = areas.map(a => {
     const suspect = AR_SUSPECT_AREAS[a.code];
-    const w = pctW => Math.max(1, (pctW / maxSold) * 100);
-    const mix = a.total.sold ? (a.new.sold / a.total.sold) * 100 : 0;
+    const s = seg(a);
+    const w = v => Math.max(v ? 1 : 0, (v / maxSold) * 100);
+    const flag = suspect
+      ? ' <span class="ar-flag" title="Average and median price duplicated across Meridian SE / SW in the source — treat as provisional">⚑</span>'
+      : '';
+    const sc = suspect ? ' ar-suspect' : '';
+
+    const bar = scope === 'all'
+      ? `<div class="ar-bar-wrap" title="${a.new.sold} new · ${a.existing.sold} existing">
+           <div class="ar-bar ar-bar-new" style="width:${w(a.new.sold)}%"></div>
+           <div class="ar-bar ar-bar-ex" style="width:${w(a.existing.sold)}%"></div>
+         </div>`
+      : `<div class="ar-bar-wrap" title="${s.sold} ${scope === 'new' ? 'new' : 'existing'}">
+           <div class="ar-bar" style="width:${w(s.sold)}%;background:${segColor}"></div>
+         </div>`;
+
+    const mid = scope === 'all'
+      ? `<td class="ar-figure"><b>${a.total.sold}</b></td>
+         <td class="ar-figure" style="color:${MR.blue}">${a.new.sold}</td>
+         <td class="ar-figure" style="color:${MR.slate}">${a.existing.sold}</td>
+         <td class="ar-figure">${arPct(a.total.sold ? (a.new.sold / a.total.sold) * 100 : 0)}</td>
+         <td class="ar-figure">${arPct(a.total.pct)}</td>`
+      : `<td class="ar-figure" style="color:${segColor}"><b>${s.sold}</b></td>
+         <td class="ar-figure">${arPct(s.pct)}</td>
+         <td class="ar-figure">${a.total.sold}</td>
+         <td class="ar-figure">${arPct(a.total.sold ? (s.sold / a.total.sold) * 100 : 0)}</td>`;
+
     return `<tr data-area="${a.code}">
-      <td class="ar-rowlab">${a.name}${suspect ? ' <span class="ar-flag" title="Average and median price duplicated across Meridian SE / SW in the source — treat as provisional">⚑</span>' : ''}</td>
+      <td class="ar-rowlab">${a.name}${flag}</td>
       <td class="ar-figure">${a.code}</td>
-      <td class="ar-barcell">
-        <div class="ar-bar-wrap" title="${a.new.sold} new · ${a.existing.sold} existing">
-          <div class="ar-bar ar-bar-new" style="width:${w(a.new.sold)}%"></div>
-          <div class="ar-bar ar-bar-ex" style="width:${w(a.existing.sold)}%"></div>
-        </div>
-      </td>
-      <td class="ar-figure"><b>${a.total.sold}</b></td>
-      <td class="ar-figure" style="color:${MR.blue}">${a.new.sold}</td>
-      <td class="ar-figure" style="color:${MR.slate}">${a.existing.sold}</td>
-      <td class="ar-figure">${arPct(mix)}</td>
-      <td class="ar-figure">${arPct(a.total.pct)}</td>
-      <td class="ar-figure${suspect ? ' ar-suspect' : ''}">${arMoney(a.total.avg)}</td>
-      <td class="ar-figure${suspect ? ' ar-suspect' : ''}">${arMoney(a.total.med)}</td>
+      <td class="ar-barcell">${bar}</td>
+      ${mid}
+      <td class="ar-figure${sc}">${arMoney(s.avg)}</td>
+      <td class="ar-figure${sc}">${arMoney(s.med)}</td>
     </tr>`;
   }).join('');
 
-  const T = ADA_REPORT.areaTotals;
+  const head = scope === 'all'
+    ? `<th class="ar-figure">Sold</th><th class="ar-figure">New</th>
+       <th class="ar-figure">Existing</th><th class="ar-figure">New %</th>
+       <th class="ar-figure">Mkt %</th>`
+    : `<th class="ar-figure">Sold</th><th class="ar-figure">% of Segment</th>
+       <th class="ar-figure">Area Total</th><th class="ar-figure">Share of Area</th>`;
+
+  const foot = scope === 'all'
+    ? `<td class="ar-figure"><b>${arNum(T.total.sold)}</b></td>
+       <td class="ar-figure" style="color:${MR.blue}"><b>${arNum(T.new.sold)}</b></td>
+       <td class="ar-figure" style="color:${MR.slate}"><b>${arNum(T.existing.sold)}</b></td>
+       <td class="ar-figure">${arPct(T.new.sold / T.total.sold * 100)}</td>
+       <td class="ar-figure">100.0%</td>`
+    : `<td class="ar-figure" style="color:${segColor}"><b>${arNum(segT.sold)}</b></td>
+       <td class="ar-figure">100.0%</td>
+       <td class="ar-figure">${arNum(T.total.sold)}</td>
+       <td class="ar-figure">${arPct(segT.sold / T.total.sold * 100)}</td>`;
+
+  const legend = scope === 'all'
+    ? `<i class="ar-swatch" style="background:${MR.blue}"></i>New
+       <i class="ar-swatch" style="background:${MR.slate}"></i>Existing`
+    : `<i class="ar-swatch" style="background:${segColor}"></i>${AR_SERIES[scope].label}`;
+
   return `<div class="ar-tablecard">
     <div class="ar-tablecard-head">
-      <span class="ar-tablecard-title">Sales by IMLS Area — July 2026</span>
-      <span class="ar-legend">
-        <i class="ar-swatch" style="background:${MR.blue}"></i>New
-        <i class="ar-swatch" style="background:${MR.slate}"></i>Existing
-      </span>
+      <span class="ar-tablecard-title">Sales by IMLS Area — ${ADA_REPORT.period}</span>
+      <span class="ar-legend">${legend}</span>
     </div>
     <div class="ar-scroll">
     <table class="data-table ar-table ar-area-table">
       <thead><tr>
         <th>MLS Area</th><th class="ar-figure">Code</th><th style="width:150px">Mix</th>
-        <th class="ar-figure">Sold</th><th class="ar-figure">New</th><th class="ar-figure">Existing</th>
-        <th class="ar-figure">New %</th><th class="ar-figure">Mkt %</th>
+        ${head}
         <th class="ar-figure">Avg Price</th><th class="ar-figure">Median</th>
       </tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr>
         <td class="ar-rowlab"><b>All areas</b></td><td class="ar-figure">—</td><td></td>
-        <td class="ar-figure"><b>${arNum(T.total.sold)}</b></td>
-        <td class="ar-figure" style="color:${MR.blue}"><b>${arNum(T.new.sold)}</b></td>
-        <td class="ar-figure" style="color:${MR.slate}"><b>${arNum(T.existing.sold)}</b></td>
-        <td class="ar-figure">${arPct(T.new.sold / T.total.sold * 100)}</td>
-        <td class="ar-figure">100.0%</td>
-        <td class="ar-figure"><b>${arMoney(T.total.avg)}</b></td>
+        ${foot}
+        <td class="ar-figure"><b>${arMoney(segT.avg)}</b></td>
         <td class="ar-figure">—</td>
       </tr></tfoot>
     </table>
@@ -216,52 +285,70 @@ function arAreaSection() {
 }
 
 // ── Section 3: units sold by price class ─────────────────────────────────────
-function arPriceClassSection() {
-  const build = which => {
-    const data = which === 'jul' ? ADA_REPORT.priceClassJul : ADA_REPORT.priceClassYtd;
-    const max = Math.max(...data.map(r => Math.max(r.new, r.ex)));
-    return data.map(r => {
-      const empty = r.new === 0 && r.ex === 0;
-      return `<tr class="${empty ? 'ar-empty' : ''}">
-        <td class="ar-rowlab">${r.range}</td>
-        <td class="ar-figure" style="color:${MR.blue}">${r.new || '—'}</td>
-        <td class="ar-figure">${r.new ? arPct(r.newPct) : '—'}</td>
-        <td class="ar-barcell">
-          <div class="ar-bar-wrap ar-bar-split">
-            <div class="ar-bar ar-bar-new" style="width:${max ? (r.new / max) * 100 : 0}%"></div>
-            <div class="ar-bar ar-bar-ex" style="width:${max ? (r.ex / max) * 100 : 0}%"></div>
-          </div>
-        </td>
-        <td class="ar-figure" style="color:${MR.slate}">${r.ex || '—'}</td>
-        <td class="ar-figure">${r.ex ? arPct(r.exPct) : '—'}</td>
-      </tr>`;
-    }).join('');
-  };
+// Rows are rebuilt on both the period toggle and the scope toggle, so the
+// builder is shared rather than duplicated in the event handler.
+function arPriceClassRows(which, scope = 'all') {
+  const data = which === 'jul' ? ADA_REPORT.priceClassJul : ADA_REPORT.priceClassYtd;
+  const showNew = scope !== 'existing', showEx = scope !== 'new';
+  // Bars are scaled against the largest bar actually on screen, so narrowing to
+  // one segment re-fills the column instead of leaving every bar half-length.
+  const max = Math.max(...data.map(r => Math.max(showNew ? r.new : 0, showEx ? r.ex : 0)), 1);
+
+  return data.map(r => {
+    const shown = (showNew ? r.new : 0) + (showEx ? r.ex : 0);
+    const newCells = showNew
+      ? `<td class="ar-figure" style="color:${MR.blue}">${r.new || '—'}</td>
+         <td class="ar-figure">${r.new ? arPct(r.newPct) : '—'}</td>` : '';
+    const exCells = showEx
+      ? `<td class="ar-figure" style="color:${MR.slate}">${r.ex || '—'}</td>
+         <td class="ar-figure">${r.ex ? arPct(r.exPct) : '—'}</td>` : '';
+    const bar = `<td class="ar-barcell">
+        <div class="ar-bar-wrap ar-bar-split">
+          ${showNew ? `<div class="ar-bar ar-bar-new" style="width:${(r.new / max) * 100}%"></div>` : ''}
+          ${showEx ? `<div class="ar-bar ar-bar-ex" style="width:${(r.ex / max) * 100}%"></div>` : ''}
+        </div>
+      </td>`;
+    // "All" is a butterfly: New | bars | Existing. With one segment there is no
+    // second wing to balance, so the bars trail the figures they belong to.
+    const body = showNew && showEx ? newCells + bar + exCells : newCells + exCells + bar;
+    return `<tr class="${shown ? '' : 'ar-empty'}">
+      <td class="ar-rowlab">${r.range}</td>
+      ${body}
+    </tr>`;
+  }).join('');
+}
+
+function arPriceClassSection(scope = 'all', which = 'jul') {
+  const showNew = scope !== 'existing', showEx = scope !== 'new';
+  const legend = scope === 'all'
+    ? `<i class="ar-swatch" style="background:${MR.blue}"></i>New
+       <i class="ar-swatch" style="background:${MR.slate}"></i>Existing`
+    : `<i class="ar-swatch" style="background:${showNew ? MR.blue : MR.slate}"></i>${AR_SERIES[scope].label}`;
 
   return `<div class="ar-tablecard">
     <div class="ar-tablecard-head">
       <span class="ar-tablecard-title">Units Sold by Price Class</span>
       <span class="ar-toggle" role="group" aria-label="Period">
-        <button class="ar-toggle-btn active" data-pc="jul">July 2026</button>
-        <button class="ar-toggle-btn" data-pc="ytd">Year to Date</button>
+        <button class="ar-toggle-btn${which === 'jul' ? ' active' : ''}" data-pc="jul">${ADA_REPORT.period}</button>
+        <button class="ar-toggle-btn${which === 'ytd' ? ' active' : ''}" data-pc="ytd">Year to Date</button>
       </span>
-      <span class="ar-legend">
-        <i class="ar-swatch" style="background:${MR.blue}"></i>New
-        <i class="ar-swatch" style="background:${MR.slate}"></i>Existing
-      </span>
+      <span class="ar-legend">${legend}</span>
     </div>
     <div class="ar-scroll">
     <table class="data-table ar-table">
       <thead><tr>
         <th>Sales Price Range</th>
-        <th class="ar-figure">New</th><th class="ar-figure">New %</th>
-        <th style="width:170px">Distribution</th>
-        <th class="ar-figure">Existing</th><th class="ar-figure">Existing %</th>
+        ${showNew && showEx
+          ? '<th class="ar-figure">New</th><th class="ar-figure">New %</th>'
+            + '<th style="width:170px">Distribution</th>'
+            + '<th class="ar-figure">Existing</th><th class="ar-figure">Existing %</th>'
+          : (showNew ? '<th class="ar-figure">New</th><th class="ar-figure">New %</th>'
+                     : '<th class="ar-figure">Existing</th><th class="ar-figure">Existing %</th>')
+            + '<th style="width:170px">Distribution</th>'}
       </tr></thead>
-      <tbody id="ar-pc-body">${build('jul')}</tbody>
+      <tbody id="ar-pc-body">${arPriceClassRows(which, scope)}</tbody>
     </table>
     </div>
-    <div class="ar-pc-cache" hidden data-jul="1"></div>
   </div>`;
 }
 
@@ -456,6 +543,8 @@ function buildAdaMarketReport() {
       <button class="ar-linkbtn" id="ar-toggle-2025">Show 2025 columns</button>
     </div>
 
+    ${arScopeBar()}
+
     <div class="ar-kpirow">${arKpiRow()}</div>
 
     <div class="ar-blocktitle">Section 1 · Summary Statistics</div>
@@ -464,7 +553,7 @@ function buildAdaMarketReport() {
     ${arSummaryTable('new')}
 
     <div class="ar-blocktitle">Section 2 · Sales by IMLS Area</div>
-    ${arAreaSection()}
+    <div id="ar-area-host">${arAreaSection('all')}</div>
     <div class="ar-callout ar-callout-note">
       <b>Flagged:</b> Meridian SE (1000) and Meridian SW (1010) report identical average
       ($646,125) and median ($600,000) prices across different unit counts (51 vs 50), which a
@@ -475,11 +564,19 @@ function buildAdaMarketReport() {
     </div>
 
     <div class="ar-blocktitle">Section 3 · Units Sold by Price Class</div>
-    ${arPriceClassSection()}
+    <div id="ar-pc-host">${arPriceClassSection('all')}</div>
 
-    <div class="ar-blocktitle">Section 4 · New Construction Market Dynamics</div>
-    ${arNcTierSection()}
-    ${arTrendChart()}
+    <div class="ar-blocktitle ar-seg" data-seg="new">Section 4 · New Construction Market Dynamics</div>
+    <div class="ar-seg" data-seg="new">
+      ${arNcTierSection()}
+      ${arTrendChart()}
+    </div>
+    <div class="ar-callout ar-callout-note ar-existing-only" hidden>
+      <b>Section 4 is new-construction only.</b> The trailing-12-month tier table and 13-month
+      trend are cut from the new-construction listing set; there is no equivalent existing-home
+      tier series in <code>ADA_REPORT</code>, so the section is hidden under this view rather
+      than shown with new-construction numbers under an “Existing” label.
+    </div>
 
     <div class="ar-callout ar-callout-note">
       <b>Sources & method.</b> Sections 1–3 come from
@@ -509,33 +606,53 @@ function buildAdaMarketReport() {
     btn.textContent = on ? 'Hide 2025 columns' : 'Show 2025 columns';
   });
 
-  // Price-class period toggle
-  const pcBody = wrap.querySelector('#ar-pc-body');
-  wrap.querySelectorAll('.ar-toggle-btn').forEach(b => {
+  // Price-class period toggle. Delegated, because the card is re-rendered
+  // whenever the scope changes and a bound listener would go with it.
+  let arScope = 'all';
+  let arPeriod = 'jul';
+  const pcHost = wrap.querySelector('#ar-pc-host');
+  const areaHost = wrap.querySelector('#ar-area-host');
+
+  pcHost.addEventListener('click', e => {
+    const b = e.target.closest('.ar-toggle-btn[data-pc]');
+    if (!b) return;
+    arPeriod = b.dataset.pc;
+    pcHost.querySelectorAll('.ar-toggle-btn[data-pc]').forEach(x =>
+      x.classList.toggle('active', x === b));
+    pcHost.querySelector('#ar-pc-body').innerHTML = arPriceClassRows(arPeriod, arScope);
+  });
+
+  // Product-segment scope
+  wrap.querySelectorAll('.ar-toggle-btn[data-scope]').forEach(b => {
     b.addEventListener('click', () => {
-      wrap.querySelectorAll('.ar-toggle-btn').forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-      const which = b.dataset.pc;
-      const data = which === 'jul' ? ADA_REPORT.priceClassJul : ADA_REPORT.priceClassYtd;
-      const max = Math.max(...data.map(r => Math.max(r.new, r.ex)));
-      pcBody.innerHTML = data.map(r => {
-        const empty = r.new === 0 && r.ex === 0;
-        return `<tr class="${empty ? 'ar-empty' : ''}">
-          <td class="ar-rowlab">${r.range}</td>
-          <td class="ar-figure" style="color:${MR.blue}">${r.new || '—'}</td>
-          <td class="ar-figure">${r.new ? arPct(r.newPct) : '—'}</td>
-          <td class="ar-barcell">
-            <div class="ar-bar-wrap ar-bar-split">
-              <div class="ar-bar ar-bar-new" style="width:${max ? (r.new / max) * 100 : 0}%"></div>
-              <div class="ar-bar ar-bar-ex" style="width:${max ? (r.ex / max) * 100 : 0}%"></div>
-            </div>
-          </td>
-          <td class="ar-figure" style="color:${MR.slate}">${r.ex || '—'}</td>
-          <td class="ar-figure">${r.ex ? arPct(r.exPct) : '—'}</td>
-        </tr>`;
-      }).join('');
+      arScope = b.dataset.scope;
+      wrap.querySelectorAll('.ar-toggle-btn[data-scope]').forEach(x => {
+        const on = x === b;
+        x.classList.toggle('active', on);
+        x.setAttribute('aria-pressed', String(on));
+      });
+      // Scope drives visibility of the tagged blocks via CSS...
+      wrap.classList.remove('ar-scope-all', 'ar-scope-new', 'ar-scope-existing');
+      wrap.classList.add('ar-scope-' + arScope);
+      wrap.querySelector('.ar-existing-only').hidden = arScope !== 'existing';
+      // ...and a rebuild of the two tables whose columns actually change.
+      areaHost.innerHTML = arAreaSection(arScope);
+      pcHost.innerHTML = arPriceClassSection(arScope, arPeriod);
     });
   });
 
+  // PDF export — reflects whatever scope is on screen.
+  const pdfBtn = wrap.querySelector('#ar-pdf');
+  pdfBtn.addEventListener('click', () => {
+    if (typeof adaReportPdf !== 'function') return;
+    const ok = adaReportPdf(arScope);
+    if (!ok) {
+      pdfBtn.textContent = 'Popup blocked — allow popups';
+      setTimeout(() => { pdfBtn.innerHTML = pdfBtn.dataset.label; }, 3200);
+    }
+  });
+  pdfBtn.dataset.label = pdfBtn.innerHTML;
+
+  wrap.classList.add('ar-scope-all');
   return wrap;
 }
