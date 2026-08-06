@@ -1217,3 +1217,201 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
   .imls-table { font-size: 0.78rem; }
   .imls-table th, .imls-table td { padding: 7px 8px; }
 }
+
+/* ── Ada County Market Report (Boise MSA section) ───────────────────────────
+   Market Research palette. Hues are assigned by job, never cycled:
+   blue = New Construction · slate = Existing · purple = Total
+   green = favourable · orange = unfavourable · amber = caution / context line */
+:root {
+  --mr-blue:   #007bff;
+  --mr-purple: #9c27b0;
+  --mr-orange: #ff7043;
+  --mr-amber:  #ffb30f;
+  --mr-green:  #00d084;
+  --mr-slate:  #607d8b;
+}
+
+.ar-report { margin-top: 40px; }
+
+/* ── Branded header ── */
+.ar-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 18px 20px;
+  background: linear-gradient(90deg, rgba(0,123,255,0.10), rgba(0,123,255,0));
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--mr-blue);
+  border-radius: var(--card-radius);
+  position: relative;
+}
+.ar-brand { display: flex; align-items: center; gap: 11px; }
+.ar-brand-mark { height: 42px; width: auto; display: block; }
+.ar-brand-words { display: flex; flex-direction: column; line-height: 1.0; }
+.ar-brand-market {
+  font-size: 1.25rem; font-weight: 300; letter-spacing: -0.01em; color: var(--text);
+}
+.ar-brand-research {
+  font-size: 1.25rem; font-weight: 300; letter-spacing: -0.01em; color: var(--mr-blue);
+}
+.ar-brand-sub {
+  font-size: 0.52rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-muted); margin-top: 5px; font-family: Georgia, 'Times New Roman', serif;
+}
+.ar-header-titles { flex: 1; min-width: 240px; }
+.ar-title { font-size: 1.12rem; font-weight: 700; color: var(--text); }
+.ar-subtitle { font-size: 0.8rem; color: var(--text-muted); margin-top: 3px; }
+.ar-accentbar { display: flex; gap: 3px; }
+.ar-accentbar i { width: 20px; height: 5px; border-radius: 2px; display: block; }
+
+/* ── Callouts ── */
+.ar-callout {
+  border-radius: 8px; padding: 13px 16px; margin: 16px 0;
+  font-size: 0.83rem; line-height: 1.55; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border);
+}
+.ar-callout-warn  { border-left: 3px solid var(--mr-amber); }
+.ar-callout-note  { border-left: 3px solid var(--mr-slate); color: var(--text-muted); }
+.ar-callout code {
+  background: var(--surface2); padding: 1px 5px; border-radius: 4px;
+  font-size: 0.92em; color: var(--text);
+}
+.ar-linkbtn {
+  display: inline-block; margin-left: 6px; background: none; border: none;
+  color: var(--mr-blue); font: inherit; font-weight: 600; cursor: pointer;
+  padding: 0; text-decoration: underline; text-underline-offset: 2px;
+}
+.ar-linkbtn:hover { color: #4da3ff; }
+
+/* ── KPI tiles ── */
+.ar-kpirow {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px; margin: 20px 0 6px;
+}
+.ar-kpi {
+  background: var(--surface); border: 1px solid var(--border);
+  border-top: 3px solid var(--ar-accent); border-radius: var(--card-radius);
+  padding: 14px 16px 12px;
+}
+.ar-kpi-label {
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--text-muted);
+  display: flex; align-items: center; gap: 7px;
+}
+.ar-kpi-value {
+  font-size: 1.75rem; font-weight: 800; margin: 8px 0 2px; line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.ar-kpi-unit {
+  font-size: 0.68rem; font-weight: 600; color: var(--text-muted);
+  margin-left: 8px; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.ar-kpi-delta { font-size: 0.74rem; color: var(--text-muted); }
+.ar-kpi-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px;
+  margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--border);
+}
+.ar-kpi-grid > div { display: flex; justify-content: space-between; font-size: 0.76rem; }
+.ar-kpi-grid span { color: var(--text-muted); }
+.ar-kpi-grid b { font-variant-numeric: tabular-nums; }
+
+/* ── Block headings & table cards ── */
+.ar-blocktitle {
+  font-size: 0.74rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--mr-blue);
+  margin: 34px 0 12px; padding-bottom: 7px; border-bottom: 1px solid var(--border);
+}
+.ar-tablecard {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--card-radius); margin-bottom: 14px; overflow: hidden;
+}
+.ar-tablecard-head {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 11px 16px; border-bottom: 1px solid var(--border); background: var(--surface2);
+}
+.ar-tablecard-title { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+.ar-tablecard-note { font-size: 0.72rem; color: var(--text-muted); }
+.ar-swatch {
+  width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none;
+}
+.ar-swatch-line { height: 3px; border-radius: 2px; }
+.ar-legend {
+  margin-left: auto; display: flex; align-items: center; gap: 6px;
+  font-size: 0.72rem; color: var(--text-muted);
+}
+.ar-legend i { margin-left: 8px; }
+.ar-scroll { overflow-x: auto; }
+
+/* ── Tables ── */
+.ar-table { font-size: 0.79rem; }
+.ar-table th { white-space: nowrap; padding: 8px 12px; }
+.ar-table td { padding: 7px 12px; white-space: nowrap; }
+.ar-table tfoot td {
+  border-top: 1px solid var(--border); background: var(--surface2);
+  border-bottom: none; padding: 9px 12px;
+}
+.ar-figure { text-align: right; font-variant-numeric: tabular-nums; }
+.ar-rowlab { color: var(--text); }
+.ar-table tr.ar-empty td { color: var(--text-muted); opacity: 0.5; }
+.ar-suspect { color: var(--mr-amber) !important; }
+.ar-flag { color: var(--mr-amber); cursor: help; }
+.ar-withheld {
+  font-size: 0.72rem; color: var(--text-muted); font-style: italic; cursor: help;
+}
+.ar-prev12 { color: var(--text-muted); }
+
+/* 2025 columns are hidden until explicitly revealed (4% price sample) */
+.ar-y2025 { display: none; }
+.ar-show-2025 .ar-y2025 { display: table-cell; color: var(--mr-amber); opacity: 0.85; }
+
+/* ── Change chips ── */
+.ar-delta { font-size: 0.75rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ar-delta.ar-up   { color: var(--mr-green); }
+.ar-delta.ar-down { color: var(--mr-orange); }
+.ar-delta.ar-flat { color: var(--text-muted); }
+
+/* ── Inline bars ── */
+.ar-barcell { padding: 7px 12px !important; }
+.ar-bar-wrap { display: flex; flex-direction: column; gap: 2px; min-width: 90px; }
+.ar-bar { height: 6px; border-radius: 0 3px 3px 0; min-width: 2px; }
+.ar-bar-new { background: var(--mr-blue); }
+.ar-bar-ex  { background: var(--mr-slate); }
+
+/* ── Period toggle ── */
+.ar-toggle {
+  display: inline-flex; border: 1px solid var(--border);
+  border-radius: 6px; overflow: hidden;
+}
+.ar-toggle-btn {
+  background: var(--surface); border: none; color: var(--text-muted);
+  font: inherit; font-size: 0.72rem; font-weight: 600;
+  padding: 4px 11px; cursor: pointer;
+}
+.ar-toggle-btn.active { background: var(--mr-blue); color: #fff; }
+.ar-toggle-btn:not(.active):hover { color: var(--text); }
+
+/* ── Trend chart ── */
+.ar-chart { width: 100%; min-width: 620px; height: auto; display: block; padding: 12px 8px 4px; }
+.ar-chart .ar-grid { stroke: var(--border); stroke-width: 1; }
+.ar-chart .ar-axis { fill: var(--text-muted); font-size: 9px; }
+.ar-chart .ar-axis-strong { fill: var(--text); font-weight: 700; }
+.ar-chart .ar-mark { transition: opacity 0.12s; }
+.ar-chart:hover .ar-mark { opacity: 0.55; }
+.ar-chart .ar-mark:hover { opacity: 1; }
+.ar-chart-note {
+  font-size: 0.7rem; color: var(--text-muted);
+  padding: 0 16px 12px; line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .ar-header { gap: 12px; padding: 14px; }
+  .ar-title { font-size: 1rem; }
+  .ar-accentbar { width: 100%; }
+  .ar-kpi-value { font-size: 1.5rem; }
+  .ar-table { font-size: 0.74rem; }
+  .ar-table th, .ar-table td { padding: 6px 8px; }
+}
+.ar-chart .ar-panel-label {
+  fill: var(--text-muted); font-size: 8px; font-weight: 700; letter-spacing: 0.09em;
+}

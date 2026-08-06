@@ -2464,6 +2464,11 @@ function renderBoise() {
   // IMLS Area ↔ ZIP cross-reference (searchable, with filter tiles)
   el.appendChild(buildBoiseImlsSection());
 
+  // Ada County Single-Family Residential Market Report (July 2026)
+  if (typeof buildAdaMarketReport === 'function') {
+    el.appendChild(buildAdaMarketReport());
+  }
+
   // Data quality note
   const note = document.createElement('div');
   note.className = 'narrative-box';
