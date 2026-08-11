@@ -2288,14 +2288,14 @@ function renderBoise() {
 
   // Market overview narrative
   el.appendChild(buildNarrativeBox(
-    "Boise's housing market shows resilience with strong YoY appreciation and solid transaction volumes. Ada County median prices up 3.7% ($603.8K vs $582K YoY), while Canyon County markets reflect broader regional growth. Average prices near $700K in Ada County signal continued demand in mid-range segment.",
-    () => Promise.resolve("Data sourced from Intermountain MLS via Databricks gold_polaris schema (Jun 2026). Ada County data matches official reports within 0.1% (average price), suggesting high data quality. DOMs above reported levels likely reflect different calculation methodology (list-date vs pending-date vs close-date).")
+    "July marked a new price high for Ada County: median close price reached $602,000, up 9.5% YoY from $550,000, with the average at $721,664. Canyon County median rose to $444,990 (+3.5% YoY). Closings cooled from June's peak — Ada 949 (down 89 MoM) and Canyon 496 (down 85) — the normal post-June seasonal step-down, but both counties are still ahead of last July (+5.2% and +8.8% YoY). Ada homes sold in 32 days on average versus 39 in Canyon.",
+    () => Promise.resolve("Data sourced from Intermountain MLS via Databricks (main.gold_mls.search_listings), filtered to SOLD single-family listings by close-date month. Prices use current_price rather than close_price: close_price is only 2-4% populated before Oct 2025, while current_price is fully populated and matches close_price exactly where both exist. DOM is days_on_market_from_feed and may differ from IMLS published figures, which use a different basis (list-date vs pending-date vs close-date).")
   ));
 
   // Ada County subsection
   const adaTitle = document.createElement('div');
   adaTitle.className = 'subsection-title';
-  adaTitle.textContent = 'Ada County (Boise Proper) — Jun 2026';
+  adaTitle.textContent = 'Ada County (Boise, Meridian, Eagle, Star, Kuna, Garden City) — Jul 2026';
   el.appendChild(adaTitle);
 
   const adaGrid = document.createElement('div');
@@ -2310,7 +2310,7 @@ function renderBoise() {
   // Canyon County subsection
   const canyonTitle = document.createElement('div');
   canyonTitle.className = 'subsection-title';
-  canyonTitle.textContent = 'Canyon County (Meridian / Kuna) — Jun 2026';
+  canyonTitle.textContent = 'Canyon County (Nampa, Caldwell, Middleton) — Jul 2026';
   el.appendChild(canyonTitle);
 
   const canyonGrid = document.createElement('div');
@@ -2389,52 +2389,59 @@ function renderBoise() {
 
   const compTable = document.createElement('div');
   compTable.style.overflowX = 'auto';
+  // Derived from BOISE_MARKETS rather than hardcoded, so this table can never
+  // drift out of sync with the metric cards above when the data is refreshed.
+  const money  = v => '$' + Math.round(v).toLocaleString();
+  const moneyM = v => '$' + (v / 1e6).toFixed(1) + 'M';
+  const num    = v => Math.round(v).toLocaleString();
+  const val    = id => ALL_METRICS[id].value;
+  const yoyPct = id => {
+    const m = ALL_METRICS[id];
+    const prior = m.value - m.yoyChange;
+    return prior ? (m.yoyChange / prior) * 100 : 0;
+  };
+  const pctCell = v =>
+    `<td class="${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '+' : ''}${v.toFixed(2)}%</td>`;
+
+  const cmpRow = (label, adaId, canId, fmt, diffNote) => {
+    const a = val(adaId), c = val(canId), diff = a - c;
+    const pct = c ? Math.abs(diff / c) * 100 : 0;
+    const cell = diffNote
+      ? diffNote(diff)
+      : `<strong>${diff >= 0 ? '+' : '−'}${fmt(Math.abs(diff))} (${pct.toFixed(1)}%)</strong>`;
+    return `<tr>
+        <td><strong>${label}</strong></td>
+        <td class="up">${fmt(a)}</td>
+        <td>${fmt(c)}</td>
+        <td>${cell}</td>
+      </tr>`;
+  };
+
+  const medAda = yoyPct('boiseMedianPrice'),  medCan = yoyPct('canyonMedianPrice');
+  const untAda = yoyPct('boiseSingleFamilyClosed'), untCan = yoyPct('canyonSingleFamilyClosed');
+
   compTable.innerHTML = `<table class="data-table" style="margin-bottom: 32px;">
     <thead><tr>
       <th>Metric</th><th>Ada County</th><th>Canyon County</th><th>Difference</th>
     </tr></thead>
     <tbody>
-      <tr>
-        <td><strong>Median Price (Jun 2026)</strong></td>
-        <td class="up">$582,000</td>
-        <td>$435,900</td>
-        <td><strong>+$146,100 (33.5%)</strong></td>
-      </tr>
-      <tr>
-        <td><strong>Average Price (Jun 2026)</strong></td>
-        <td class="up">$700,924</td>
-        <td>$507,488</td>
-        <td><strong>+$193,436 (38.1%)</strong></td>
-      </tr>
-      <tr>
-        <td><strong>SF Homes Closed (Jun 2026)</strong></td>
-        <td>1,034</td>
-        <td>575</td>
-        <td>+459 (79.8%)</td>
-      </tr>
-      <tr>
-        <td><strong>Days on Market</strong></td>
-        <td class="up">32</td>
-        <td>43</td>
-        <td>-11 days (faster in Ada)</td>
-      </tr>
-      <tr>
-        <td><strong>Dollar Volume (Jun 2026)</strong></td>
-        <td class="up">$724.8M</td>
-        <td>$291.8M</td>
-        <td>+$433.0M (148.4%)</td>
-      </tr>
+      ${cmpRow('Median Price (Jul 2026)',    'boiseMedianPrice',        'canyonMedianPrice',        money)}
+      ${cmpRow('Average Price (Jul 2026)',   'boiseAvgPrice',           'canyonAvgPrice',           money)}
+      ${cmpRow('SF Homes Closed (Jul 2026)', 'boiseSingleFamilyClosed', 'canyonSingleFamilyClosed', num)}
+      ${cmpRow('Days on Market',             'boiseDom',                'canyonDom',                num,
+               d => `${d} days (${d < 0 ? 'faster' : 'slower'} in Ada)`)}
+      ${cmpRow('Dollar Volume (Jul 2026)',   'boiseDollarVolume',       'canyonDollarVolume',       moneyM)}
       <tr>
         <td><strong>YoY Median Change</strong></td>
-        <td class="up">+0.29%</td>
-        <td class="down">-0.93%</td>
-        <td>Price divergence</td>
+        ${pctCell(medAda)}
+        ${pctCell(medCan)}
+        <td>${medAda > medCan ? 'Ada appreciating faster' : 'Canyon appreciating faster'}</td>
       </tr>
       <tr>
         <td><strong>YoY Unit Growth</strong></td>
-        <td class="up">+20.37%</td>
-        <td class="up">+17.11%</td>
-        <td>Both growing</td>
+        ${pctCell(untAda)}
+        ${pctCell(untCan)}
+        <td>${untAda > 0 && untCan > 0 ? 'Both growing' : untAda > 0 ? 'Ada growing only' : untCan > 0 ? 'Canyon growing only' : 'Both contracting'}</td>
       </tr>
     </tbody>
   </table>`;
@@ -2444,21 +2451,22 @@ function renderBoise() {
   const tierTitle = document.createElement('div');
   tierTitle.className = 'subsection-title';
   tierTitle.style.marginTop = '40px';
-  tierTitle.textContent = 'Price Tier Analysis (June 2026)';
+  tierTitle.textContent = 'Price Tier Analysis (July 2026)';
   el.appendChild(tierTitle);
 
   const tierBox = document.createElement('div');
   tierBox.className = 'narrative-box';
-  tierBox.innerHTML = `<h3>Ada County Price Distribution</h3>
-    <p><strong>Core Market (200K-500K):</strong> 23.3% of sales — price-sensitive first-time buyer segment, steady demand</p>
-    <p><strong>Mid-Market (500K-800K):</strong> 40.3% of sales — largest segment, includes median price home, strong absorption</p>
-    <p><strong>Premium Market (800K+):</strong> 36.4% of sales — high-value segment growing, indicating wealth migration to Boise</p>
+  tierBox.innerHTML = `<h3>Ada County Price Distribution — 949 sales</h3>
+    <p><strong>Core Market (200K-500K):</strong> 29.9% of sales — price-sensitive first-time buyer segment</p>
+    <p><strong>Mid-Market (500K-800K):</strong> 45.1% of sales — largest segment, contains the median home</p>
+    <p><strong>Premium Market (800K+):</strong> 24.9% of sales — high-value segment</p>
     <br>
-    <h3>Canyon County Price Distribution</h3>
-    <p><strong>Core Market (200K-500K):</strong> 54.1% of sales — strong concentration in entry/first-move-up segment</p>
-    <p><strong>Mid-Market (500K-800K):</strong> 32.5% of sales — fewer higher-priced homes available</p>
-    <p><strong>Premium Market (800K+):</strong> 13.4% of sales — limited luxury inventory in Canyon County</p>
-    <p style="margin-top: 16px; color: var(--text-muted); font-size: 0.9rem;"><strong>Insight:</strong> Ada County attracts more high-value buyers, while Canyon County focuses on affordable first-time buyer market. Explains 38% average price premium in Ada despite only 33% median premium.</p>`;
+    <h3>Canyon County Price Distribution — 496 sales</h3>
+    <p><strong>Core Market (200K-500K):</strong> 68.8% of sales — heavy concentration in entry/first-move-up segment</p>
+    <p><strong>Mid-Market (500K-800K):</strong> 22.0% of sales — fewer higher-priced homes available</p>
+    <p><strong>Premium Market (800K+):</strong> 8.9% of sales — limited luxury inventory in Canyon County</p>
+    <p style="margin-top: 16px; color: var(--text-muted); font-size: 0.9rem;"><strong>Insight:</strong> More than two-thirds of Canyon County sales fall under $500K, versus under a third in Ada — Ada's mid and premium tiers together account for 70% of its volume. That mix difference is what drives Ada's 41% average-price premium over Canyon despite a 35% gap in medians. Tiers under 200K (0.1% Ada, 0.4% Canyon) are omitted.</p>
+    <p style="margin-top: 10px; color: var(--yellow); font-size: 0.85rem;"><strong>Revision:</strong> the June figures previously shown here (Ada 23.3 / 40.3 / 36.4) were computed from <code>close_price</code>, which was only 2-4% populated at the time and skewed toward premium sales. These July tiers use the fully-populated <code>current_price</code> field across all 1,445 closings.</p>`;
   el.appendChild(tierBox);
 
   // IMLS Area ↔ ZIP cross-reference (searchable, with filter tiles)
@@ -2474,8 +2482,9 @@ function renderBoise() {
   note.className = 'narrative-box';
   note.style.marginTop = '32px';
   note.innerHTML = `<h3>Data Quality & Methodology</h3>
-    <p><strong>Source:</strong> Intermountain Multiple Listing Service (official IMLS June 2026 reports) · Area/ZIP crosswalk from <a href="https://imlsmembers.com/areas" target="_blank" rel="noopener">imlsmembers.com/areas</a></p>
-    <p><strong>Date Range:</strong> June 2025 – June 2026 (12 months of historical data with monthly detail)</p>
+    <p><strong>Source:</strong> Intermountain MLS via Databricks <code>main.gold_mls.search_listings</code>, filtered to <code>sale_status = 'SOLD'</code> and <code>property_type_aggregated = 'Single Family'</code>, grouped by close-date month · Area/ZIP crosswalk from <a href="https://imlsmembers.com/areas" target="_blank" rel="noopener">imlsmembers.com/areas</a></p>
+    <p><strong>Date Range:</strong> June 2025 – July 2026 (14 months of monthly detail; sparklines cover 24 months from Aug 2024)</p>
+    <p style="color:var(--yellow)"><strong>Correction (Aug 2026):</strong> the monthly history for Jul 2025 – May 2026 previously shown here was linearly interpolated between two real endpoints, not measured. Those months are now actual per-month aggregates from the MLS table, so intermediate values have changed — notably Dec 2025 and Jan 2026, where the real seasonal trough (Ada median $525K, 531 closings) was hidden by the straight-line fill.</p>
     <p><strong>Accuracy Level:</strong> <strong style="color: var(--green);">EXCELLENT (100% reconciliation)</strong> — All metrics verified against official IMLS PDFs. Median price, average price, unit count, DOM, and dollar volume all match exactly.</p>
     <p><strong>Geographic Scope:</strong> Ada County = all single-family sales in Ada County, including Boise, Garden City, Meridian (83642 / 83646), Eagle (83616), Star (83669) and Kuna (83634). Canyon County = Nampa (83651 / 83686 / 83687), Caldwell (83605 / 83607), Middleton (83644) and surrounding communities.</p>
     <p style="color:var(--yellow)"><strong>Correction (Jul 2026):</strong> an earlier version of this note listed ZIPs 83634, 83642 and 83646 under Canyon County. Kuna and Meridian are in <strong>Ada</strong> County — the county roll-ups above were always computed from the MLS county field and are unaffected, but the ZIP list was wrong and has been fixed.</p>
