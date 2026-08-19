@@ -1433,6 +1433,13 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
   font: inherit; font-size: 0.74rem; font-weight: 700;
   padding: 6px 13px; cursor: pointer;
 }
+/* Zip drill-down reuses the Ada report's PDF button. The badge takes the left
+   slot and `margin-left:auto` on the button pushes the pair to the right. */
+.zip-actions {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 18px; /* was the badge's own margin before it moved in here */
+}
+.zip-actions .zip-neighborhood-badge { margin: 0; }
 .ar-pdf-btn:hover { background: #2a94ff; }
 .ar-pdf-btn:active { transform: translateY(1px); }
 .ar-pdf-btn svg { flex: none; }

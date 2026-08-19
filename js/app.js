@@ -2814,7 +2814,16 @@ function renderZip(zip) {
   el.innerHTML = `
     <div class="section-title">Zip ${zip}</div>
     <div class="section-subtitle">${d.name} · ${d.county} County · Data as of Apr 2026</div>
-    <div class="zip-neighborhood-badge">📍 ${d.name}, ${d.county} County</div>
+    <div class="zip-actions">
+      <div class="zip-neighborhood-badge">📍 ${d.name}, ${d.county} County</div>
+      <button class="ar-pdf-btn zip-pdf-btn" type="button">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>Download PDF</button>
+      <span class="ar-pdf-hint">One page, letter portrait · choose “Save as PDF”</span>
+    </div>
   `;
 
   // Hero stats
@@ -2908,6 +2917,21 @@ function renderZip(zip) {
       For authoritative figures use <a href="https://www.redfin.com/zipcode/${zip}" target="_blank" style="color:var(--accent)">Redfin</a>
       or <a href="https://www.zillow.com/homes/${zip}_rb/" target="_blank" style="color:var(--accent)">Zillow</a> directly.
     </p>`;
+
+  // Wired last on purpose: every `el.innerHTML +=` above reparses the subtree
+  // and would drop a listener attached earlier.
+  const pdfBtn = el.querySelector('.zip-pdf-btn');
+  if (pdfBtn && typeof zipReportPdf === 'function') {
+    pdfBtn.dataset.label = pdfBtn.innerHTML;
+    pdfBtn.addEventListener('click', () => {
+      if (zipReportPdf(zip)) return;
+      pdfBtn.textContent = 'Popup blocked — allow popups';
+      setTimeout(() => { pdfBtn.innerHTML = pdfBtn.dataset.label; }, 3200);
+    });
+  } else if (pdfBtn) {
+    pdfBtn.remove();
+    el.querySelector('.zip-actions .ar-pdf-hint')?.remove();
+  }
 
   return el;
 }
