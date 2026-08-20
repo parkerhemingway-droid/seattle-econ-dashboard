@@ -1359,6 +1359,12 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
 .ar-withheld {
   font-size: 0.72rem; color: var(--text-muted); font-style: italic; cursor: help;
 }
+/* Distinct from .ar-withheld: withheld means the base is too thin to quote,
+   not comparable means the two periods measure different things. */
+.ar-notcomp {
+  font-size: 0.72rem; color: var(--mr-amber); font-style: italic; cursor: help;
+  white-space: nowrap;
+}
 .ar-prev12 { color: var(--text-muted); }
 
 /* 2025 columns are hidden until explicitly revealed (4% price sample) */

@@ -101,6 +101,32 @@ function arScopeBar() {
 // that depend on them are withheld rather than published.
 const AR_UNRELIABLE_2025 = true;
 
+// The source defines new construction as assessor year built >= 2025 — a FIXED
+// threshold, not a rolling one. So the Jul-26 / YTD-26 "new" bucket holds two
+// build vintages (2025 and 2026) while the Jul-25 / YTD-25 bucket holds one
+// (2025). Unit growth across those columns is therefore mostly definitional,
+// and the same reclassification drains the existing bucket by the same homes.
+//
+// Checked against main.gold_mls.search_listings (Ada County, SOLD, single
+// family): of the 2,065 YTD-26 sales built >= 2025, 1,307 were built in 2025 —
+// 63% of the bucket is prior-vintage carryover the 2025 column cannot contain.
+// Like-for-like current-vintage sales went 767 -> 758 (-1.2%); on a rolling
+// "built this year or last" definition, 1,811 -> 2,065 (+14.0%) against a total
+// market of +14.8%. The source's +170.8% is an artifact of the fixed threshold.
+const AR_VINTAGE_SHIFT = true;
+const AR_VINTAGE_TITLE =
+  'Not comparable: the source defines new construction as year built >= 2025, a fixed '
+  + 'threshold, so the 2026 columns span two build vintages and the 2025 columns span one. '
+  + 'On a rolling definition Ada County new-construction sales grew ~14% YTD, in line with '
+  + 'the market, not 170.8%.';
+
+// Unit-count changes are safe for the county total — the vintage threshold only
+// moves homes between the new and existing buckets, it does not add or remove
+// sales — so only those two bands are suppressed.
+function arCountNotComparable(key, label) {
+  return AR_VINTAGE_SHIFT && /homes sold/i.test(label) && (key === 'new' || key === 'existing');
+}
+
 function arRowIsPrice(label) {
   return /price|volume/i.test(label);
 }
@@ -116,15 +142,23 @@ function arSummaryTable(key) {
 
     // Withhold change vs. 2025 for any price/volume row — the base is a 4% sample.
     const suppress = AR_UNRELIABLE_2025 && isPrice;
+    // ...and for the new/existing unit counts, where the fixed vintage
+    // threshold makes the two years measure different things.
+    const notComp = arCountNotComparable(key, r.label);
     const chg = r.pct ? r.pct[0] : null;
     const chgYtd = r.pct ? r.pct[1] : null;
+    const deltaCell = v => suppress
+      ? '<span class="ar-withheld" title="Base period is a 4% sample — withheld">withheld</span>'
+      : notComp
+        ? `<span class="ar-notcomp" title="${AR_VINTAGE_TITLE}">not comparable</span>`
+        : arDelta(v, isDom);
 
     return `<tr>
       <td class="ar-rowlab">${r.label}</td>
       <td class="ar-figure">${fmt(r.vals[0])}</td>
-      <td>${suppress ? '<span class="ar-withheld" title="Base period is a 4% sample — withheld">withheld</span>' : arDelta(chg, isDom)}</td>
+      <td>${deltaCell(chg)}</td>
       <td class="ar-figure">${fmt(r.vals[1])}</td>
-      <td>${suppress ? '<span class="ar-withheld" title="Base period is a 4% sample — withheld">withheld</span>' : arDelta(chgYtd, isDom)}</td>
+      <td>${deltaCell(chgYtd)}</td>
       <td class="ar-figure ar-prev12">${fmt(r.vals[4])}</td>
       <td class="ar-figure ar-y2025">${fmt(r.vals[2])}</td>
       <td class="ar-figure ar-y2025">${fmt(r.vals[3])}</td>
@@ -168,7 +202,9 @@ function arKpiRow() {
     return `<div class="ar-kpi ar-seg" data-seg="${key}" style="--ar-accent:${s.color}">
       <div class="ar-kpi-label"><span class="ar-swatch" style="background:${s.color}"></span>${s.label}</div>
       <div class="ar-kpi-value">${arNum(m.sold.vals[0])}<span class="ar-kpi-unit">sold · Jul-26</span></div>
-      <div class="ar-kpi-delta">${arDelta(m.sold.pct ? m.sold.pct[0] : null)} vs Jul-25 units</div>
+      <div class="ar-kpi-delta">${arCountNotComparable(key, m.sold.label)
+        ? `<span class="ar-notcomp" title="${AR_VINTAGE_TITLE}">not comparable vs Jul-25</span>`
+        : `${arDelta(m.sold.pct ? m.sold.pct[0] : null)} vs Jul-25 units`}</div>
       <div class="ar-kpi-grid">
         <div><span>Median</span><b>${arMoney(m.median.vals[0])}</b></div>
         <div><span>DOM</span><b>${arNum(m.dom.vals[0], 1)}</b></div>
@@ -180,11 +216,62 @@ function arKpiRow() {
 }
 
 // ── Section 2: sales by MLS area ─────────────────────────────────────────────
-// Two areas in the source (Meridian SE 1000 / Meridian SW 1010) report identical
-// average and median prices across different unit counts, which cannot arise
-// from a correct aggregation; Boise North 0100 carries a price with zero new
-// units. Those cells are flagged rather than silently shown.
-const AR_SUSPECT_AREAS = { '1000': true, '1010': true };
+// The source report carries several defects that a correct aggregation cannot
+// produce. They are detected here rather than listed by hand: a hardcoded list
+// goes stale silently the first time the notebook is rerun, and these are all
+// checkable from the numbers themselves.
+//
+//   · new + existing must equal the area total;
+//   · a price cannot be reported against zero units;
+//   · with one unit, average must equal median;
+//   · two areas sharing an exact median and a near-exact average is a copied
+//     row, not a coincidence.
+//
+// Returns { areaCode: [reason, ...] }.
+function arAreaAudit() {
+  const out = {};
+  const add = (code, msg) => { (out[code] = out[code] || []).push(msg); };
+  const bands = ['total', 'new', 'existing'];
+
+  ADA_REPORT.areas.forEach(a => {
+    const sum = a.new.sold + a.existing.sold;
+    if (sum !== a.total.sold) {
+      add(a.code, `New + Existing = ${sum} against ${a.total.sold} sold `
+                + `(${sum > a.total.sold ? '+' : ''}${sum - a.total.sold})`);
+    }
+    bands.forEach(k => {
+      const s = a[k];
+      if (!s) return;
+      if (s.sold === 0 && (s.avg != null || s.med != null)) {
+        add(a.code, `${AR_SERIES[k].label}: price reported against zero units`);
+      }
+      if (s.sold === 1 && s.avg != null && s.med != null && s.avg !== s.med) {
+        add(a.code, `${AR_SERIES[k].label}: one unit, but average ≠ median`);
+      }
+    });
+  });
+
+  // Copied rows. Group by band + median, then require the averages to agree to
+  // within $100 — median alone repeats legitimately across areas.
+  const byMed = {};
+  ADA_REPORT.areas.forEach(a => bands.forEach(k => {
+    const s = a[k];
+    if (!s || !s.sold || s.med == null || s.avg == null) return;
+    (byMed[k + '|' + s.med] = byMed[k + '|' + s.med] || []).push({ a, s, k });
+  }));
+  Object.values(byMed).forEach(list => {
+    if (list.length < 2) return;
+    list.forEach(({ a, s, k }) => {
+      const twins = list.filter(o => o.a !== a && Math.abs(o.s.avg - s.avg) < 100);
+      if (twins.length) {
+        add(a.code, `${AR_SERIES[k].label}: average and median duplicate `
+                  + `${twins.map(o => o.a.name).join(', ')}`);
+      }
+    });
+  });
+
+  return out;
+}
 
 // Under 'all' the bar cell splits new vs existing. Under a single segment it
 // shows that segment's share of its own county total, so bar length stays
@@ -199,14 +286,19 @@ function arAreaSection(scope = 'all') {
   const maxSold = Math.max(...areas.map(a => seg(a).sold), 1);
   const segColor = scope === 'new' ? MR.blue : scope === 'existing' ? MR.slate : MR.purple;
 
+  const audit = arAreaAudit();
+
   const rows = areas.map(a => {
-    const suspect = AR_SUSPECT_AREAS[a.code];
+    const issues = audit[a.code];
     const s = seg(a);
     const w = v => Math.max(v ? 1 : 0, (v / maxSold) * 100);
-    const flag = suspect
-      ? ' <span class="ar-flag" title="Average and median price duplicated across Meridian SE / SW in the source — treat as provisional">⚑</span>'
+    const flag = issues
+      ? ` <span class="ar-flag" title="${issues.join(' · ')}">⚑</span>`
       : '';
-    const sc = suspect ? ' ar-suspect' : '';
+    // Only tint the price cells when the defect is actually about prices; a
+    // count mismatch says nothing about whether the average is right.
+    const priceIssue = issues && issues.some(m => /price|average|median/i.test(m));
+    const sc = priceIssue ? ' ar-suspect' : '';
 
     const bar = scope === 'all'
       ? `<div class="ar-bar-wrap" title="${a.new.sold} new · ${a.existing.sold} existing">
@@ -282,6 +374,46 @@ function arAreaSection(scope = 'all') {
       </tr></tfoot>
     </table>
     </div>
+  </div>`;
+}
+
+// Written from arAreaAudit() rather than prose, so it cannot drift from the ⚑
+// flags in the table above or go stale when the notebook is rerun.
+function arAuditCallout() {
+  const audit = arAreaAudit();
+  const name = code => (ADA_REPORT.areas.find(a => a.code === code) || {}).name || code;
+  const codes = Object.keys(audit);
+  if (!codes.length) return '';
+
+  const isCount = m => /New \+ Existing/.test(m);
+  const countAreas = codes.filter(c => audit[c].some(isCount));
+  const priceAreas = codes.filter(c => audit[c].some(m => !isCount(m)));
+
+  const T = ADA_REPORT.areaTotals;
+  const bandSum = T.new.sold + T.existing.sold;
+  const list = cs => cs.map(c => `${name(c)} (${c})`).join(', ');
+
+  const countPara = countAreas.length ? `
+    <b>${countAreas.length} of ${ADA_REPORT.areas.length} areas do not add up.</b>
+    New + Existing ≠ Sold for ${list(countAreas)}. The gaps run in both directions and net to
+    ${bandSum - T.total.sold}, so the county band totals below the table read
+    ${arNum(T.new.sold)} new + ${arNum(T.existing.sold)} existing =
+    ${arNum(bandSum)} against ${arNum(T.total.sold)} sold — while Sections 1 and 3 both split
+    the same month as ${arNum(T.new.sold + 1)} + ${arNum(T.existing.sold + 1)}.
+    This is not the two unassigned-area sales it has previously been attributed to: the Sold
+    column sums to the full ${arNum(T.total.sold)}, and a sale missing an area would drop out
+    of all three columns at once.` : '';
+
+  const pricePara = priceAreas.length ? `
+    <b>Price defects.</b> ${priceAreas.map(c =>
+      `<em>${name(c)} (${c})</em> — ${audit[c].filter(m => !isCount(m)).join('; ')}`).join('. ')}.` : '';
+
+  return `<div class="ar-callout ar-callout-note">
+    ${countPara}${countPara && pricePara ? '<br><br>' : ''}${pricePara}
+    <br><br>Every one of these originates in
+    <code>data_science.compass_db.ada_county_report_csv</code>; the figures above reproduce the
+    source faithfully. They need fixing in the generating notebook. Treat flagged area prices as
+    provisional and area counts as ±1.
   </div>`;
 }
 
@@ -544,6 +676,25 @@ function buildAdaMarketReport() {
       <button class="ar-linkbtn" id="ar-toggle-2025">Show 2025 columns</button>
     </div>
 
+    <div class="ar-callout ar-callout-warn">
+      <b>New-construction growth vs 2025 is not a like-for-like comparison.</b>
+      The source classifies new construction by assessor year built <b>≥ 2025</b> — a fixed
+      threshold, not a rolling one. The 2026 columns therefore span two build vintages
+      (2025 and 2026) while the 2025 columns span one, and the same reclassification moves
+      homes out of the existing bucket. A house built in 2025 and resold in July 2026 counts
+      as new construction.
+      <br><br>
+      Cross-checked against <code>main.gold_mls.search_listings</code> (Ada County, sold,
+      single family): of the 2,065 YTD-26 sales built ≥ 2025, <b>1,307 were built in 2025</b> —
+      63% of the bucket is carryover the 2025 column cannot contain. Comparing like with like,
+      current-vintage sales went <b>767 → 758 (−1.2%)</b>; on a rolling “built this year or
+      last” definition, <b>1,811 → 2,065 (+14.0%)</b>, against a total market of +14.8%.
+      New construction has held a steady <b>~35% share both years</b> — it did not climb from
+      14.7% to 34.5%. Unit-count changes for the new and existing bands are marked
+      <span class="ar-notcomp">not comparable</span> below; the county total is unaffected,
+      because the threshold only moves sales between buckets.
+    </div>
+
     ${arScopeBar()}
 
     <div class="ar-kpirow">${arKpiRow()}</div>
@@ -555,14 +706,7 @@ function buildAdaMarketReport() {
 
     <div class="ar-blocktitle">Section 2 · Sales by IMLS Area</div>
     <div id="ar-area-host">${arAreaSection('all')}</div>
-    <div class="ar-callout ar-callout-note">
-      <b>Flagged:</b> Meridian SE (1000) and Meridian SW (1010) report identical average
-      ($646,125) and median ($600,000) prices across different unit counts (51 vs 50), which a
-      correct per-area aggregation cannot produce. Boise North (0100) carries a $630,000
-      new-construction price against zero new-construction units. Area-level <em>prices</em> are
-      provisional pending a fix in the source notebook; area-level <em>counts</em> reconcile to
-      the county total.
-    </div>
+    ${arAuditCallout()}
 
     <div class="ar-blocktitle">Section 3 · Units Sold by Price Class</div>
     <div id="ar-pc-host">${arPriceClassSection('all')}</div>

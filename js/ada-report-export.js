@@ -451,7 +451,16 @@ function arPdfDocument(scope) {
   $630,000 new-construction average against 0 new-construction units &mdash; shown as
   reported, but not to be relied on.
   &nbsp;&bull;&nbsp; The summary bands split July's 1,035 sales as 319 new + 716 existing;
-  the area rows sum to 318 + 715 = 1,033, because two July sales carry no IMLS area.
+  the area rows sum to 318 + 715 = 1,033. This is <b>not</b> two sales missing an IMLS area,
+  as previously stated &mdash; the area Sold column sums to the full 1,035, and six areas
+  individually fail new + existing = sold with gaps in both directions. The new/existing
+  split is unreliable at &plusmn;1 per area.
+  &nbsp;&bull;&nbsp; <b>New-construction change vs 2025 is not like-for-like.</b> Year built
+  &ge; 2025 is a fixed threshold, so the 2026 columns span two build vintages and the 2025
+  columns one. Against <i>main.gold_mls.search_listings</i>, 1,307 of the 2,065 YTD-26 sales
+  built &ge; 2025 were built in 2025; on a rolling definition new construction grew ~14% YTD,
+  in line with the market, and held a ~35% share both years &mdash; not the +170.8% the
+  source reports.
   &nbsp;&bull;&nbsp; <span class="wh">wthld</span> = withheld.${showNc
     ? ' New-construction tier and trend figures use a 12-month close window, so they will'
       + ' not tie to the monthly sections above.' : ''}
