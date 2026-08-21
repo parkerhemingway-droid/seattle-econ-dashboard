@@ -107,18 +107,19 @@ const AR_UNRELIABLE_2025 = true;
 // (2025). Unit growth across those columns is therefore mostly definitional,
 // and the same reclassification drains the existing bucket by the same homes.
 //
-// Checked against main.gold_mls.search_listings (Ada County, SOLD, single
-// family): of the 2,065 YTD-26 sales built >= 2025, 1,307 were built in 2025 —
-// 63% of the bucket is prior-vintage carryover the 2025 column cannot contain.
-// Like-for-like current-vintage sales went 767 -> 758 (-1.2%); on a rolling
-// "built this year or last" definition, 1,811 -> 2,065 (+14.0%) against a total
-// market of +14.8%. The source's +170.8% is an artifact of the fixed threshold.
+// Checked against main.gold_mls.search_listings (Ada + Canyon, SOLD, single
+// family, 25 ZIPs, recomputed 2026-08-21 for the Ada+Canyon report): of the
+// 3,501 YTD-26 sales built >= 2025, 2,206 were built in 2025 — 63% of the
+// bucket is prior-vintage carryover the 2025 column cannot contain.
+// Like-for-like current-vintage sales went 1,426 -> 1,295 (-9.2%); on a rolling
+// "built this year or last" definition, 3,183 -> 3,501 (+10.0%) against a total
+// market of +13.1%. The source's +153.4% is an artifact of the fixed threshold.
 const AR_VINTAGE_SHIFT = true;
 const AR_VINTAGE_TITLE =
   'Not comparable: the source defines new construction as year built >= 2025, a fixed '
   + 'threshold, so the 2026 columns span two build vintages and the 2025 columns span one. '
-  + 'On a rolling definition Ada County new-construction sales grew ~14% YTD, in line with '
-  + 'the market, not 170.8%.';
+  + 'On a rolling definition Ada + Canyon new-construction sales grew ~10% YTD, in line '
+  + 'with the market, not 153.4%.';
 
 // Unit-count changes are safe for the county total — the vintage threshold only
 // moves homes between the new and existing buckets, it does not add or remove
@@ -657,7 +658,7 @@ function buildAdaMarketReport() {
     <div class="ar-header">
       ${arBrandLockup()}
       <div class="ar-header-titles">
-        <div class="ar-title">Ada County Single-Family Residential Market Report</div>
+        <div class="ar-title">Ada &amp; Canyon County Single-Family Residential Market Report</div>
         <div class="ar-subtitle">${ADA_REPORT.period} · ${ADA_REPORT.county}</div>
       </div>
       <div class="ar-accentbar">
@@ -669,9 +670,9 @@ function buildAdaMarketReport() {
 
     <div class="ar-callout ar-callout-warn">
       <b>Read the 2025 comparisons with care.</b> ${cov.jul25MissingClosePrice} of the
-      ${cov.jul25Sold} July-2025 Ada County closings (${missPct}%) have no close price recorded,
-      so every 2025 price and dollar-volume figure in the source report is computed on a ~4%
-      sample. Unit counts for 2025 are sound; prices are not. Price and volume changes against
+      ${cov.jul25Sold.toLocaleString()} July-2025 Ada + Canyon closings (${missPct}%) have no close
+      price recorded, so every 2025 price and dollar-volume figure in the source report is
+      computed on a ~4% sample. Unit counts for 2025 are sound; prices are not. Price and volume changes against
       2025 are withheld below, and the 2025 columns are hidden by default.
       <button class="ar-linkbtn" id="ar-toggle-2025">Show 2025 columns</button>
     </div>
@@ -684,13 +685,13 @@ function buildAdaMarketReport() {
       homes out of the existing bucket. A house built in 2025 and resold in July 2026 counts
       as new construction.
       <br><br>
-      Cross-checked against <code>main.gold_mls.search_listings</code> (Ada County, sold,
-      single family): of the 2,065 YTD-26 sales built ≥ 2025, <b>1,307 were built in 2025</b> —
-      63% of the bucket is carryover the 2025 column cannot contain. Comparing like with like,
-      current-vintage sales went <b>767 → 758 (−1.2%)</b>; on a rolling “built this year or
-      last” definition, <b>1,811 → 2,065 (+14.0%)</b>, against a total market of +14.8%.
-      New construction has held a steady <b>~35% share both years</b> — it did not climb from
-      14.7% to 34.5%. Unit-count changes for the new and existing bands are marked
+      Cross-checked against <code>main.gold_mls.search_listings</code> (Ada + Canyon, sold,
+      single family, 25 ZIPs): of the 3,501 YTD-26 sales built ≥ 2025, <b>2,206 were built in
+      2025</b> — 63% of the bucket is carryover the 2025 column cannot contain. Comparing like
+      with like, current-vintage sales went <b>1,426 → 1,295 (−9.2%)</b>; on a rolling “built
+      this year or last” definition, <b>3,183 → 3,501 (+10.0%)</b>, against a total market of
+      +13.1%. New construction has held a steady <b>~38% share both years</b> — it did not
+      climb from 16.6% to 37.3%. Unit-count changes for the new and existing bands are marked
       <span class="ar-notcomp">not comparable</span> below; the county total is unaffected,
       because the threshold only moves sales between buckets.
     </div>
@@ -725,8 +726,11 @@ function buildAdaMarketReport() {
 
     <div class="ar-callout ar-callout-note">
       <b>Sources & method.</b> Sections 1–3 come from
-      <code>data_science.compass_db.ada_county_report_csv</code> (${ADA_REPORT.period} run).
-      Section 4 is a trailing-12-month cut of <code>data_analytics.dev.dim_listing</code> joined to
+      <code>data_science.compass_db.ada_canyon_county_report_csv</code> (${ADA_REPORT.period} run,
+      generated ${ADA_REPORT.generated}) and cover <b>Ada and Canyon County</b> — 24 IMLS areas.
+      <b style="color:var(--mr-amber)">Section 4 is still ${ADA_REPORT.ncScope || 'Ada County only'}</b>
+      and was not regenerated by that notebook, so its totals do not tie to Sections 1–3.
+      It is a trailing-12-month cut of <code>data_analytics.dev.dim_listing</code> joined to
       <code>main.gold_polaris.dim_property</code> for year built, filtered to Ada County single
       family / townhouse / condo with at least 1 bed, 1 bath and a $2K price floor.
       <b>New construction is defined by assessor year built ≥ 2025, not by the IMLS

@@ -224,6 +224,61 @@ function openBoiseZipDetail(zipData) {
   modal.classList.add('open');
 }
 
+// Detail modal driven by the static BOISE_ZIP_METRICS pull, for when the Boise
+// serving endpoint is not configured. Different field set from the live payload
+// above — this one is period-based (Jul / YTD / TTM) rather than rolling 30/60d.
+function openBoiseZipStatic(zip) {
+  const s = BOISE_ZIP_METRICS[zip];
+  if (!s) return;
+  const meta  = imlsZipMeta(zip) || { city: '', county: '', label: '' };
+  const areas = imlsAreasForZip(zip);
+
+  const modal  = document.getElementById('metric-modal-overlay');
+  const money  = v => v == null ? '—' : '$' + Math.round(v).toLocaleString();
+  const pct    = v => v == null ? '—' : (v >= 0 ? '+' : '') + v + '%';
+  const cls    = v => v == null ? '' : v >= 0 ? 'up' : 'down';
+  const stat   = (label, value, klass) => `<div class="stat-row">
+      <div class="stat-label">${label}</div>
+      <div class="stat-value ${klass || ''}">${value}</div>
+    </div>`;
+
+  document.getElementById('modal-title').textContent =
+    `${zip} — ${meta.label || meta.city}, ${meta.county} County`;
+  document.getElementById('modal-meta').textContent = areas.length
+    ? `IMLS Area ${areas.map(a => `${a.code} (${a.pct}%)`).join(' · ')}`
+    : 'No IMLS area assignment';
+
+  document.getElementById('modal-stats').innerHTML = [
+    stat('Sold — July 2026', s.julSold == null ? '—' : s.julSold.toLocaleString()),
+    stat('Median — July 2026', money(s.julMed)),
+    stat('Sold — YTD 2026', s.ytdSold == null ? '—' : s.ytdSold.toLocaleString()),
+    stat('YTD sales vs 2025', pct(s.ytdSoldPct), cls(s.ytdSoldPct)),
+    stat('Median — YTD 2026', money(s.ytdMed)),
+    stat('YTD median vs 2025', pct(s.ytdMedPct), cls(s.ytdMedPct)),
+    stat('Median — trailing 12mo', money(s.ttmMed)),
+    stat('Median resale — trailing 12mo', money(s.ttmResaleMed)),
+    stat('Median $/sq ft — trailing 12mo', s.ttmPpsf == null ? '—' : '$' + s.ttmPpsf),
+    stat('Median DOM — trailing 12mo', s.ttmDom == null ? '—' : s.ttmDom + ' days'),
+    stat('Sale-to-list — trailing 12mo', s.ttmS2l == null ? '—' : s.ttmS2l + '%'),
+    stat('New construction share', s.newSharePct == null ? '—' : s.newSharePct + '%'),
+    stat('Active listings', s.active == null ? '—' : s.active.toLocaleString()),
+    stat('Under contract', s.pending == null ? '—' : s.pending.toLocaleString()),
+  ].join('');
+
+  // Thin ZIPs produce medians that swing on mix alone; say so rather than let
+  // a 5-sale month read as a trend.
+  const thin = (s.julSold || 0) < 15;
+  document.getElementById('modal-signal').textContent = thin
+    ? `Only ${s.julSold} July closings here — read the trailing-12-month figures, not the monthly ones.`
+    : '';
+
+  document.getElementById('modal-source').innerHTML =
+    '<small>Source: main.gold_mls.search_listings, pulled 2026-08-21 · single-family only · '
+    + 'new vs resale on a rolling vintage, so it will not tie exactly to the IMLS area tables</small>';
+
+  modal.classList.add('open');
+}
+
 // ── Section: Today ───────────────────────────────────────────────────────────
 
 function renderToday() {
@@ -2507,13 +2562,18 @@ function buildBoiseImlsSection() {
   const wrap = document.createElement('div');
   wrap.className = 'imls-section';
 
-  // Live ZIP-level metrics if the Boise serving endpoint is wired up
+  // ZIP-level metrics: the static pull from search_listings is always present,
+  // so the table carries real numbers whether or not the serving endpoint is
+  // configured. A live endpoint, when wired up, takes precedence per ZIP.
+  const statZip = typeof BOISE_ZIP_METRICS !== 'undefined' ? BOISE_ZIP_METRICS : {};
   const live    = (typeof BoiseData !== 'undefined' && BoiseData.getCachedData()) || null;
   const liveZip = {};
   (live && live.by_zip ? live.by_zip : []).forEach(z => { liveZip[String(z.zipcode)] = z; });
   const hasLive = Object.keys(liveZip).length > 0;
+  const hasStat = Object.keys(statZip).length > 0;
 
   const xref = imlsCrossReference(hasLive ? Object.keys(liveZip) : IMLS_ALL_ZIPS);
+  const derivedAreas = IMLS_AREAS.filter(a => a.derived);
 
   // ── Heading + coverage narrative ──
   const title = document.createElement('div');
@@ -2528,16 +2588,25 @@ function buildBoiseImlsSection() {
     <p>Intermountain MLS publishes market statistics by <strong>Area</strong>, not by ZIP. The two do not line up one-to-one:
     an area spans several ZIPs, and a ZIP can sit inside several areas. The table below is the published
     crosswalk — the percentage is that area's share of listings falling in the given ZIP.</p>
-    <p style="margin-top:12px"><strong>Coverage:</strong> the published area list covers
-    <strong>${IMLS_MAPPED_ZIPS.length} ZIPs</strong> across <strong>${IMLS_AREAS.length} areas</strong>.
-    Every one of them is in <strong>Ada County</strong> — the Boise / Garden City / Meridian / Eagle / Star / Kuna core.</p>
-    <p style="margin-top:12px;color:var(--yellow)"><strong>Gap:</strong> no Canyon County ZIP
-    (Nampa 83651 · 83686 · 83687, Caldwell 83605 · 83607, Middleton 83644) appears in the area crosswalk,
-    so the ${IMLS_CANYON_ZIPS.length} Canyon ZIPs this dashboard tracks have <strong>no IMLS area assignment</strong>.
-    Canyon figures on this page are county roll-ups from the MLS county field, not area roll-ups.</p>
-    ${hasLive
-      ? `<p style="margin-top:12px"><strong>Live data:</strong> ${xref.matched.length} of ${IMLS_MAPPED_ZIPS.length} mapped ZIPs have metrics from the serving endpoint${xref.missingData.length ? `; missing ${xref.missingData.join(', ')}` : ''}.</p>`
-      : `<p style="margin-top:12px;color:var(--text-muted)"><strong>Note:</strong> ZIP-level metrics require the Boise serving endpoint (set <em>Boise Endpoint Name</em> in the sidebar). Until then this table shows the geography crosswalk only.</p>`}`;
+    <p style="margin-top:12px"><strong>Coverage:</strong> <strong>${IMLS_MAPPED_ZIPS.length} ZIPs</strong>
+    across <strong>${IMLS_AREAS.length} areas</strong>, spanning <strong>Ada and Canyon County</strong>.</p>
+    <p style="margin-top:12px;color:var(--yellow)"><strong>The ${derivedAreas.length} Canyon areas
+    (${derivedAreas.map(a => a.code).join(' · ')}) are derived, not published.</strong>
+    IMLS does not publish a ZIP crosswalk for them. Each one's July-2026 sold count and median in the
+    Ada+Canyon report matches exactly one ZIP's July-2026 single-family figures in the MLS table, so the
+    mapping is 1:1 and unambiguous — but it is inferred. Areas 1310 and 1500 are within ±2 sales rather
+    than exact. Canyon area <em>names</em> also disagree with the ZIPs' geography: 1220 “Nampa South” is
+    83651, central Nampa, and 1200 “Nampa SW” is 83686, southern Nampa. Trust the code, not the
+    compass direction.</p>
+    ${hasStat
+      ? `<p style="margin-top:12px"><strong>ZIP metrics:</strong> single-family closings from
+         <code>main.gold_mls.search_listings</code>, pulled 2026-08-21, for all
+         ${Object.keys(statZip).length} Ada + Canyon ZIPs. New vs resale uses a <strong>rolling</strong>
+         vintage (built in the sale year or the one before), so the ZIP split will not tie exactly to the
+         area tables above, which use the source's fixed “year built ≥ 2025” threshold.
+         ${hasLive ? `The serving endpoint is live and overrides these for ${xref.matched.length} ZIPs.` : ''}</p>`
+      : `<p style="margin-top:12px;color:var(--text-muted)"><strong>Note:</strong> ZIP-level metrics
+         require the Boise serving endpoint (set <em>Boise Endpoint Name</em> in the sidebar).</p>`}`;
   wrap.appendChild(intro);
 
   // ── Filter tiles ──
@@ -2598,26 +2667,52 @@ function buildBoiseImlsSection() {
   const tableWrap = document.createElement('div');
   tableWrap.className = 'imls-table-wrap';
 
-  const metricCols = hasLive
-    ? '<th>Median List</th><th>Median Close</th><th>Active</th><th>DOM</th>'
+  const metricCols = hasStat
+    ? `<th class="num" title="Single-family closings, July 2026">Jul Sold</th>
+       <th class="num" title="Median close price, July 2026">Jul Median</th>
+       <th class="num" title="Median close price, trailing 12 months">TTM Median</th>
+       <th class="num" title="Median resale close price, trailing 12 months (rolling vintage)">TTM Resale</th>
+       <th class="num" title="Median price per square foot, trailing 12 months">$/SF</th>
+       <th class="num" title="Median days on market, trailing 12 months">DOM</th>
+       <th class="num" title="New construction as a share of trailing-12-month sales, rolling vintage">New %</th>
+       <th class="num" title="Active listings at pull time">Active</th>
+       <th class="num" title="Under contract at pull time">Pend</th>`
     : '';
+
+  const kMoney = v => v == null ? '&mdash;' : '$' + Math.round(v / 1000) + 'K';
+  const plain  = v => v == null ? '&mdash;' : Math.round(v).toLocaleString();
 
   const rowsHtml = IMLS_ALL_ZIPS.map(zip => {
     const meta   = imlsZipMeta(zip);
     const areas  = imlsAreasForZip(zip);
+    const s      = statZip[zip];
     const m      = liveZip[zip];
     const codes  = areas.map(a => a.code).join(' ');
     const search = [zip, meta.city, meta.label, ...areas.map(a => `${a.code} ${a.name}`)].join(' ').toLowerCase();
 
+    // A derived Canyon mapping is marked so the pill reads differently from a
+    // published Ada one — same geometry, weaker provenance.
     const areaCell = areas.length
-      ? areas.map(a => `<span class="imls-area-pill" title="${a.name}">${a.code}<em>${a.pct}%</em></span>`).join('')
+      ? areas.map(a => {
+          const src = IMLS_AREAS.find(x => x.code === a.code);
+          const der = src && src.derived;
+          return `<span class="imls-area-pill${der ? ' imls-derived' : ''}"
+                        title="${a.name}${der ? ' — derived mapping, not published by IMLS' : ''}"
+                  >${a.code}<em>${a.pct}%</em>${der ? '<b>†</b>' : ''}</span>`;
+        }).join('')
       : '<span class="imls-area-none">— no IMLS area</span>';
 
-    const metricCells = hasLive
-      ? `<td class="num">${m && m.median_list_price ? '$' + Math.round(m.median_list_price / 1000) + 'K' : '—'}</td>
-         <td class="num">${m && m.median_close_price ? '$' + Math.round(m.median_close_price / 1000) + 'K' : '—'}</td>
-         <td class="num">${m ? m.active_listings : '—'}</td>
-         <td class="num">${m && m.median_dom ? Math.round(m.median_dom) : '—'}</td>`
+    // Live endpoint wins per-field where it has a value; static fills the rest.
+    const metricCells = hasStat
+      ? `<td class="num">${plain(s && s.julSold)}</td>
+         <td class="num">${kMoney(s && s.julMed)}</td>
+         <td class="num">${kMoney(m && m.median_close_price != null ? m.median_close_price : s && s.ttmMed)}</td>
+         <td class="num">${kMoney(s && s.ttmResaleMed)}</td>
+         <td class="num">${s && s.ttmPpsf != null ? '$' + s.ttmPpsf : '&mdash;'}</td>
+         <td class="num">${plain(m && m.median_dom != null ? m.median_dom : s && s.ttmDom)}</td>
+         <td class="num">${s && s.newSharePct != null ? s.newSharePct + '%' : '&mdash;'}</td>
+         <td class="num">${plain(m && m.active_listings != null ? m.active_listings : s && s.active)}</td>
+         <td class="num">${plain(s && s.pending)}</td>`
       : '';
 
     return `<tr class="imls-row" data-zip="${zip}" data-county="${meta.county}"
@@ -2729,12 +2824,14 @@ function buildBoiseImlsSection() {
     exportImlsCsv(visibleRows().map(r => r.dataset.zip), liveZip, hasLive);
   });
 
-  // Open a ZIP's detail modal when live metrics exist for it
+  // Open a ZIP's detail modal. The live endpoint's richer payload wins when
+  // present; otherwise fall back to the static search_listings pull.
   tableWrap.addEventListener('click', e => {
     const tr = e.target.closest('.imls-row');
     if (!tr) return;
     const z = liveZip[tr.dataset.zip];
-    if (z) openBoiseZipDetail(z);
+    if (z) { openBoiseZipDetail(z); return; }
+    if (statZip[tr.dataset.zip]) openBoiseZipStatic(tr.dataset.zip);
   });
 
   apply();
@@ -2742,12 +2839,26 @@ function buildBoiseImlsSection() {
 }
 
 function exportImlsCsv(zips, liveZip, hasLive) {
-  const header = ['ZIP', 'City', 'Neighborhood', 'County', 'IMLS Areas', 'Area Shares'];
-  if (hasLive) header.push('Median List', 'Median Close', 'Active', 'Pending', 'Closed 30d', 'Median DOM', 'Sale-to-List %');
+  const stat    = typeof BOISE_ZIP_METRICS !== 'undefined' ? BOISE_ZIP_METRICS : {};
+  const hasStat = Object.keys(stat).length > 0;
+
+  const header = ['ZIP', 'City', 'Neighborhood', 'County', 'IMLS Areas', 'Area Shares', 'Mapping Source'];
+  if (hasStat) header.push(
+    'Jul-26 Sold', 'Jul-26 Median', 'YTD-26 Sold', 'YTD-26 Median',
+    'YTD-25 Sold', 'YTD-25 Median', 'YTD Sold %', 'YTD Median %',
+    'TTM Median', 'TTM Resale Median', 'TTM $/SF', 'TTM DOM', 'TTM Sale-to-List %',
+    'TTM Sold', 'TTM New', 'New Share %', 'Active', 'Pending',
+  );
+  if (hasLive) header.push('Live Median List', 'Live Median Close', 'Live Active', 'Live Pending',
+                           'Live Closed 30d', 'Live Median DOM', 'Live Sale-to-List %');
 
   const rows = [
     ['Boise MSA — IMLS Area / ZIP Cross-Reference'],
-    ['Source: Intermountain MLS area crosswalk (imlsmembers.com/areas)'],
+    ['Geography: Intermountain MLS area crosswalk (imlsmembers.com/areas).'],
+    ['Canyon areas 1200-1500 are DERIVED 1:1 from the Ada+Canyon report, not published by IMLS.'],
+    ['Metrics: main.gold_mls.search_listings, pulled 2026-08-21, single-family closings.'],
+    ['New vs resale uses a rolling vintage (built in sale year or prior), NOT the report’s'],
+    ['fixed "year built >= 2025" threshold, so it will not tie to the area tables.'],
     [`Exported ${new Date().toISOString().slice(0, 10)} · ${zips.length} ZIPs`],
     [],
     header,
@@ -2756,11 +2867,21 @@ function exportImlsCsv(zips, liveZip, hasLive) {
   zips.forEach(zip => {
     const meta  = imlsZipMeta(zip) || { city: '', label: '', county: '' };
     const areas = imlsAreasForZip(zip);
+    const derived = areas.some(a => (IMLS_AREAS.find(x => x.code === a.code) || {}).derived);
     const row = [
       zip, meta.city, meta.label, meta.county,
       areas.map(a => `${a.code} ${a.name}`).join('; ') || 'No IMLS area',
       areas.map(a => `${a.code}=${a.pct}%`).join('; ') || '',
+      !areas.length ? 'none' : derived ? 'derived' : 'published',
     ];
+    if (hasStat) {
+      const s = stat[zip] || {};
+      row.push(
+        s.julSold, s.julMed, s.ytdSold, s.ytdMed, s.ytd25Sold, s.ytd25Med,
+        s.ytdSoldPct, s.ytdMedPct, s.ttmMed, s.ttmResaleMed, s.ttmPpsf,
+        s.ttmDom, s.ttmS2l, s.ttmSold, s.ttmNew, s.newSharePct, s.active, s.pending,
+      );
+    }
     if (hasLive) {
       const m = liveZip[zip];
       row.push(

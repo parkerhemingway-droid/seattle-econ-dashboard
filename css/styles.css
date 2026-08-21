@@ -1206,6 +1206,17 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
 }
 .imls-area-pill em { font-style: normal; color: var(--text-muted); font-size: 0.66rem; }
 .imls-area-none { font-size: 0.72rem; color: var(--yellow); }
+/* Canyon areas 1200-1500: the geometry is inferred from the report's own counts,
+   not published by IMLS. Dashed edge + dagger so it reads as weaker provenance. */
+.imls-area-pill.imls-derived {
+  border-style: dashed;
+  border-color: var(--mr-amber, var(--yellow));
+}
+.imls-area-pill.imls-derived b {
+  color: var(--mr-amber, var(--yellow));
+  font-weight: 700;
+  font-size: 0.66rem;
+}
 
 .imls-dim { opacity: 0.32; }
 .imls-empty { padding: 18px; color: var(--text-muted); font-size: 0.85rem; }

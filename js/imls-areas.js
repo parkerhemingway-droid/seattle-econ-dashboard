@@ -10,9 +10,27 @@
 // the long tail of <5% ZIPs is not published.
 //
 // SCOPE NOTE: the published crosswalk covers the Boise/Meridian/Eagle/Star/Kuna
-// core only — i.e. ALL of these ZIPs are in ADA COUNTY. No Canyon County ZIP
-// (Nampa, Caldwell, Middleton) appears in the area list, so Canyon County
-// inventory has no IMLS area assignment here.
+// core only — those ZIPs are all in ADA COUNTY.
+//
+// The Ada+Canyon report (ada_canyon_county_report_csv, 2026-08-21) added seven
+// CANYON areas, 1200–1500, which the published crosswalk does not cover. Their
+// ZIP mappings below are DERIVED, not published: each Canyon area's July-2026
+// sold count and median in that report matches exactly one ZIP's July-2026
+// single-family figures in main.gold_mls.search_listings, so the mapping is
+// 1:1 and unambiguous. Verified 2026-08-21 —
+//   1200 → 83686 (101 sold / $443,000 both sides)
+//   1210 → 83687 (112 / $454,990)
+//   1220 → 83651 ( 57 / $403,000)
+//   1300 → 83605 ( 53 / $418,000)
+//   1400 → 83644 ( 61 / $548,990)
+//   1310 → 83607 (report 88 vs ZIP 90 — the same ±2 slop as the Ada areas)
+//   1500 → the four rural ZIPs, 22 sold against the report's 23
+// `derived: true` marks these so the UI can distinguish them from published rows.
+//
+// CAUTION: IMLS's Canyon area NAMES do not match the ZIPs' actual geography —
+// area 1220 "Nampa South" is 83651, which is central Nampa, and area 1200
+// "Nampa SW" is 83686, which is southern Nampa. Names are reproduced as the
+// source publishes them; trust the code, not the compass direction.
 
 const IMLS_AREAS = [
   { code: '100',  name: 'North Boise',                zips: [['83702', 59], ['83703', 41]] },
@@ -32,6 +50,17 @@ const IMLS_AREAS = [
   { code: '1020', name: 'N.E. Meridian',              zips: [['83646', 44], ['83642', 41], ['83713', 15]] },
   { code: '1030', name: 'N.W. Meridian',              zips: [['83646', 55], ['83642', 45]] },
   { code: '1100', name: 'Kuna',                       zips: [['83642', 65], ['83634', 35]] },
+  // ── Canyon County (derived — see SCOPE NOTE above) ──
+  { code: '1200', name: 'Nampa SW',            derived: true, zips: [['83686', 100]] },
+  { code: '1210', name: 'Nampa NE',            derived: true, zips: [['83687', 100]] },
+  { code: '1220', name: 'Nampa South',         derived: true, zips: [['83651', 100]] },
+  { code: '1300', name: 'Caldwell South',      derived: true, zips: [['83605', 100]] },
+  { code: '1310', name: 'Caldwell North',      derived: true, zips: [['83607', 100]] },
+  { code: '1400', name: 'Middleton',           derived: true, zips: [['83644', 100]] },
+  // Shares are YTD-26 sold counts (83676 52, 83660 50, 83626 5, 83656 3 of 110);
+  // July alone is too thin to split four ZIPs.
+  { code: '1500', name: 'Canyon County Rural', derived: true,
+    zips: [['83676', 47], ['83660', 45], ['83626', 5], ['83656', 3]] },
 ];
 
 // ── ZIP metadata ─────────────────────────────────────────────────────────────

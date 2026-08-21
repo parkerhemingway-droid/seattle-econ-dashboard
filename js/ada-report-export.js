@@ -396,7 +396,7 @@ function arPdfDocument(scope) {
   </div>
   <div class="titles">
     <div class="sub">${subtitle}</div>
-    <div class="meta"><b>Area:</b> Ada County &nbsp;&nbsp; <b>Report Month:</b> ${ADA_REPORT.period}
+    <div class="meta"><b>Area:</b> Ada &amp; Canyon County &nbsp;&nbsp; <b>Report Month:</b> ${ADA_REPORT.period}
       &nbsp;&nbsp; <b>Report date:</b> ${ADA_REPORT.generated}
       ${scoped ? `<span class="scope">${label} only</span>` : ''}</div>
   </div>
@@ -425,7 +425,7 @@ function arPdfDocument(scope) {
         for those two columns &mdash; and every % change against them &mdash; are
         suppressed rather than published.</div>
       <div class="crit"><b>Report criteria.</b>
-        Single-Family Residential &mdash; Ada County, ID, all 17 IMLS areas.
+        Single-Family Residential &mdash; Ada &amp; Canyon County, ID, all ${ADA_REPORT.areas.length} IMLS areas.
         New Construction = assessor year built &ge; 2025 (not the IMLS flag &mdash; see note).
         Reporting month ${ADA_REPORT.period}; YTD = Jan 1 &ndash; Jul 31;
         Previous 12 Months = Aug 1, 2025 &ndash; Jul 31, 2026.${scoped
@@ -438,29 +438,20 @@ function arPdfDocument(scope) {
 
 <div class="note">
   Source: Compass Databricks &mdash; <i>data_science.compass_db.ada_county_report_csv</i>
-  (${ADA_REPORT.period} run), Ada County single-family residential.
+  (${ADA_REPORT.period} run), Ada &amp; Canyon County single-family residential.
   <b>New construction is defined by assessor year built, not by the IMLS
   <i>NewConstructionYN</i> flag</b> &mdash; IMLS publishes that flag, but it is not ingested
   into the Compass warehouse (<i>main.silver_mls.listing_idaho_imls</i> is a 69-column RESO
   subset carrying neither <i>NewConstructionYN</i> nor <i>YearBuilt</i>, and the only
   <i>is_new_construction_flag</i> sits on DMS tables &mdash; Compass-listed inventory only,
   71% null).
-  &nbsp;&bull;&nbsp; <span class="flag">&#9873;</span> marks a source-report aggregation
-  defect: Meridian SE (1000) and Meridian SW (1010) report identical average and median
-  prices on different unit counts (51 vs. 50 sales), and Boise North (0100) carries a
-  $630,000 new-construction average against 0 new-construction units &mdash; shown as
-  reported, but not to be relied on.
-  &nbsp;&bull;&nbsp; The summary bands split July's 1,035 sales as 319 new + 716 existing;
-  the area rows sum to 318 + 715 = 1,033. This is <b>not</b> two sales missing an IMLS area,
-  as previously stated &mdash; the area Sold column sums to the full 1,035, and six areas
-  individually fail new + existing = sold with gaps in both directions. The new/existing
-  split is unreliable at &plusmn;1 per area.
+  &nbsp;&bull;&nbsp; ${arExportDefectNote()}
   &nbsp;&bull;&nbsp; <b>New-construction change vs 2025 is not like-for-like.</b> Year built
   &ge; 2025 is a fixed threshold, so the 2026 columns span two build vintages and the 2025
-  columns one. Against <i>main.gold_mls.search_listings</i>, 1,307 of the 2,065 YTD-26 sales
-  built &ge; 2025 were built in 2025; on a rolling definition new construction grew ~14% YTD,
-  in line with the market, and held a ~35% share both years &mdash; not the +170.8% the
-  source reports.
+  columns one. Against <i>main.gold_mls.search_listings</i> (Ada + Canyon, 25 ZIPs), 2,206 of
+  the 3,501 YTD-26 sales built &ge; 2025 were built in 2025; on a rolling definition new
+  construction grew ~10% YTD, in line with the market's +13.1%, and held a ~38% share both
+  years &mdash; not the +153.4% the source reports.
   &nbsp;&bull;&nbsp; <span class="wh">wthld</span> = withheld.${showNc
     ? ' New-construction tier and trend figures use a 12-month close window, so they will'
       + ' not tie to the monthly sections above.' : ''}
@@ -470,6 +461,39 @@ function arPdfDocument(scope) {
 
 // Opens the print view. Returns false if the popup was blocked so the caller
 // can surface that rather than failing silently.
+// The area-level defects change whenever the source report is regenerated, so
+// derive the footnote from the data rather than restating last month's counts.
+// Mirrors arAreaAudit() in ada-market-report.js.
+function arExportDefectNote() {
+  const audit = typeof arAreaAudit === 'function' ? arAreaAudit() : {};
+  const codes = Object.keys(audit);
+  const t = ADA_REPORT.areaTotals;
+  const sum = ADA_REPORT.areas.reduce((a, x) => a + x.total.sold, 0);
+  const bandSum = ADA_REPORT.summary.total.rows
+    .find(r => /homes sold/i.test(r.label));
+  const headline = bandSum ? bandSum.vals[0] : null;
+
+  if (!codes.length) return '<span class="flag">&#9873;</span> no area-level aggregation '
+    + 'defects were detected in this run.';
+
+  const parts = codes.slice(0, 3).map(c => {
+    const a = ADA_REPORT.areas.find(x => x.code === c);
+    return `${a ? a.name : c} (${c})`;
+  });
+  return `<span class="flag">&#9873;</span> marks a source-report aggregation defect. `
+    + `${codes.length} of ${ADA_REPORT.areas.length} areas are flagged this run, including `
+    + `${parts.join(', ')}${codes.length > 3 ? ' and others' : ''} &mdash; duplicated `
+    + `average/median pairs across areas, prices quoted against zero units, and rows where `
+    + `new + existing does not equal sold. Shown as reported, but not to be relied on. `
+    + (headline && headline !== sum
+        ? `The area Sold column totals ${sum.toLocaleString()} against the summary band's `
+          + `${headline.toLocaleString()}; the new/existing split is unreliable at &plusmn;1 per area.`
+        : `The area Sold column totals ${sum.toLocaleString()}, matching the summary band, but `
+          + `the new/existing split is still unreliable at &plusmn;1 per area `
+          + `(${t.new.sold.toLocaleString()} + ${t.existing.sold.toLocaleString()} = `
+          + `${(t.new.sold + t.existing.sold).toLocaleString()}).`);
+}
+
 function adaReportPdf(scope) {
   const w = window.open('', '_blank', 'width=1200,height=850');
   if (!w) return false;
