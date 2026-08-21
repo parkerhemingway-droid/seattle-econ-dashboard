@@ -1492,8 +1492,126 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
 .ar-scope-existing .ar-seg[data-seg="new"] { display: none; }
 .ar-existing-only[hidden] { display: none; }
 
+/* ── ZIP focus: search box, suggestions, and the ZIP's own card ── */
+.ar-zipsearch { position: relative; display: inline-flex; align-items: center; }
+.ar-zip-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font: inherit; font-size: 0.74rem;
+  padding: 5px 26px 5px 9px; width: 220px;
+}
+.ar-zip-input::placeholder { color: var(--text-muted); }
+.ar-zip-input:focus { outline: none; border-color: var(--mr-blue); }
+.ar-zip-clear {
+  position: absolute; right: 5px; background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 0.72rem; line-height: 1; padding: 3px;
+}
+.ar-zip-clear:hover { color: var(--text); }
+
+.ar-zipsug {
+  position: absolute; top: calc(100% + 5px); left: 0; z-index: 40;
+  min-width: 300px; max-height: 290px; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+.ar-zipsug[hidden] { display: none; }
+.ar-zipsug-item {
+  display: grid; grid-template-columns: 52px 1fr auto; align-items: baseline; gap: 8px;
+  width: 100%; text-align: left; background: none; border: none; cursor: pointer;
+  font: inherit; padding: 7px 10px; color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.ar-zipsug-item:last-child { border-bottom: none; }
+.ar-zipsug-item:hover:not([disabled]) { background: rgba(0, 123, 255, 0.13); }
+.ar-zipsug-item[disabled] { opacity: 0.45; cursor: default; }
+.ar-zipsug-item b { font-size: 0.78rem; font-weight: 700; }
+.ar-zipsug-item span { font-size: 0.72rem; color: var(--text-muted); }
+.ar-zipsug-item i { font-size: 0.64rem; font-style: normal; color: var(--text-muted); }
+.ar-zipsug-empty { padding: 10px 12px; font-size: 0.72rem; color: var(--text-muted); line-height: 1.5; }
+
+.ar-zipcard {
+  margin: 14px 0 4px; padding: 14px 16px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--mr-blue); border-radius: var(--card-radius);
+}
+.ar-zipcard-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.ar-zipcard-zip { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
+.ar-zipcard-name { font-size: 0.86rem; color: var(--text); }
+.ar-zipcard-county { font-size: 0.7rem; color: var(--text-muted); }
+.ar-zipcard-src {
+  margin-left: auto; font-size: 0.62rem; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.07em;
+}
+.ar-ziptiles {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 7px; margin-top: 12px;
+}
+.ar-ziptile {
+  border: 1px solid var(--border); border-top: 2px solid var(--mr-blue);
+  border-radius: 5px; padding: 7px 8px; background: var(--bg);
+}
+.ar-ziptile-k {
+  font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-muted); line-height: 1.3;
+}
+.ar-ziptile-v { font-size: 1.05rem; font-weight: 700; margin-top: 3px; letter-spacing: -0.02em; }
+.ar-ziptile-d { font-size: 0.62rem; margin-top: 2px; }
+
+.ar-zip-areas { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 12px; }
+.ar-zip-arealab {
+  font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-muted); font-weight: 700;
+}
+.ar-zip-areachip {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 3px 10px; font-size: 0.7rem; color: var(--text);
+}
+.ar-zip-areachip em { font-style: normal; font-size: 0.62rem; color: var(--text-muted); }
+.ar-zip-areachip.imls-derived {
+  border-style: dashed; border-color: var(--mr-amber, var(--yellow));
+}
+.ar-zip-areachip.imls-derived b {
+  color: var(--mr-amber, var(--yellow)); font-weight: 700; font-size: 0.66rem;
+}
+.ar-zip-areachip-none { color: var(--text-muted); font-style: italic; }
+.ar-zipcard-note {
+  margin-top: 11px; font-size: 0.72rem; line-height: 1.55; color: var(--text-muted);
+}
+.ar-zipcard-note b { color: var(--text); }
+.ar-zipshare { color: var(--mr-blue); font-weight: 700; }
+
+/* Actions on the static Boise ZIP modal — straight to the sheet, or into the
+   report's ZIP focus. */
+.bz-modal-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 9px; }
+.bz-modal-actions button {
+  background: var(--mr-blue); color: #fff; border: none; border-radius: 6px;
+  font: inherit; font-size: 0.72rem; font-weight: 700; padding: 6px 12px; cursor: pointer;
+}
+.bz-modal-actions .bz-focus-btn {
+  background: transparent; color: var(--mr-blue); border: 1px solid var(--mr-blue);
+}
+.bz-modal-actions button:hover { filter: brightness(1.12); }
+
+/* Badges that only make sense once a ZIP is focused — they exist to stop a
+   county-wide section being read as the ZIP's. Declared before .ar-zip-only so
+   the hide rule wins on order at equal specificity, and the two focus rules
+   win over both on specificity. */
+.ar-countywide {
+  display: inline-block; margin-left: 9px; padding: 2px 8px; border-radius: 999px;
+  background: rgba(255, 179, 15, 0.14); color: var(--mr-amber, var(--yellow));
+  font-size: 0.6rem; font-weight: 700; text-transform: none; letter-spacing: 0.01em;
+  vertical-align: middle;
+}
+.ar-zip-only { display: none; }
+.ar-report.ar-zip-focus .ar-zip-only { display: block; }
+.ar-report.ar-zip-focus span.ar-zip-only { display: inline-block; }
+
 @media (max-width: 768px) {
   .ar-controls { gap: 9px; }
   .ar-pdf-btn { margin-left: 0; }
   .ar-pdf-hint { display: none; }
+  .ar-zip-input { width: 100%; }
+  .ar-zipsearch { flex: 1 1 180px; }
+  .ar-zipsug { min-width: 0; width: 100%; }
+  .ar-zipcard-src { display: none; }
 }

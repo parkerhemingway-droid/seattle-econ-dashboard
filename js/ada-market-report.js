@@ -75,6 +75,9 @@ const AR_SCOPES = [
   { key: 'existing', label: 'Existing' }
 ];
 
+const AR_PDF_HINT_COUNTY =
+  'One page, letter landscape &middot; choose “Save as PDF” and untick “Headers and footers”';
+
 function arScopeBar() {
   const btns = AR_SCOPES.map(s =>
     `<button class="ar-toggle-btn${s.key === 'all' ? ' active' : ''}" data-scope="${s.key}"
@@ -82,14 +85,146 @@ function arScopeBar() {
   return `<div class="ar-controls">
     <span class="ar-controls-label">View</span>
     <span class="ar-toggle" role="group" aria-label="Product segment">${btns}</span>
+    <span class="ar-controls-label">Zip</span>
+    <span class="ar-zipsearch">
+      <input type="text" id="ar-zip-input" class="ar-zip-input" autocomplete="off"
+             placeholder="83712, Nampa, Caldwell, area 200…"
+             aria-label="Focus the report on a ZIP code"
+             aria-autocomplete="list" aria-controls="ar-zipsug">
+      <button class="ar-zip-clear" id="ar-zip-clear" type="button" hidden
+              aria-label="Clear ZIP focus">✕</button>
+      <div class="ar-zipsug" id="ar-zipsug" role="listbox" hidden></div>
+    </span>
     <button class="ar-pdf-btn" id="ar-pdf" type="button">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
         <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>Download PDF</button>
-    <span class="ar-pdf-hint">One page, letter landscape &middot; choose “Save as PDF”
-      and untick “Headers and footers”</span>
+      </svg><span id="ar-pdf-label">Download PDF</span></button>
+    <span class="ar-pdf-hint" id="ar-pdf-hint">${AR_PDF_HINT_COUNTY}</span>
+  </div>`;
+}
+
+// ── ZIP focus ────────────────────────────────────────────────────────────────
+// The source report has no ZIP dimension — it aggregates to IMLS areas, and an
+// area is not a union of whole ZIPs. So a ZIP filter can honestly do two things
+// and no more:
+//   · show that ZIP's own closings, from the direct pull in BOISE_ZIP_METRICS;
+//   · narrow Section 2 to the areas the ZIP sits in, at full area scope.
+// Sections 1, 3 and 4 have no ZIP breakdown in the source. They stay county-wide
+// and are badged as such rather than being prorated by listing share, which
+// would produce ZIP figures that look authoritative and are not.
+
+// Searchable index: ZIP, city, neighborhood label, county, and area code/name,
+// so "Nampa", "Warm Springs" and "200" all find something.
+function arZipSearchIndex() {
+  if (typeof IMLS_ZIP_META === 'undefined') return [];
+  return Object.keys(IMLS_ZIP_META).sort().map(z => {
+    const m = IMLS_ZIP_META[z];
+    const areas = typeof imlsAreasForZip === 'function' ? imlsAreasForZip(z) : [];
+    const has = typeof BOISE_ZIP_METRICS !== 'undefined' && !!BOISE_ZIP_METRICS[z];
+    return {
+      zip: z, city: m.city, county: m.county, label: m.label, areas, has,
+      hay: [z, m.city, m.label, m.county, 'area',
+            ...areas.map(a => a.code + ' ' + a.name)].join(' ').toLowerCase()
+    };
+  });
+}
+
+function arZipMatches(q) {
+  const s = String(q || '').trim().toLowerCase();
+  const all = arZipSearchIndex();
+  if (!s) return all;
+  const hits = all.filter(r => r.hay.includes(s));
+  // Exact ZIP first, then ZIPs that start with the query, then the rest.
+  return hits.sort((a, b) => {
+    const rank = r => r.zip === s ? 0 : r.zip.startsWith(s) ? 1 : 2;
+    return rank(a) - rank(b) || a.zip.localeCompare(b.zip);
+  });
+}
+
+function arZipSuggestHtml(q) {
+  const hits = arZipMatches(q).slice(0, 8);
+  if (!hits.length) {
+    return `<div class="ar-zipsug-empty">No Ada or Canyon County ZIP matches
+      “${String(q).slice(0, 24)}”. Coverage is the 25 ZIPs in this report.</div>`;
+  }
+  return hits.map(r => `<button type="button" class="ar-zipsug-item" role="option"
+      data-zip="${r.zip}"${r.has ? '' : ' disabled'}>
+      <b>${r.zip}</b>
+      <span>${r.city} &middot; ${r.label}</span>
+      <i>${r.county}${r.areas.length ? ' &middot; area ' + r.areas.map(a => a.code).join('/') : ''}${
+        r.has ? '' : ' &middot; no ZIP data'}</i>
+    </button>`).join('');
+}
+
+// The ZIP's own numbers, straight from the pull. Deliberately placed above the
+// county KPI row so the reader meets the ZIP figure before the county one.
+function arZipPanel(zip) {
+  const meta = typeof imlsZipMeta === 'function' ? imlsZipMeta(zip) : null;
+  if (!meta) return '';
+  const d = (typeof BOISE_ZIP_METRICS !== 'undefined' && BOISE_ZIP_METRICS[zip]) || null;
+  const areas = typeof imlsAreasForZip === 'function' ? imlsAreasForZip(zip) : [];
+  const chips = areas.length
+    ? areas.map(a => {
+        const src = typeof IMLS_AREAS !== 'undefined'
+          ? IMLS_AREAS.find(x => x.code === a.code) : null;
+        const der = !!(src && src.derived);
+        return `<span class="ar-zip-areachip${der ? ' imls-derived' : ''}"
+          title="${a.name}${der ? ' — derived mapping, not published by IMLS' : ''}"
+          >${a.code} · ${a.name}<em>${a.pct}% of area</em>${der ? '<b>†</b>' : ''}</span>`;
+      }).join('')
+    : '<span class="ar-zip-areachip ar-zip-areachip-none">no IMLS area assignment</span>';
+
+  if (!d) {
+    return `<div class="ar-zipcard">
+      <div class="ar-zipcard-head">
+        <span class="ar-zipcard-zip">${zip}</span>
+        <span class="ar-zipcard-name">${meta.city} · ${meta.label}</span>
+        <span class="ar-zipcard-county">${meta.county} County</span>
+      </div>
+      <div class="ar-zipcard-note">No ZIP-level closings are loaded for ${zip}. Section 2 below
+        is narrowed to the areas it sits in; every other section is county-wide.</div>
+      <div class="ar-zip-areas">${chips}</div>
+    </div>`;
+  }
+
+  const tiles = [
+    ['Sold · Jul-26',   arNum(d.julSold),  null],
+    ['Median · Jul-26', arMoneyK(d.julMed), null],
+    ['Sold · YTD-26',   arNum(d.ytdSold),  d.ytdSoldPct],
+    ['Median · YTD-26', arMoneyK(d.ytdMed), d.ytdMedPct],
+    ['Median · TTM',    arMoneyK(d.ttmMed), null],
+    ['Resale med · TTM', arMoneyK(d.ttmResaleMed), null],
+    ['$/SqFt · TTM',    d.ttmPpsf == null ? '—' : '$' + d.ttmPpsf, null],
+    ['Median DOM',      arNum(d.ttmDom),   null],
+    ['New share · TTM', arPct(d.newSharePct), null],
+    ['Active / Pending', `${arNum(d.active)} / ${arNum(d.pending)}`, null],
+  ].map(([k, v, chg]) => `<div class="ar-ziptile">
+      <div class="ar-ziptile-k">${k}</div>
+      <div class="ar-ziptile-v">${v}</div>
+      <div class="ar-ziptile-d">${chg == null ? '&nbsp;' : arDelta(chg) + ' YoY'}</div>
+    </div>`).join('');
+
+  const thin = d.julSold != null && d.julSold < 15;
+  const caution = thin
+    ? `<b>Thin market.</b> ${zip} closed ${d.julSold} single-family sales in July 2026 — at that
+       volume one unusual sale moves the median several percent. Quote the trailing-12-month
+       column (${arNum(d.ttmSold)} sales), not the month.`
+    : `<b>Median is a mix statistic.</b> ${arNum(d.ttmSold)} trailing-12-month sales,
+       ${arPct(d.newSharePct)} of them new construction. A change in what sold moves the median
+       without any home changing value — read $${d.ttmPpsf}/sqft alongside it.`;
+
+  return `<div class="ar-zipcard">
+    <div class="ar-zipcard-head">
+      <span class="ar-zipcard-zip">${zip}</span>
+      <span class="ar-zipcard-name">${meta.city} · ${meta.label}</span>
+      <span class="ar-zipcard-county">${meta.county} County</span>
+      <span class="ar-zipcard-src">Direct ZIP pull · main.gold_mls.search_listings</span>
+    </div>
+    <div class="ar-ziptiles">${tiles}</div>
+    <div class="ar-zip-areas"><span class="ar-zip-arealab">IMLS areas</span>${chips}</div>
+    <div class="ar-zipcard-note">${caution}</div>
   </div>`;
 }
 
@@ -277,13 +412,36 @@ function arAreaAudit() {
 // Under 'all' the bar cell splits new vs existing. Under a single segment it
 // shows that segment's share of its own county total, so bar length stays
 // comparable down the column instead of silently changing meaning.
-function arAreaSection(scope = 'all') {
+function arAreaSection(scope = 'all', zip = null) {
   const T = ADA_REPORT.areaTotals;
   const seg = a => scope === 'new' ? a.new : scope === 'existing' ? a.existing : a.total;
   // Ordered by the metric on display; sorting by total under a segment scope
   // yields a column that looks ranked but isn't.
-  const areas = ADA_REPORT.areas.slice().sort((a, b) => seg(b).sold - seg(a).sold);
-  const segT = scope === 'new' ? T.new : scope === 'existing' ? T.existing : T.total;
+  let areas = ADA_REPORT.areas.slice().sort((a, b) => seg(b).sold - seg(a).sold);
+
+  // ZIP focus narrows the row set to the areas that ZIP sits in. The figures
+  // themselves stay whole-area — the share column says how much of the area the
+  // ZIP is, it is not a weight applied to the numbers.
+  let zipShare = null;
+  if (zip) {
+    zipShare = {};
+    (typeof imlsAreasForZip === 'function' ? imlsAreasForZip(zip) : [])
+      .forEach(a => { zipShare[String(a.code).padStart(4, '0')] = a.pct; });
+    areas = areas.filter(a => zipShare[a.code] != null);
+  }
+
+  // Under a ZIP filter the county footer would be a non sequitur, so the total
+  // row sums the areas actually shown. Averages are sold-weighted, which is
+  // exact: an area's average times its count is its dollar total.
+  const band = k => {
+    const sold = areas.reduce((s, a) => s + a[k].sold, 0);
+    const dollars = areas.reduce((s, a) => s + (a[k].avg || 0) * a[k].sold, 0);
+    return { sold, avg: sold ? dollars / sold : null };
+  };
+  const FT = zip ? { total: band('total'), new: band('new'), existing: band('existing') } : T;
+  const segT = scope === 'new' ? FT.new : scope === 'existing' ? FT.existing : FT.total;
+  const countySeg = scope === 'new' ? T.new : scope === 'existing' ? T.existing : T.total;
+  const shownPct = zip ? areas.reduce((s, a) => s + (a.total.pct || 0), 0) : 100;
   const maxSold = Math.max(...areas.map(a => seg(a).sold), 1);
   const segColor = scope === 'new' ? MR.blue : scope === 'existing' ? MR.slate : MR.purple;
 
@@ -324,6 +482,7 @@ function arAreaSection(scope = 'all') {
     return `<tr data-area="${a.code}">
       <td class="ar-rowlab">${a.name}${flag}</td>
       <td class="ar-figure">${a.code}</td>
+      ${zipShare ? `<td class="ar-figure ar-zipshare">${zipShare[a.code]}%</td>` : ''}
       <td class="ar-barcell">${bar}</td>
       ${mid}
       <td class="ar-figure${sc}">${arMoney(s.avg)}</td>
@@ -339,42 +498,63 @@ function arAreaSection(scope = 'all') {
        <th class="ar-figure">Area Total</th><th class="ar-figure">Share of Area</th>`;
 
   const foot = scope === 'all'
-    ? `<td class="ar-figure"><b>${arNum(T.total.sold)}</b></td>
-       <td class="ar-figure" style="color:${MR.blue}"><b>${arNum(T.new.sold)}</b></td>
-       <td class="ar-figure" style="color:${MR.slate}"><b>${arNum(T.existing.sold)}</b></td>
-       <td class="ar-figure">${arPct(T.new.sold / T.total.sold * 100)}</td>
-       <td class="ar-figure">100.0%</td>`
+    ? `<td class="ar-figure"><b>${arNum(FT.total.sold)}</b></td>
+       <td class="ar-figure" style="color:${MR.blue}"><b>${arNum(FT.new.sold)}</b></td>
+       <td class="ar-figure" style="color:${MR.slate}"><b>${arNum(FT.existing.sold)}</b></td>
+       <td class="ar-figure">${arPct(FT.total.sold ? FT.new.sold / FT.total.sold * 100 : 0)}</td>
+       <td class="ar-figure">${arPct(shownPct)}</td>`
     : `<td class="ar-figure" style="color:${segColor}"><b>${arNum(segT.sold)}</b></td>
-       <td class="ar-figure">100.0%</td>
-       <td class="ar-figure">${arNum(T.total.sold)}</td>
-       <td class="ar-figure">${arPct(segT.sold / T.total.sold * 100)}</td>`;
+       <td class="ar-figure">${arPct(countySeg.sold ? segT.sold / countySeg.sold * 100 : 0)}</td>
+       <td class="ar-figure">${arNum(FT.total.sold)}</td>
+       <td class="ar-figure">${arPct(FT.total.sold ? segT.sold / FT.total.sold * 100 : 0)}</td>`;
 
   const legend = scope === 'all'
     ? `<i class="ar-swatch" style="background:${MR.blue}"></i>New
        <i class="ar-swatch" style="background:${MR.slate}"></i>Existing`
     : `<i class="ar-swatch" style="background:${segColor}"></i>${AR_SERIES[scope].label}`;
 
+  const title = zip
+    ? `Sales by IMLS Area — areas covering ${zip} · ${ADA_REPORT.period}`
+    : `Sales by IMLS Area — ${ADA_REPORT.period}`;
+
+  // Said out loud, because a filtered table invites exactly the wrong reading:
+  // that these rows are the ZIP's sales. They are the areas' sales.
+  const topShare = zip && areas.length ? Math.max(...areas.map(a => zipShare[a.code])) : null;
+  const zipNote = !zip ? ''
+    : !areas.length
+      ? `<div class="ar-chart-note"><b>${zip} has no IMLS area assignment</b>, so there is no
+         area row to show. Its own closings are in the card above.</div>`
+      : `<div class="ar-chart-note">These are <b>whole-area</b> figures for the ${areas.length}
+         area${areas.length === 1 ? '' : 's'} ${zip} sits in — not ${zip}'s sales. The share
+         column is ${zip}'s portion of each area's listings; it is deliberately not applied to
+         the numbers, because a ${topShare}%-share ZIP does not carry ${topShare}% of its area's
+         high-end closings. For ${zip}'s own closings see the card above.</div>`;
+
   return `<div class="ar-tablecard">
     <div class="ar-tablecard-head">
-      <span class="ar-tablecard-title">Sales by IMLS Area — ${ADA_REPORT.period}</span>
+      <span class="ar-tablecard-title">${title}</span>
       <span class="ar-legend">${legend}</span>
     </div>
     <div class="ar-scroll">
     <table class="data-table ar-table ar-area-table">
       <thead><tr>
-        <th>MLS Area</th><th class="ar-figure">Code</th><th style="width:150px">Mix</th>
+        <th>MLS Area</th><th class="ar-figure">Code</th>
+        ${zip ? `<th class="ar-figure" title="${zip}'s share of this area's listings">${zip} share</th>` : ''}
+        <th style="width:150px">Mix</th>
         ${head}
         <th class="ar-figure">Avg Price</th><th class="ar-figure">Median</th>
       </tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr>
-        <td class="ar-rowlab"><b>All areas</b></td><td class="ar-figure">—</td><td></td>
+        <td class="ar-rowlab"><b>${zip ? 'Areas shown' : 'All areas'}</b></td>
+        <td class="ar-figure">—</td>${zip ? '<td class="ar-figure">—</td>' : ''}<td></td>
         ${foot}
         <td class="ar-figure"><b>${arMoney(segT.avg)}</b></td>
         <td class="ar-figure">—</td>
       </tr></tfoot>
     </table>
     </div>
+    ${zipNote}
   </div>`;
 }
 
@@ -698,9 +878,15 @@ function buildAdaMarketReport() {
 
     ${arScopeBar()}
 
+    <div id="ar-zip-host"></div>
+
+    <div class="ar-blocktitle ar-zip-only">County Baseline
+      <span class="ar-countywide">Ada &amp; Canyon — not ZIP-filtered</span></div>
     <div class="ar-kpirow">${arKpiRow()}</div>
 
-    <div class="ar-blocktitle">Section 1 · Summary Statistics</div>
+    <div class="ar-blocktitle">Section 1 · Summary Statistics
+      <span class="ar-countywide ar-zip-only">County-wide — the source report has no ZIP
+        breakdown for this section</span></div>
     ${arSummaryTable('total')}
     ${arSummaryTable('existing')}
     ${arSummaryTable('new')}
@@ -709,10 +895,13 @@ function buildAdaMarketReport() {
     <div id="ar-area-host">${arAreaSection('all')}</div>
     ${arAuditCallout()}
 
-    <div class="ar-blocktitle">Section 3 · Units Sold by Price Class</div>
+    <div class="ar-blocktitle">Section 3 · Units Sold by Price Class
+      <span class="ar-countywide ar-zip-only">County-wide — the source report has no ZIP
+        breakdown for this section</span></div>
     <div id="ar-pc-host">${arPriceClassSection('all')}</div>
 
-    <div class="ar-blocktitle ar-seg" data-seg="new">Section 4 · New Construction Market Dynamics</div>
+    <div class="ar-blocktitle ar-seg" data-seg="new">Section 4 · New Construction Market Dynamics
+      <span class="ar-countywide ar-zip-only">Ada County only — not ZIP-filtered</span></div>
     <div class="ar-seg" data-seg="new">
       ${arNcTierSection()}
       ${arTrendChart()}
@@ -759,6 +948,7 @@ function buildAdaMarketReport() {
   // whenever the scope changes and a bound listener would go with it.
   let arScope = 'all';
   let arPeriod = 'jul';
+  let arZip = null;
   const pcHost = wrap.querySelector('#ar-pc-host');
   const areaHost = wrap.querySelector('#ar-area-host');
 
@@ -785,23 +975,89 @@ function buildAdaMarketReport() {
       wrap.classList.add('ar-scope-' + arScope);
       wrap.querySelector('.ar-existing-only').hidden = arScope !== 'existing';
       // ...and a rebuild of the two tables whose columns actually change.
-      areaHost.innerHTML = arAreaSection(arScope);
+      areaHost.innerHTML = arAreaSection(arScope, arZip);
       pcHost.innerHTML = arPriceClassSection(arScope, arPeriod);
     });
   });
 
-  // PDF export — reflects whatever scope is on screen.
-  const pdfBtn = wrap.querySelector('#ar-pdf');
+  // ── ZIP focus ──
+  const zipInput  = wrap.querySelector('#ar-zip-input');
+  const zipSug    = wrap.querySelector('#ar-zipsug');
+  const zipClear  = wrap.querySelector('#ar-zip-clear');
+  const zipHost   = wrap.querySelector('#ar-zip-host');
+  const zipSearch = wrap.querySelector('.ar-zipsearch');
+  const pdfBtn    = wrap.querySelector('#ar-pdf');
+  const pdfLabel  = wrap.querySelector('#ar-pdf-label');
+  const pdfHint   = wrap.querySelector('#ar-pdf-hint');
+  pdfBtn.dataset.label = pdfBtn.innerHTML;
+
+  const closeSug = () => { zipSug.hidden = true; zipSug.innerHTML = ''; };
+  const openSug = q => { zipSug.innerHTML = arZipSuggestHtml(q); zipSug.hidden = false; };
+
+  function applyZip(z) {
+    arZip = z || null;
+    wrap.classList.toggle('ar-zip-focus', !!arZip);
+    zipHost.innerHTML = arZip ? arZipPanel(arZip) : '';
+    areaHost.innerHTML = arAreaSection(arScope, arZip);
+    zipClear.hidden = !arZip;
+    zipInput.value = arZip || '';
+    pdfLabel.textContent = arZip ? `Download PDF · ${arZip}` : 'Download PDF';
+    pdfHint.innerHTML = arZip
+      ? `One page, letter landscape &middot; ${arZip} snapshot, peer ZIPs and covering areas`
+      : AR_PDF_HINT_COUNTY;
+    pdfBtn.dataset.label = pdfBtn.innerHTML;
+    closeSug();
+  }
+
+  zipInput.addEventListener('input', () => openSug(zipInput.value));
+  zipInput.addEventListener('focus', () => openSug(zipInput.value));
+  zipInput.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeSug(); zipInput.blur(); return; }
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    // Enter takes the first selectable suggestion, so typing a full ZIP and
+    // hitting return works without reaching for the mouse.
+    const first = zipSug.querySelector('.ar-zipsug-item:not([disabled])');
+    if (first) applyZip(first.dataset.zip);
+  });
+  zipSug.addEventListener('click', e => {
+    const b = e.target.closest('.ar-zipsug-item');
+    if (b && !b.disabled) applyZip(b.dataset.zip);
+  });
+  // Close on leaving the control entirely. relatedTarget is the element taking
+  // focus, so clicking a suggestion (a button) does not count as leaving.
+  zipSearch.addEventListener('focusout', e => {
+    if (!zipSearch.contains(e.relatedTarget)) closeSug();
+  });
+  zipClear.addEventListener('click', () => { applyZip(null); zipInput.focus(); });
+
+  // PDF export — reflects whatever scope and ZIP are on screen. With a ZIP
+  // focused this is a different sheet, not the county report filtered: the
+  // source has no ZIP dimension, so the ZIP sheet is built from the direct pull.
   pdfBtn.addEventListener('click', () => {
-    if (typeof adaReportPdf !== 'function') return;
-    const ok = adaReportPdf(arScope);
+    const ok = arZip
+      ? (typeof boiseZipPdf === 'function' && boiseZipPdf(arZip, arScope))
+      : (typeof adaReportPdf === 'function' && adaReportPdf(arScope));
     if (!ok) {
       pdfBtn.textContent = 'Popup blocked — allow popups';
       setTimeout(() => { pdfBtn.innerHTML = pdfBtn.dataset.label; }, 3200);
     }
   });
-  pdfBtn.dataset.label = pdfBtn.innerHTML;
 
   wrap.classList.add('ar-scope-all');
   return wrap;
+}
+
+// Let the rest of the dashboard drop straight into a ZIP — the Boise ZIP table
+// rows and the global ZIP search both want "show me this ZIP in the report".
+function arFocusZip(zip) {
+  const input = document.querySelector('#ar-zip-input');
+  if (!input) return false;
+  input.value = String(zip);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  const hit = document.querySelector(`#ar-zipsug .ar-zipsug-item[data-zip="${zip}"]:not([disabled])`);
+  if (!hit) return false;
+  hit.click();
+  input.closest('.ar-controls')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  return true;
 }

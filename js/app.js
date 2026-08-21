@@ -272,9 +272,27 @@ function openBoiseZipStatic(zip) {
     ? `Only ${s.julSold} July closings here — read the trailing-12-month figures, not the monthly ones.`
     : '';
 
-  document.getElementById('modal-source').innerHTML =
-    '<small>Source: main.gold_mls.search_listings, pulled 2026-08-21 · single-family only · '
+  const src = document.getElementById('modal-source');
+  src.innerHTML =
+    '<div class="bz-modal-actions">'
+    + `<button type="button" class="bz-pdf-btn" data-zip="${zip}">Download ${zip} PDF</button>`
+    + `<button type="button" class="bz-focus-btn" data-zip="${zip}">Focus report on ${zip}</button>`
+    + '</div>'
+    + '<small>Source: main.gold_mls.search_listings, pulled 2026-08-21 · single-family only · '
     + 'new vs resale on a rolling vintage, so it will not tie exactly to the IMLS area tables</small>';
+
+  const pdfBtn = src.querySelector('.bz-pdf-btn');
+  pdfBtn.addEventListener('click', () => {
+    if (typeof boiseZipPdf !== 'function' || !boiseZipPdf(zip)) {
+      pdfBtn.textContent = 'Popup blocked — allow popups';
+    }
+  });
+  // Closes the modal first: the report's ZIP control scrolls itself into view,
+  // which does nothing useful behind an overlay.
+  src.querySelector('.bz-focus-btn').addEventListener('click', () => {
+    modal.classList.remove('open');
+    if (typeof arFocusZip === 'function') arFocusZip(zip);
+  });
 
   modal.classList.add('open');
 }
