@@ -2791,16 +2791,111 @@ function exportImlsCsv(zips, liveZip, hasLive) {
 
 // ── Section: Zip Code ────────────────────────────────────────────────────────
 
+// The drill-down only carries Seattle ZIPs, but the Boise MSA section covers
+// Ada + Canyon. Searching an 83xxx ZIP used to dead-end on "coverage includes
+// ~40 Seattle-area zip codes", which is wrong — we do cover it, just by IMLS
+// area rather than by ZIP. Hand those off instead of turning them away.
+function bzAreaStats(code) {
+  if (typeof ADA_REPORT === 'undefined') return null;
+  const padded = String(code).padStart(4, '0');
+  return ADA_REPORT.areas.find(a => a.code === padded) || null;
+}
+
+function boiseZipFallbackHtml(zip, meta) {
+  const areas = imlsAreasForZip(zip);
+  const money = v => v == null ? '&ndash;' : '$' + Math.round(v).toLocaleString();
+
+  if (!areas.length) {
+    // Canyon County: in the coverage footprint, but the published crosswalk
+    // assigns it no area, so there is genuinely nothing to roll up to.
+    return `<div class="section-title">Zip ${zip}</div>
+      <div class="section-subtitle">${meta.label} &middot; ${meta.city} &middot; ${meta.county} County</div>
+      <div class="zip-not-found">
+        <strong style="color:var(--yellow)">${zip} is in the Boise MSA footprint, but has no IMLS area.</strong><br><br>
+        The published Intermountain MLS area crosswalk covers the
+        Boise/Meridian/Eagle/Star/Kuna core only &mdash; no Canyon County ZIP is
+        assigned an area, so there is no area-level roll-up to show for
+        ${meta.city}. County-level Ada figures are in the Boise MSA section.
+        <div class="bz-actions"><button type="button" class="bz-go-btn">Open Boise MSA &rarr;</button></div>
+      </div>`;
+  }
+
+  const primary = areas[0];
+  const st = bzAreaStats(primary.code);
+  const audit = typeof arAreaAudit === 'function' ? arAreaAudit() : {};
+  const issues = st ? audit[st.code] : null;
+
+  const row = (label, s, cls) => !s ? '' : `<tr class="${cls || ''}">
+    <td>${label}</td>
+    <td class="num">${s.sold == null ? '&ndash;' : s.sold.toLocaleString()}</td>
+    <td class="num">${money(s.med)}</td>
+    <td class="num">${money(s.avg)}</td></tr>`;
+
+  const statsBlock = st ? `
+    <div class="subsection-title" style="margin-top:26px">
+      Area ${primary.code} &mdash; ${primary.name} &middot; ${ADA_REPORT.period}
+    </div>
+    <table class="data-table bz-area-table">
+      <thead><tr><th>Segment</th><th class="num">Sold</th><th class="num">Median</th><th class="num">Average</th></tr></thead>
+      <tbody>
+        ${row('Existing (resale)', st.existing, 'bz-hl')}
+        ${row('New construction', st.new)}
+        ${row('All product', st.total)}
+      </tbody>
+    </table>
+    ${issues ? `<div class="bz-warn"><strong>Known defect in this area's split:</strong>
+      ${issues.join(' &middot; ')}. Treat the new/existing rows as indicative, not exact.</div>` : ''}` : '';
+
+  const areaList = areas.map(a =>
+    `<span class="imls-area-pill" title="${a.name}">${a.code}<em>${a.pct}%</em></span>`).join('');
+
+  return `<div class="section-title">Zip ${zip}</div>
+    <div class="section-subtitle">${meta.label} &middot; ${meta.city} &middot; ${meta.county} County</div>
+    <div class="zip-not-found">
+      <strong style="color:var(--yellow)">No ZIP-level detail for ${zip} &mdash; IMLS reports by area.</strong><br><br>
+      ${zip} is inside the Boise MSA coverage, but the Intermountain MLS publishes
+      statistics by <b>area</b>, not by ZIP. This ZIP maps to ${areaList}
+      ${areas.length === 1
+        ? `&mdash; it is ${primary.pct}% of that area's listings.`
+        : `&mdash; the largest share is area ${primary.code} at ${primary.pct}%.`}
+      <br><br>
+      The figures below are for the <b>whole area</b>, which is wider than the ZIP.
+      Area ${primary.code} also contains
+      ${(IMLS_AREAS.find(a => a.code === primary.code) || { zips: [] }).zips
+        .filter(([z]) => z !== zip).map(([z]) => z).join(', ') || 'no other ZIP'}.
+      <div class="bz-actions"><button type="button" class="bz-go-btn">Open Boise MSA &rarr;</button></div>
+    </div>
+    ${statsBlock}`;
+}
+
 function renderZip(zip) {
   const el = document.createElement('div');
   const d = ZIP_DATA[zip];
 
   if (!d) {
+    const bMeta = typeof imlsZipMeta === 'function' ? imlsZipMeta(zip) : null;
+    if (bMeta) {
+      el.innerHTML = boiseZipFallbackHtml(zip, bMeta);
+      el.querySelector('.bz-go-btn')?.addEventListener('click', () => {
+        navigate('boise');
+        // Pre-filter the cross-reference table to the ZIP they actually asked for.
+        const s = document.querySelector('.imls-search');
+        if (s) {
+          s.value = zip;
+          s.dispatchEvent(new Event('input', { bubbles: true }));
+          s.closest('.imls-filters')?.classList.add('open');
+          s.scrollIntoView({ block: 'center' });
+        }
+      });
+      return el;
+    }
     el.innerHTML = `<div class="section-title">Zip Code: ${zip}</div>
       <div class="zip-not-found">
         <strong style="color:var(--yellow)">No data for zip code ${zip}.</strong><br><br>
-        Coverage includes ~40 Seattle-area zip codes across King, Pierce, and Snohomish counties.
-        Try one of the featured zips in the sidebar, or check the Housing section for county-level data.
+        Coverage includes ~40 Seattle-area zip codes across King, Pierce, and Snohomish
+        counties, plus Ada and Canyon County (Boise MSA) ZIPs in the Boise MSA section.
+        Try one of the featured zips in the sidebar, or check the Housing section for
+        county-level data.
       </div>`;
     return el;
   }

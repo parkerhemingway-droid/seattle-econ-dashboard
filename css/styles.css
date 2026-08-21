@@ -586,6 +586,29 @@ nav a.nav-link.active { color: var(--accent); border-left-color: var(--accent); 
   margin-top: 16px;
 }
 
+/* Boise ZIP hand-off: an 83xxx search lands here instead of dead-ending, and
+   gets the containing IMLS area's numbers plus a jump into the Boise section. */
+.bz-actions { margin-top: 14px; }
+.bz-go-btn {
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bz-go-btn:hover { filter: brightness(1.1); }
+/* The resale row is the one people come for — give it the emphasis. */
+.bz-area-table tbody tr.bz-hl td { background: rgba(255, 255, 255, 0.04); font-weight: 600; }
+.bz-warn {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: var(--mr-amber, var(--yellow));
+  line-height: 1.5;
+}
+
 /* ── Metric Expand Modal ── */
 #metric-modal-overlay {
   display: none;
