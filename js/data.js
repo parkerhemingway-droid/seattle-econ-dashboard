@@ -894,6 +894,14 @@ const AI_LEASING = {
       note: 'Leased a full block of Four106 (same tower as Databricks), more than doubling its regional footprint to 285K+ SF.',
       chart: { kind: 'growth', labels: ['Four106 (new)', 'Total WA'], values: [170000, 285000], unit: 'K', divisor: 1000, approx: true },
     },
+    {
+      id: 'microsoft', name: 'Microsoft', color: '#00A4EF',
+      sf: 95000, sfLabel: '95,000 SF',
+      city: 'Puget Sound', location: 'Building pending confirmation',
+      date: '2026', tag: 'New 2026 commitment',
+      note: '95,000 SF committed in 2026 — building, submarket and deal type still pending confirmation. Microsoft has been re-absorbing Eastside space since 2025, including a 396K SF Redmond Town Center renewal.',
+      chart: { kind: 'single', labels: ['2026 commitment'], values: [95000], unit: 'K', divisor: 1000 },
+    },
   ],
 };
 

@@ -3254,7 +3254,7 @@ function renderLuisRamiro() {
 
   const src = document.createElement('div');
   src.className = 'luxury-source';
-  src.textContent = `Sources: ${d.sources}. Figures from public reporting; Stripe prior footprint estimated from “roughly doubled” characterization.`;
+  src.textContent = `Sources: ${d.sources}. Figures from public reporting; Stripe prior footprint estimated from “roughly doubled” characterization; Microsoft 95,000 SF reported directly — building, date and deal type not yet confirmed against a public source.`;
   el.appendChild(src);
 
   // Draw the per-company charts after the cards are in the DOM.
