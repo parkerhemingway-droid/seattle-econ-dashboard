@@ -2466,6 +2466,12 @@ function renderBoise() {
     </table>`;
     el.appendChild(table);
 
+    // Absorption chart sits directly under its table, before the note, so the
+    // caveat about dashed-out months reads as covering both.
+    if (typeof renderBoiseAbsorption === 'function') {
+      renderBoiseAbsorption(el, c.name, median.monthlyHistory);
+    }
+
     if (median.absorptionNote) {
       const n = document.createElement('p');
       n.style.cssText = 'margin: 0 0 32px; max-width: 90ch; color: var(--yellow); font-size: 0.8rem;';
