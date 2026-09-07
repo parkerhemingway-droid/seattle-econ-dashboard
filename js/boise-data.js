@@ -1,7 +1,8 @@
 // Boise MLS Market Data — September 2024 to August 2026
 // Data source: Databricks main.gold_mls.search_listings
 // Filters: sale_status = 'SOLD', property_type_aggregated = 'Single Family',
-//          county IN ('Ada County', 'Canyon County'), grouped by close_date month.
+//          county IN ('Ada County', 'Canyon County', 'Gem County', 'Valley County'),
+//          grouped by close_date month.
 // Prices use current_price: close_price is only 2-4% populated before Oct 2025,
 // while current_price is 100% populated across all 24 months and matches
 // close_price exactly on rows where both are present.
@@ -211,6 +212,198 @@ const BOISE_MARKETS = {
     category: 'Canyon County Market',
     local: true,
   },
+  // ── Gem County (Emmett, Sweet, Letha, Ola, Horseshoe Bend) ──
+  // Part of the Boise MSA, but a thin market: ~29 closings a month, and
+  // 95% of them are in Emmett (83617). Single-month moves are noisy.
+
+  gemMedianPrice: {
+    id: 'gemMedianPrice',
+    name: 'Gem County Median Close Price',
+    section: 'boise',
+    value: 542500,
+    unit: '$',
+    date: '2026-08-31',
+    periodChange: +17500, // Aug 26 vs Jul 26
+    yoyChange: +67075, // Aug 26 vs Aug 25
+    release: 'Monthly — Intermountain MLS',
+    sparkline: [420066, 410242, 430000, 389900, 414100, 450000, 397500, 475000, 424900, 459000, 460000, 475425, 494900, 482500, 455000, 420000, 433990, 470000, 490000, 507900, 500000, 465000, 525000, 542500],
+    category: 'Gem County Market',
+    local: true,
+    monthlyHistory: [
+      { month: 'Jul 25', medianPrice: 460000, avgPrice: 469523, dom: 44, volumeM: 15.5, closed: 33, sf: 33 },
+      { month: 'Aug 25', medianPrice: 475425, avgPrice: 610832, dom: 41, volumeM: 23.2, closed: 38, sf: 38 },
+      { month: 'Sep 25', medianPrice: 494900, avgPrice: 567235, dom: 84, volumeM: 18.7, closed: 33, sf: 33 },
+      { month: 'Oct 25', medianPrice: 482500, avgPrice: 502032, dom: 105, volumeM: 15.1, closed: 30, sf: 30 },
+      { month: 'Nov 25', medianPrice: 455000, avgPrice: 629592, dom: 61, volumeM: 13.2, closed: 21, sf: 21 },
+      { month: 'Dec 25', medianPrice: 420000, avgPrice: 506861, dom: 67, volumeM: 11.2, closed: 22, sf: 22 },
+      { month: 'Jan 26', medianPrice: 433990, avgPrice: 500002, dom: 63, volumeM: 12.5, closed: 25, sf: 25 },
+      { month: 'Feb 26', medianPrice: 470000, avgPrice: 526323, dom: 61, volumeM: 14.2, closed: 27, sf: 27 },
+      { month: 'Mar 26', medianPrice: 490000, avgPrice: 588233, dom: 57, volumeM: 15.3, closed: 26, sf: 26 },
+      { month: 'Apr 26', medianPrice: 507900, avgPrice: 577594, dom: 37, volumeM: 17.3, closed: 30, sf: 30 },
+      { month: 'May 26', medianPrice: 500000, avgPrice: 533025, dom: 40, volumeM: 19.7, closed: 37, sf: 37 },
+      { month: 'Jun 26', medianPrice: 465000, avgPrice: 621131, dom: 57, volumeM: 22.4, closed: 36, sf: 36 },
+      { month: 'Jul 26', medianPrice: 525000, avgPrice: 585217, dom: 49, volumeM: 21.7, closed: 37, sf: 37 },
+      { month: 'Aug 26', medianPrice: 542500, avgPrice: 623116, dom: 44, volumeM: 21.2, closed: 34, sf: 34 },
+    ],
+  },
+
+  gemAvgPrice: {
+    id: 'gemAvgPrice',
+    name: 'Gem County Average Close Price',
+    section: 'boise',
+    value: 623116,
+    unit: '$',
+    date: '2026-08-31',
+    periodChange: +37899, // Aug 26 vs Jul 26
+    yoyChange: +12284, // Aug 26 vs Aug 25
+    release: 'Monthly — Intermountain MLS',
+    sparkline: [475759, 490363, 543082, 479858, 469990, 550819, 579694, 516504, 510057, 551510, 469523, 610832, 567235, 502032, 629592, 506861, 500002, 526323, 588233, 577594, 533025, 621131, 585217, 623116],
+    category: 'Gem County Market',
+    local: true,
+  },
+
+  gemSingleFamilyClosed: {
+    id: 'gemSingleFamilyClosed',
+    name: 'Gem County Single-Family Homes Closed',
+    section: 'boise',
+    value: 34,
+    unit: ' homes',
+    date: '2026-08-31',
+    periodChange: -3, // Aug 26 vs Jul 26
+    yoyChange: -4, // Aug 26 vs Aug 25
+    release: 'Monthly — Intermountain MLS',
+    sparkline: [38, 30, 24, 25, 17, 16, 26, 25, 36, 32, 33, 38, 33, 30, 21, 22, 25, 27, 26, 30, 37, 36, 37, 34],
+    category: 'Gem County Market',
+    local: true,
+  },
+
+  gemDom: {
+    id: 'gemDom',
+    name: 'Gem County Average Days on Market',
+    section: 'boise',
+    value: 44,
+    unit: ' days',
+    date: '2026-08-31',
+    periodChange: -5, // Aug 26 vs Jul 26
+    yoyChange: +3, // Aug 26 vs Aug 25
+    release: 'Monthly — Intermountain MLS',
+    sparkline: [38, 30, 60, 48, 59, 71, 49, 45, 49, 52, 44, 41, 84, 105, 61, 67, 63, 61, 57, 37, 40, 57, 49, 44],
+    category: 'Gem County Market',
+    local: true,
+  },
+
+  gemDollarVolume: {
+    id: 'gemDollarVolume',
+    name: 'Gem County Total Dollar Volume',
+    section: 'boise',
+    value: 21185945,
+    unit: '$',
+    date: '2026-08-31',
+    periodChange: -467093, // Aug 26 vs Jul 26
+    yoyChange: -2025672, // Aug 26 vs Aug 25
+    release: 'Monthly — Intermountain MLS',
+    sparkline: [18078828, 14710898, 13033962, 11996457, 7989830, 8813097, 15072037, 12912608, 18362066, 17648319, 15494250, 23211617, 18718762, 15060952, 13221425, 11150938, 12500060, 14210732, 15294050, 17327807, 19721940, 22360704, 21653038, 21185945],
+    category: 'Gem County Market',
+    local: true,
+  },
+
+  // ── Valley County (McCall, Donnelly, Cascade, Yellow Pine) ──
+  // NOT part of the Boise MSA — it is the separate McCall micropolitan area,
+  // covered here because it trades on the same MLS. A resort market: ~36
+  // closings a month and a handful of Payette Lake luxury sales can move the
+  // average by $400K, so the median is the more reliable read.
+
+  valleyMedianPrice: {
+    id: 'valleyMedianPrice',
+    name: 'Valley County Median Close Price',
+    section: 'boise',
+    value: 762500,
+    unit: '$',
+    date: '2026-08-31',
+    periodChange: -27500, // Aug 26 vs Jul 26
+    yoyChange: -112500, // Aug 26 vs Aug 25
+    release: 'Monthly — Intermountain MLS',
+    sparkline: [775000, 860000, 743600, 835000, 805518, 849000, 850000, 685000, 744000, 899000, 797500, 875000, 694900, 695000, 825000, 715000, 700000, 840000, 899000, 788000, 730000, 950000, 790000, 762500],
+    category: 'Valley County Market',
+    local: true,
+    monthlyHistory: [
+      { month: 'Jul 25', medianPrice: 797500, avgPrice: 954261, dom: 71, volumeM: 39.1, closed: 41, sf: 41 },
+      { month: 'Aug 25', medianPrice: 875000, avgPrice: 1287893, dom: 76, volumeM: 78.6, closed: 61, sf: 61 },
+      { month: 'Sep 25', medianPrice: 694900, avgPrice: 797145, dom: 95, volumeM: 59.0, closed: 74, sf: 74 },
+      { month: 'Oct 25', medianPrice: 695000, avgPrice: 1003408, dom: 130, volumeM: 62.2, closed: 62, sf: 62 },
+      { month: 'Nov 25', medianPrice: 825000, avgPrice: 826450, dom: 135, volumeM: 22.3, closed: 27, sf: 27 },
+      { month: 'Dec 25', medianPrice: 715000, avgPrice: 1133823, dom: 129, volumeM: 44.2, closed: 39, sf: 39 },
+      { month: 'Jan 26', medianPrice: 700000, avgPrice: 873838, dom: 157, volumeM: 28.0, closed: 32, sf: 32 },
+      { month: 'Feb 26', medianPrice: 840000, avgPrice: 1207947, dom: 135, volumeM: 23.0, closed: 19, sf: 19 },
+      { month: 'Mar 26', medianPrice: 899000, avgPrice: 1122827, dom: 58, volumeM: 16.8, closed: 15, sf: 15 },
+      { month: 'Apr 26', medianPrice: 788000, avgPrice: 998661, dom: 66, volumeM: 18.0, closed: 18, sf: 18 },
+      { month: 'May 26', medianPrice: 730000, avgPrice: 989667, dom: 45, volumeM: 19.8, closed: 20, sf: 20 },
+      { month: 'Jun 26', medianPrice: 950000, avgPrice: 1390300, dom: 42, volumeM: 50.1, closed: 36, sf: 36 },
+      { month: 'Jul 26', medianPrice: 790000, avgPrice: 934510, dom: 56, volumeM: 32.7, closed: 35, sf: 35 },
+      { month: 'Aug 26', medianPrice: 762500, avgPrice: 1237165, dom: 59, volumeM: 45.8, closed: 37, sf: 37 },
+    ],
+  },
+
+  valleyAvgPrice: {
+    id: 'valleyAvgPrice',
+    name: 'Valley County Average Close Price',
+    section: 'boise',
+    value: 1237165,
+    unit: '$',
+    date: '2026-08-31',
+    periodChange: +302655, // Aug 26 vs Jul 26
+    yoyChange: -50728, // Aug 26 vs Aug 25
+    release: 'Monthly — Intermountain MLS',
+    sparkline: [917306, 1175758, 801266, 1236266, 1269901, 1761054, 974759, 968479, 986706, 1342153, 954261, 1287893, 797145, 1003408, 826450, 1133823, 873838, 1207947, 1122827, 998661, 989667, 1390300, 934510, 1237165],
+    category: 'Valley County Market',
+    local: true,
+  },
+
+  valleySingleFamilyClosed: {
+    id: 'valleySingleFamilyClosed',
+    name: 'Valley County Single-Family Homes Closed',
+    section: 'boise',
+    value: 37,
+    unit: ' homes',
+    date: '2026-08-31',
+    periodChange: +2, // Aug 26 vs Jul 26
+    yoyChange: -24, // Aug 26 vs Aug 25
+    release: 'Monthly — Intermountain MLS',
+    sparkline: [49, 43, 37, 38, 25, 16, 29, 25, 32, 38, 41, 61, 74, 62, 27, 39, 32, 19, 15, 18, 20, 36, 35, 37],
+    category: 'Valley County Market',
+    local: true,
+  },
+
+  valleyDom: {
+    id: 'valleyDom',
+    name: 'Valley County Average Days on Market',
+    section: 'boise',
+    value: 59,
+    unit: ' days',
+    date: '2026-08-31',
+    periodChange: +3, // Aug 26 vs Jul 26
+    yoyChange: -17, // Aug 26 vs Aug 25
+    release: 'Monthly — Intermountain MLS',
+    sparkline: [81, 98, 117, 112, 115, 134, 150, 147, 71, 73, 71, 76, 95, 130, 135, 129, 157, 135, 58, 66, 45, 42, 56, 59],
+    category: 'Valley County Market',
+    local: true,
+  },
+
+  valleyDollarVolume: {
+    id: 'valleyDollarVolume',
+    name: 'Valley County Total Dollar Volume',
+    section: 'boise',
+    value: 45775102,
+    unit: '$',
+    date: '2026-08-31',
+    periodChange: +13067266, // Aug 26 vs Jul 26
+    yoyChange: -32786396, // Aug 26 vs Aug 25
+    release: 'Monthly — Intermountain MLS',
+    sparkline: [44947988, 50557580, 29646839, 46978105, 31747518, 28176862, 28268001, 24211975, 31574600, 51001800, 39124700, 78561498, 58988706, 62211300, 22314150, 44219100, 27962800, 22951000, 16842400, 17975900, 19793339, 50050800, 32707836, 45775102],
+    category: 'Valley County Market',
+    local: true,
+  },
+
 };
 
 // Build sparklines for YoY comparison (June 2025 base)

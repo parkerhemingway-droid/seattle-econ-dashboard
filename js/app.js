@@ -2359,61 +2359,76 @@ function renderBoise() {
   const BP = BOISE_PERIOD;
   const el = document.createElement('div');
   el.innerHTML = `<div class="section-title">Boise MLS Market Analysis</div>
-    <div class="section-subtitle">Ada County and Canyon County single-family home sales data · ${BP.histRange}</div>`;
+    <div class="section-subtitle">Ada, Canyon, Gem and Valley County single-family home sales data · ${BP.histRange}</div>`;
 
   // Market overview narrative
   el.appendChild(buildNarrativeBox(
-    "Ada County stepped back from July's record: median close price $595,000, down $7,000 MoM from the $602,000 high but still +6.3% YoY from $560,000, with the average at $711,784. Canyon County median eased to $443,400 (−$1,600 MoM, +1.9% YoY). Volume held up — Ada closed 957 homes, four more than July and +15.0% YoY, while Canyon's 471 was down 28 MoM but +7.3% YoY. Marketing times lengthened on both sides of the county line: Ada 35 days versus 30 in July, Canyon 40 versus 39, though both remain faster than a year ago (39 and 46).",
+    "Ada County stepped back from July's record: median close price $595,000, down $7,000 MoM from the $602,000 high but still +6.3% YoY from $560,000, with the average at $711,784. Canyon County median eased to $443,400 (−$1,600 MoM, +1.9% YoY). Volume held up — Ada closed 957 homes, four more than July and +15.0% YoY, while Canyon's 471 was down 28 MoM but +7.3% YoY. Marketing times lengthened on both sides of the county line: Ada 35 days versus 30 in July, Canyon 40 versus 39, though both remain faster than a year ago (39 and 46). The two outlying counties added this month run much thinner: Gem closed 34 homes at a $542,500 median (+14.1% YoY, its highest of the two-year series), and Valley closed 37 at $762,500 (−12.9% YoY) after last August's 61-sale, $78.6M peak.",
     () => Promise.resolve("Data sourced from Intermountain MLS via Databricks (main.gold_mls.search_listings), filtered to SOLD single-family listings by close-date month. Prices use current_price rather than close_price: close_price is only 2-4% populated before Oct 2025, while current_price is fully populated and matches close_price exactly where both exist. DOM is days_on_market_from_feed and may differ from IMLS published figures, which use a different basis (list-date vs pending-date vs close-date).")
   ));
 
-  // Ada County subsection
-  const adaTitle = document.createElement('div');
-  adaTitle.className = 'subsection-title';
-  adaTitle.textContent = `Ada County (Boise, Meridian, Eagle, Star, Kuna, Garden City) — ${BP.month}`;
-  el.appendChild(adaTitle);
+  // The Intermountain MLS counties this section covers. Ada and Canyon are the
+  // core Boise MSA pair; Gem and Valley were added Sep 2026 and are thin enough
+  // that each carries its own caveat. Metric ids in js/boise-data.js are
+  // `<prefix><suffix>` for the five suffixes below, so adding another county is
+  // an entry here plus its metrics in the data file — nothing else.
+  const BOISE_COUNTIES = [
+    { name: 'Ada', prefix: 'boise', cities: 'Boise, Meridian, Eagle, Star, Kuna, Garden City' },
+    { name: 'Canyon', prefix: 'canyon', cities: 'Nampa, Caldwell, Middleton' },
+    {
+      name: 'Gem', prefix: 'gem', cities: 'Emmett, Sweet, Letha, Ola',
+      note: 'In the Boise MSA, but thin — about 29 closings a month, roughly 95% of them in Emmett (83617). One unusual sale moves the average, so read single-month changes as noise until a trend confirms them.',
+    },
+    {
+      name: 'Valley', prefix: 'valley', cities: 'McCall, Donnelly, Cascade, Yellow Pine',
+      note: '<strong>Outside the Boise MSA.</strong> Valley County is the separate McCall micropolitan area, shown here because it trades on the same MLS. It is a resort market of roughly 36 closings a month where a handful of Payette Lake luxury sales swing the average hard: over the past two years the median ranged $685K–$950K while the average ranged $797K–$1.76M. Use the median.',
+    },
+  ];
+  const COUNTY_METRIC_SUFFIXES = ['MedianPrice', 'AvgPrice', 'SingleFamilyClosed', 'Dom', 'DollarVolume'];
+  const countyMetricIds = c => COUNTY_METRIC_SUFFIXES.map(s => c.prefix + s);
 
-  const adaGrid = document.createElement('div');
-  adaGrid.className = 'card-grid';
-  const adaMetrics = ['boiseMedianPrice', 'boiseAvgPrice', 'boiseSingleFamilyClosed', 'boiseDom', 'boiseDollarVolume'];
-  adaMetrics.forEach(id => {
-    const m = ALL_METRICS[id];
-    if (m) adaGrid.appendChild(buildMetricCard(m));
+  // Metric cards, one grid per county.
+  BOISE_COUNTIES.forEach(c => {
+    const title = document.createElement('div');
+    title.className = 'subsection-title';
+    title.textContent = `${c.name} County (${c.cities}) — ${BP.month}`;
+    el.appendChild(title);
+
+    if (c.note) {
+      const caveat = document.createElement('p');
+      caveat.style.cssText = 'margin: -6px 0 14px; max-width: 90ch; color: var(--text-muted); font-size: 0.85rem;';
+      caveat.innerHTML = c.note;
+      el.appendChild(caveat);
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'card-grid';
+    countyMetricIds(c).forEach(id => {
+      const m = ALL_METRICS[id];
+      if (m) grid.appendChild(buildMetricCard(m));
+    });
+    el.appendChild(grid);
   });
-  el.appendChild(adaGrid);
 
-  // Canyon County subsection
-  const canyonTitle = document.createElement('div');
-  canyonTitle.className = 'subsection-title';
-  canyonTitle.textContent = `Canyon County (Nampa, Caldwell, Middleton) — ${BP.month}`;
-  el.appendChild(canyonTitle);
+  // Historical median tables, one per county that carries a monthly history.
+  BOISE_COUNTIES.forEach(c => {
+    const median = ALL_METRICS[c.prefix + 'MedianPrice'];
+    if (!median || !median.monthlyHistory) return;
 
-  const canyonGrid = document.createElement('div');
-  canyonGrid.className = 'card-grid';
-  const canyonMetrics = ['canyonMedianPrice', 'canyonAvgPrice', 'canyonSingleFamilyClosed', 'canyonDom', 'canyonDollarVolume'];
-  canyonMetrics.forEach(id => {
-    const m = ALL_METRICS[id];
-    if (m) canyonGrid.appendChild(buildMetricCard(m));
-  });
-  el.appendChild(canyonGrid);
+    const title = document.createElement('div');
+    title.className = 'subsection-title';
+    title.style.marginTop = '40px';
+    title.textContent = `${c.name} County Historical Median Prices`;
+    el.appendChild(title);
 
-  // Ada County: Historical Pricing Table
-  const adaPricingTitle = document.createElement('div');
-  adaPricingTitle.className = 'subsection-title';
-  adaPricingTitle.style.marginTop = '40px';
-  adaPricingTitle.textContent = 'Ada County Historical Median Prices';
-  el.appendChild(adaPricingTitle);
-
-  const adaBoiseMedianM = ALL_METRICS['boiseMedianPrice'];
-  if (adaBoiseMedianM && adaBoiseMedianM.monthlyHistory) {
-    const priceTable = document.createElement('div');
-    priceTable.style.overflowX = 'auto';
-    priceTable.innerHTML = `<table class="data-table" style="margin-bottom: 32px;">
+    const table = document.createElement('div');
+    table.style.overflowX = 'auto';
+    table.innerHTML = `<table class="data-table" style="margin-bottom: 32px;">
       <thead><tr>
         <th>Month</th><th>Median</th><th>Average</th><th>DOM</th><th>Closed</th><th>Volume</th>
       </tr></thead>
       <tbody>
-        ${adaBoiseMedianM.monthlyHistory.map(m => `<tr>
+        ${median.monthlyHistory.map(m => `<tr>
           <td>${m.month}</td>
           <td>$${m.medianPrice.toLocaleString()}</td>
           <td>$${m.avgPrice.toLocaleString()}</td>
@@ -2423,48 +2438,10 @@ function renderBoise() {
         </tr>`).join('')}
       </tbody>
     </table>`;
-    el.appendChild(priceTable);
-  }
+    el.appendChild(table);
+  });
 
-  // Canyon County: Historical Pricing Table
-  const canyonPricingTitle = document.createElement('div');
-  canyonPricingTitle.className = 'subsection-title';
-  canyonPricingTitle.style.marginTop = '40px';
-  canyonPricingTitle.textContent = 'Canyon County Historical Median Prices';
-  el.appendChild(canyonPricingTitle);
-
-  const canyonMedianM = ALL_METRICS['canyonMedianPrice'];
-  if (canyonMedianM && canyonMedianM.monthlyHistory) {
-    const canyonTable = document.createElement('div');
-    canyonTable.style.overflowX = 'auto';
-    canyonTable.innerHTML = `<table class="data-table" style="margin-bottom: 32px;">
-      <thead><tr>
-        <th>Month</th><th>Median</th><th>Average</th><th>DOM</th><th>Closed</th><th>Volume</th>
-      </tr></thead>
-      <tbody>
-        ${canyonMedianM.monthlyHistory.map(m => `<tr>
-          <td>${m.month}</td>
-          <td>$${m.medianPrice.toLocaleString()}</td>
-          <td>$${m.avgPrice.toLocaleString()}</td>
-          <td>${m.dom}</td>
-          <td>${m.sf.toLocaleString()}</td>
-          <td>$${(m.volumeM * 1000000).toLocaleString()}</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>`;
-    el.appendChild(canyonTable);
-  }
-
-  // Market Comparison Table: Ada vs Canyon
-  const comparisonTitle = document.createElement('div');
-  comparisonTitle.className = 'subsection-title';
-  comparisonTitle.style.marginTop = '40px';
-  comparisonTitle.textContent = 'Market Comparison: Ada County vs Canyon County';
-  el.appendChild(comparisonTitle);
-
-  const compTable = document.createElement('div');
-  compTable.style.overflowX = 'auto';
-  // Derived from BOISE_MARKETS rather than hardcoded, so this table can never
+  // Derived from BOISE_MARKETS rather than hardcoded, so these tables can never
   // drift out of sync with the metric cards above when the data is refreshed.
   const money  = v => '$' + Math.round(v).toLocaleString();
   const moneyM = v => '$' + (v / 1e6).toFixed(1) + 'M';
@@ -2475,6 +2452,55 @@ function renderBoise() {
     const prior = m.value - m.yoyChange;
     return prior ? (m.yoyChange / prior) * 100 : 0;
   };
+
+  // All-county snapshot. One row per county so the two thin ones can be read
+  // against the two large ones without implying they carry equal weight.
+  const snapshotTitle = document.createElement('div');
+  snapshotTitle.className = 'subsection-title';
+  snapshotTitle.style.marginTop = '40px';
+  snapshotTitle.textContent = `All Counties — ${BP.month} Snapshot`;
+  el.appendChild(snapshotTitle);
+
+  const snapTable = document.createElement('div');
+  snapTable.style.overflowX = 'auto';
+  snapTable.innerHTML = `<table class="data-table" style="margin-bottom: 12px;">
+    <thead><tr>
+      <th>County</th><th>Median</th><th>YoY Median</th><th>Average</th>
+      <th>Closed</th><th>YoY Closed</th><th>DOM</th><th>Volume</th>
+    </tr></thead>
+    <tbody>
+      ${BOISE_COUNTIES.map(c => {
+        const medYoY = yoyPct(c.prefix + 'MedianPrice');
+        const cntYoY = yoyPct(c.prefix + 'SingleFamilyClosed');
+        const pct = v => `<td class="${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '+' : ''}${v.toFixed(1)}%</td>`;
+        return `<tr>
+          <td><strong>${c.name}</strong>${c.note ? ' <span style="color:var(--yellow)" title="Thin market — see methodology">†</span>' : ''}</td>
+          <td>${money(val(c.prefix + 'MedianPrice'))}</td>
+          ${pct(medYoY)}
+          <td>${money(val(c.prefix + 'AvgPrice'))}</td>
+          <td>${num(val(c.prefix + 'SingleFamilyClosed'))}</td>
+          ${pct(cntYoY)}
+          <td>${num(val(c.prefix + 'Dom'))}</td>
+          <td>${moneyM(val(c.prefix + 'DollarVolume'))}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>
+  <p style="margin: 0 0 32px; color: var(--text-muted); font-size: 0.8rem;">
+    <span style="color:var(--yellow)">†</span> Thin market — fewer than 50 closings a month. Valley County also sits outside the Boise MSA; see methodology below.
+  </p>`;
+  el.appendChild(snapTable);
+
+  // Market Comparison Table: Ada vs Canyon — the two MSA-core counties, the only
+  // pair with enough monthly volume for a head-to-head to mean anything.
+  const comparisonTitle = document.createElement('div');
+  comparisonTitle.className = 'subsection-title';
+  comparisonTitle.style.marginTop = '40px';
+  comparisonTitle.textContent = 'Market Comparison: Ada County vs Canyon County';
+  el.appendChild(comparisonTitle);
+
+  const compTable = document.createElement('div');
+  compTable.style.overflowX = 'auto';
   const pctCell = v =>
     `<td class="${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '+' : ''}${v.toFixed(2)}%</td>`;
 
@@ -2560,14 +2586,17 @@ function renderBoise() {
     <p><strong>Source:</strong> Intermountain MLS via Databricks <code>main.gold_mls.search_listings</code>, filtered to <code>sale_status = 'SOLD'</code> and <code>property_type_aggregated = 'Single Family'</code>, grouped by close-date month · Area/ZIP crosswalk from <a href="https://imlsmembers.com/areas" target="_blank" rel="noopener">imlsmembers.com/areas</a></p>
     <p><strong>Date Range:</strong> ${BP.histRange} (14 months of monthly detail; sparklines cover 24 months from ${BP.sparkStart})</p>
     <p style="color:var(--yellow)"><strong>Revisions:</strong> every month is re-pulled on each refresh rather than appended, so late-recorded closings revise recent history. The ${BP.monthName} pull moved Jul 2026 Ada from 949 closings to 953 and Jun 2026 from 1,038 to 1,039; months before that are unchanged. Separately, the monthly history for Jul 2025 – May 2026 shown here before Aug 2026 was linearly interpolated between two real endpoints, not measured; those months are now actual per-month aggregates.</p>
-    <p><strong>Accuracy Level:</strong> <strong style="color: var(--green);">EXCELLENT (100% reconciliation)</strong> — All metrics verified against official IMLS PDFs. Median price, average price, unit count, DOM, and dollar volume all match exactly.</p>
-    <p><strong>Geographic Scope:</strong> Ada County = all single-family sales in Ada County, including Boise, Garden City, Meridian (83642 / 83646), Eagle (83616), Star (83669) and Kuna (83634). Canyon County = Nampa (83651 / 83686 / 83687), Caldwell (83605 / 83607), Middleton (83644) and surrounding communities.</p>
+    <p><strong>Accuracy Level:</strong> <strong style="color: var(--green);">EXCELLENT (100% reconciliation)</strong> — Ada and Canyon metrics are verified against official IMLS PDFs: median price, average price, unit count, DOM and dollar volume all match exactly. Gem and Valley have no published IMLS county report to reconcile against, so they are unverified against a second source, though they use the identical query and estimators.</p>
+    <p><strong>Geographic Scope:</strong> Ada County = all single-family sales in Ada County, including Boise, Garden City, Meridian (83642 / 83646), Eagle (83616), Star (83669) and Kuna (83634). Canyon County = Nampa (83651 / 83686 / 83687), Caldwell (83605 / 83607), Middleton (83644) and surrounding communities. Gem County = Emmett (83617, ~95% of its sales) plus Sweet, Letha, Ola and Horseshoe Bend. Valley County = McCall (83638), Donnelly (83615), Cascade (83611) and Yellow Pine (83677).</p>
+    <p style="color:var(--yellow)"><strong>MSA note:</strong> the Boise City–Nampa MSA is Ada, Boise, Canyon, Gem and Owyhee counties. Gem is inside it; <strong>Valley County is not</strong> — it is the separate McCall micropolitan area, included here only because it trades on the Intermountain MLS. Do not add Valley to a Boise MSA total.</p>
+    <p style="color:var(--yellow)"><strong>Sample size:</strong> Gem and Valley average roughly 29 and 36 closings a month against Ada's ~900 and Canyon's ~450. Medians built on that few sales move sharply on mix alone, and Valley's average is dominated by a small number of Payette Lake luxury closings. They are pulled the same way as Ada and Canyon, but a month-over-month move in either is far weaker evidence.</p>
+    <p><strong>Added:</strong> Gem and Valley counties were added Sep 7 2026. They are computed directly from <code>search_listings</code> on the same methodology as Ada and Canyon; the IMLS area↔ZIP crosswalk below does not cover them, because the published area list stops at Canyon County Rural (area 1500).</p>
     <p style="color:var(--yellow)"><strong>Correction (Jul 2026):</strong> an earlier version of this note listed ZIPs 83634, 83642 and 83646 under Canyon County. Kuna and Meridian are in <strong>Ada</strong> County — the county roll-ups above were always computed from the MLS county field and are unaffected, but the ZIP list was wrong and has been fixed.</p>
     <p><strong>Calculation Method:</strong> DOM = days from listing date to pending status (Intermountain MLS standard)</p>
     <p><a href="#help">See Help & Sources</a> for full IMLS data documentation and methodology.</p>`;
   el.appendChild(note);
 
-  const allBoise = [...adaMetrics, ...canyonMetrics].map(id => ALL_METRICS[id]).filter(Boolean);
+  const allBoise = BOISE_COUNTIES.flatMap(countyMetricIds).map(id => ALL_METRICS[id]).filter(Boolean);
   setTimeout(() => {
     drawSparklines(allBoise);
     populateSignals(allBoise, el);
