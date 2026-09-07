@@ -226,7 +226,7 @@ function openBoiseZipDetail(zipData) {
 
 // Detail modal driven by the static BOISE_ZIP_METRICS pull, for when the Boise
 // serving endpoint is not configured. Different field set from the live payload
-// above — this one is period-based (Jul / YTD / TTM) rather than rolling 30/60d.
+// above — this one is period-based (month / YTD / TTM) rather than rolling 30/60d.
 function openBoiseZipStatic(zip) {
   const s = BOISE_ZIP_METRICS[zip];
   if (!s) return;
@@ -249,8 +249,8 @@ function openBoiseZipStatic(zip) {
     : 'No IMLS area assignment';
 
   document.getElementById('modal-stats').innerHTML = [
-    stat('Sold — July 2026', s.julSold == null ? '—' : s.julSold.toLocaleString()),
-    stat('Median — July 2026', money(s.julMed)),
+    stat(`Sold — ${BZP.monthLong}`, s.moSold == null ? '—' : s.moSold.toLocaleString()),
+    stat(`Median — ${BZP.monthLong}`, money(s.moMed)),
     stat('Sold — YTD 2026', s.ytdSold == null ? '—' : s.ytdSold.toLocaleString()),
     stat('YTD sales vs 2025', pct(s.ytdSoldPct), cls(s.ytdSoldPct)),
     stat('Median — YTD 2026', money(s.ytdMed)),
@@ -267,9 +267,9 @@ function openBoiseZipStatic(zip) {
 
   // Thin ZIPs produce medians that swing on mix alone; say so rather than let
   // a 5-sale month read as a trend.
-  const thin = (s.julSold || 0) < 15;
+  const thin = (s.moSold || 0) < 15;
   document.getElementById('modal-signal').textContent = thin
-    ? `Only ${s.julSold} July closings here — read the trailing-12-month figures, not the monthly ones.`
+    ? `Only ${s.moSold} ${BZP.monthLong} closings here — read the trailing-12-month figures, not the monthly ones.`
     : '';
 
   const src = document.getElementById('modal-source');
@@ -2355,20 +2355,22 @@ document.getElementById('chart-expand-overlay').addEventListener('click', e => {
 // ── Section: Boise MLS ────────────────────────────────────────────────────────
 
 function renderBoise() {
+  // Period labels for this whole section, from js/boise-data.js.
+  const BP = BOISE_PERIOD;
   const el = document.createElement('div');
   el.innerHTML = `<div class="section-title">Boise MLS Market Analysis</div>
-    <div class="section-subtitle">Ada County and Canyon County single-family home sales data · Jun 2025 – Jul 2026</div>`;
+    <div class="section-subtitle">Ada County and Canyon County single-family home sales data · ${BP.histRange}</div>`;
 
   // Market overview narrative
   el.appendChild(buildNarrativeBox(
-    "July marked a new price high for Ada County: median close price reached $602,000, up 9.5% YoY from $550,000, with the average at $721,664. Canyon County median rose to $444,990 (+3.5% YoY). Closings cooled from June's peak — Ada 949 (down 89 MoM) and Canyon 496 (down 85) — the normal post-June seasonal step-down, but both counties are still ahead of last July (+5.2% and +8.8% YoY). Ada homes sold in 32 days on average versus 39 in Canyon.",
+    "Ada County stepped back from July's record: median close price $595,000, down $7,000 MoM from the $602,000 high but still +6.3% YoY from $560,000, with the average at $711,784. Canyon County median eased to $443,400 (−$1,600 MoM, +1.9% YoY). Volume held up — Ada closed 957 homes, four more than July and +15.0% YoY, while Canyon's 471 was down 28 MoM but +7.3% YoY. Marketing times lengthened on both sides of the county line: Ada 35 days versus 30 in July, Canyon 40 versus 39, though both remain faster than a year ago (39 and 46).",
     () => Promise.resolve("Data sourced from Intermountain MLS via Databricks (main.gold_mls.search_listings), filtered to SOLD single-family listings by close-date month. Prices use current_price rather than close_price: close_price is only 2-4% populated before Oct 2025, while current_price is fully populated and matches close_price exactly where both exist. DOM is days_on_market_from_feed and may differ from IMLS published figures, which use a different basis (list-date vs pending-date vs close-date).")
   ));
 
   // Ada County subsection
   const adaTitle = document.createElement('div');
   adaTitle.className = 'subsection-title';
-  adaTitle.textContent = 'Ada County (Boise, Meridian, Eagle, Star, Kuna, Garden City) — Jul 2026';
+  adaTitle.textContent = `Ada County (Boise, Meridian, Eagle, Star, Kuna, Garden City) — ${BP.month}`;
   el.appendChild(adaTitle);
 
   const adaGrid = document.createElement('div');
@@ -2383,7 +2385,7 @@ function renderBoise() {
   // Canyon County subsection
   const canyonTitle = document.createElement('div');
   canyonTitle.className = 'subsection-title';
-  canyonTitle.textContent = 'Canyon County (Nampa, Caldwell, Middleton) — Jul 2026';
+  canyonTitle.textContent = `Canyon County (Nampa, Caldwell, Middleton) — ${BP.month}`;
   el.appendChild(canyonTitle);
 
   const canyonGrid = document.createElement('div');
@@ -2498,12 +2500,12 @@ function renderBoise() {
       <th>Metric</th><th>Ada County</th><th>Canyon County</th><th>Difference</th>
     </tr></thead>
     <tbody>
-      ${cmpRow('Median Price (Jul 2026)',    'boiseMedianPrice',        'canyonMedianPrice',        money)}
-      ${cmpRow('Average Price (Jul 2026)',   'boiseAvgPrice',           'canyonAvgPrice',           money)}
-      ${cmpRow('SF Homes Closed (Jul 2026)', 'boiseSingleFamilyClosed', 'canyonSingleFamilyClosed', num)}
+      ${cmpRow(`Median Price (${BP.month})`,    'boiseMedianPrice',        'canyonMedianPrice',        money)}
+      ${cmpRow(`Average Price (${BP.month})`,   'boiseAvgPrice',           'canyonAvgPrice',           money)}
+      ${cmpRow(`SF Homes Closed (${BP.month})`, 'boiseSingleFamilyClosed', 'canyonSingleFamilyClosed', num)}
       ${cmpRow('Days on Market',             'boiseDom',                'canyonDom',                num,
                d => `${d} days (${d < 0 ? 'faster' : 'slower'} in Ada)`)}
-      ${cmpRow('Dollar Volume (Jul 2026)',   'boiseDollarVolume',       'canyonDollarVolume',       moneyM)}
+      ${cmpRow(`Dollar Volume (${BP.month})`,   'boiseDollarVolume',       'canyonDollarVolume',       moneyM)}
       <tr>
         <td><strong>YoY Median Change</strong></td>
         ${pctCell(medAda)}
@@ -2524,28 +2526,28 @@ function renderBoise() {
   const tierTitle = document.createElement('div');
   tierTitle.className = 'subsection-title';
   tierTitle.style.marginTop = '40px';
-  tierTitle.textContent = 'Price Tier Analysis (July 2026)';
+  tierTitle.textContent = `Price Tier Analysis (${BP.monthName} 2026)`;
   el.appendChild(tierTitle);
 
   const tierBox = document.createElement('div');
   tierBox.className = 'narrative-box';
-  tierBox.innerHTML = `<h3>Ada County Price Distribution — 949 sales</h3>
-    <p><strong>Core Market (200K-500K):</strong> 29.9% of sales — price-sensitive first-time buyer segment</p>
-    <p><strong>Mid-Market (500K-800K):</strong> 45.1% of sales — largest segment, contains the median home</p>
-    <p><strong>Premium Market (800K+):</strong> 24.9% of sales — high-value segment</p>
+  tierBox.innerHTML = `<h3>Ada County Price Distribution — 957 sales</h3>
+    <p><strong>Core Market (200K-500K):</strong> 29.2% of sales (279) — price-sensitive first-time buyer segment</p>
+    <p><strong>Mid-Market (500K-800K):</strong> 45.9% of sales (439) — largest segment, contains the median home</p>
+    <p><strong>Premium Market (800K+):</strong> 25.0% of sales (239) — high-value segment</p>
     <br>
-    <h3>Canyon County Price Distribution — 496 sales</h3>
-    <p><strong>Core Market (200K-500K):</strong> 68.8% of sales — heavy concentration in entry/first-move-up segment</p>
-    <p><strong>Mid-Market (500K-800K):</strong> 22.0% of sales — fewer higher-priced homes available</p>
-    <p><strong>Premium Market (800K+):</strong> 8.9% of sales — limited luxury inventory in Canyon County</p>
-    <p style="margin-top: 16px; color: var(--text-muted); font-size: 0.9rem;"><strong>Insight:</strong> More than two-thirds of Canyon County sales fall under $500K, versus under a third in Ada — Ada's mid and premium tiers together account for 70% of its volume. That mix difference is what drives Ada's 41% average-price premium over Canyon despite a 35% gap in medians. Tiers under 200K (0.1% Ada, 0.4% Canyon) are omitted.</p>
-    <p style="margin-top: 10px; color: var(--yellow); font-size: 0.85rem;"><strong>Revision:</strong> the June figures previously shown here (Ada 23.3 / 40.3 / 36.4) were computed from <code>close_price</code>, which was only 2-4% populated at the time and skewed toward premium sales. These July tiers use the fully-populated <code>current_price</code> field across all 1,445 closings.</p>`;
+    <h3>Canyon County Price Distribution — 471 sales</h3>
+    <p><strong>Core Market (200K-500K):</strong> 66.0% of sales (311) — heavy concentration in entry/first-move-up segment</p>
+    <p><strong>Mid-Market (500K-800K):</strong> 24.0% of sales (113) — fewer higher-priced homes available</p>
+    <p><strong>Premium Market (800K+):</strong> 10.0% of sales (47) — limited luxury inventory in Canyon County</p>
+    <p style="margin-top: 16px; color: var(--text-muted); font-size: 0.9rem;"><strong>Insight:</strong> Two-thirds of Canyon County sales fall under $500K, versus under a third in Ada — Ada's mid and premium tiers together account for 71% of its volume. Neither county recorded a single sale below $200K in ${BP.monthName}, so that band is omitted. Ada's average-price premium over Canyon is 34%, the same as the gap in medians: Canyon's premium tier grew from 8.9% of sales in July to 10.0% in ${BP.monthName}, which lifted its average $18.6K even as its median fell, closing the mix gap that had made the average premium run ahead of the median one.</p>
+    <p style="margin-top: 10px; color: var(--yellow); font-size: 0.85rem;"><strong>Method:</strong> tiers are computed from <code>current_price</code> across all ${(957 + 471).toLocaleString()} Ada + Canyon closings. Earlier versions of this panel used <code>close_price</code>, which was only 2-4% populated and skewed toward premium sales.</p>`;
   el.appendChild(tierBox);
 
   // IMLS Area ↔ ZIP cross-reference (searchable, with filter tiles)
   el.appendChild(buildBoiseImlsSection());
 
-  // Ada County Single-Family Residential Market Report (July 2026)
+  // Ada County Single-Family Residential Market Report (period comes from ADA_REPORT)
   if (typeof buildAdaMarketReport === 'function') {
     el.appendChild(buildAdaMarketReport());
   }
@@ -2556,8 +2558,8 @@ function renderBoise() {
   note.style.marginTop = '32px';
   note.innerHTML = `<h3>Data Quality & Methodology</h3>
     <p><strong>Source:</strong> Intermountain MLS via Databricks <code>main.gold_mls.search_listings</code>, filtered to <code>sale_status = 'SOLD'</code> and <code>property_type_aggregated = 'Single Family'</code>, grouped by close-date month · Area/ZIP crosswalk from <a href="https://imlsmembers.com/areas" target="_blank" rel="noopener">imlsmembers.com/areas</a></p>
-    <p><strong>Date Range:</strong> June 2025 – July 2026 (14 months of monthly detail; sparklines cover 24 months from Aug 2024)</p>
-    <p style="color:var(--yellow)"><strong>Correction (Aug 2026):</strong> the monthly history for Jul 2025 – May 2026 previously shown here was linearly interpolated between two real endpoints, not measured. Those months are now actual per-month aggregates from the MLS table, so intermediate values have changed — notably Dec 2025 and Jan 2026, where the real seasonal trough (Ada median $525K, 531 closings) was hidden by the straight-line fill.</p>
+    <p><strong>Date Range:</strong> ${BP.histRange} (14 months of monthly detail; sparklines cover 24 months from ${BP.sparkStart})</p>
+    <p style="color:var(--yellow)"><strong>Revisions:</strong> every month is re-pulled on each refresh rather than appended, so late-recorded closings revise recent history. The ${BP.monthName} pull moved Jul 2026 Ada from 949 closings to 953 and Jun 2026 from 1,038 to 1,039; months before that are unchanged. Separately, the monthly history for Jul 2025 – May 2026 shown here before Aug 2026 was linearly interpolated between two real endpoints, not measured; those months are now actual per-month aggregates.</p>
     <p><strong>Accuracy Level:</strong> <strong style="color: var(--green);">EXCELLENT (100% reconciliation)</strong> — All metrics verified against official IMLS PDFs. Median price, average price, unit count, DOM, and dollar volume all match exactly.</p>
     <p><strong>Geographic Scope:</strong> Ada County = all single-family sales in Ada County, including Boise, Garden City, Meridian (83642 / 83646), Eagle (83616), Star (83669) and Kuna (83634). Canyon County = Nampa (83651 / 83686 / 83687), Caldwell (83605 / 83607), Middleton (83644) and surrounding communities.</p>
     <p style="color:var(--yellow)"><strong>Correction (Jul 2026):</strong> an earlier version of this note listed ZIPs 83634, 83642 and 83646 under Canyon County. Kuna and Meridian are in <strong>Ada</strong> County — the county roll-ups above were always computed from the MLS county field and are unaffected, but the ZIP list was wrong and has been fixed.</p>
@@ -2610,15 +2612,16 @@ function buildBoiseImlsSection() {
     across <strong>${IMLS_AREAS.length} areas</strong>, spanning <strong>Ada and Canyon County</strong>.</p>
     <p style="margin-top:12px;color:var(--yellow)"><strong>The ${derivedAreas.length} Canyon areas
     (${derivedAreas.map(a => a.code).join(' · ')}) are derived, not published.</strong>
-    IMLS does not publish a ZIP crosswalk for them. Each one's July-2026 sold count and median in the
-    Ada+Canyon report matches exactly one ZIP's July-2026 single-family figures in the MLS table, so the
+    IMLS does not publish a ZIP crosswalk for them. Each one's sold count and median in the
+    Ada+Canyon report matched exactly one ZIP's single-family figures in the MLS table when the mapping
+    was derived from the July-2026 report, so the
     mapping is 1:1 and unambiguous — but it is inferred. Areas 1310 and 1500 are within ±2 sales rather
     than exact. Canyon area <em>names</em> also disagree with the ZIPs' geography: 1220 “Nampa South” is
     83651, central Nampa, and 1200 “Nampa SW” is 83686, southern Nampa. Trust the code, not the
     compass direction.</p>
     ${hasStat
       ? `<p style="margin-top:12px"><strong>ZIP metrics:</strong> single-family closings from
-         <code>main.gold_mls.search_listings</code>, pulled 2026-08-21, for all
+         <code>main.gold_mls.search_listings</code>, pulled ${typeof BOISE_ZIP_PERIOD !== 'undefined' ? BOISE_ZIP_PERIOD.pulled : ''}, for all
          ${Object.keys(statZip).length} Ada + Canyon ZIPs. New vs resale uses a <strong>rolling</strong>
          vintage (built in the sale year or the one before), so the ZIP split will not tie exactly to the
          area tables above, which use the source's fixed “year built ≥ 2025” threshold.
@@ -2686,9 +2689,9 @@ function buildBoiseImlsSection() {
   tableWrap.className = 'imls-table-wrap';
 
   const metricCols = hasStat
-    ? `<th class="num" title="Single-family closings, July 2026">Jul Sold</th>
-       <th class="num" title="Median close price, July 2026">Jul Median</th>
-       <th class="num" title="Median close price, trailing 12 months">TTM Median</th>
+    ? `<th class="num" title="Single-family closings, ${BZP.monthLong}">${BZP.month} Sold</th>
+       <th class="num" title="Median close price, ${BZP.monthLong}">${BZP.month} Median</th>
+       <th class="num" title="Median close price, trailing 12 months (${BZP.ttm})">TTM Median</th>
        <th class="num" title="Median resale close price, trailing 12 months (rolling vintage)">TTM Resale</th>
        <th class="num" title="Median price per square foot, trailing 12 months">$/SF</th>
        <th class="num" title="Median days on market, trailing 12 months">DOM</th>
@@ -2722,8 +2725,8 @@ function buildBoiseImlsSection() {
 
     // Live endpoint wins per-field where it has a value; static fills the rest.
     const metricCells = hasStat
-      ? `<td class="num">${plain(s && s.julSold)}</td>
-         <td class="num">${kMoney(s && s.julMed)}</td>
+      ? `<td class="num">${plain(s && s.moSold)}</td>
+         <td class="num">${kMoney(s && s.moMed)}</td>
          <td class="num">${kMoney(m && m.median_close_price != null ? m.median_close_price : s && s.ttmMed)}</td>
          <td class="num">${kMoney(s && s.ttmResaleMed)}</td>
          <td class="num">${s && s.ttmPpsf != null ? '$' + s.ttmPpsf : '&mdash;'}</td>
@@ -2862,7 +2865,7 @@ function exportImlsCsv(zips, liveZip, hasLive) {
 
   const header = ['ZIP', 'City', 'Neighborhood', 'County', 'IMLS Areas', 'Area Shares', 'Mapping Source'];
   if (hasStat) header.push(
-    'Jul-26 Sold', 'Jul-26 Median', 'YTD-26 Sold', 'YTD-26 Median',
+    `${BZP.month} Sold`, `${BZP.month} Median`, 'YTD-26 Sold', 'YTD-26 Median',
     'YTD-25 Sold', 'YTD-25 Median', 'YTD Sold %', 'YTD Median %',
     'TTM Median', 'TTM Resale Median', 'TTM $/SF', 'TTM DOM', 'TTM Sale-to-List %',
     'TTM Sold', 'TTM New', 'New Share %', 'Active', 'Pending',
@@ -2895,7 +2898,7 @@ function exportImlsCsv(zips, liveZip, hasLive) {
     if (hasStat) {
       const s = stat[zip] || {};
       row.push(
-        s.julSold, s.julMed, s.ytdSold, s.ytdMed, s.ytd25Sold, s.ytd25Med,
+        s.moSold, s.moMed, s.ytdSold, s.ytdMed, s.ytd25Sold, s.ytd25Med,
         s.ytdSoldPct, s.ytdMedPct, s.ttmMed, s.ttmResaleMed, s.ttmPpsf,
         s.ttmDom, s.ttmS2l, s.ttmSold, s.ttmNew, s.newSharePct, s.active, s.pending,
       );

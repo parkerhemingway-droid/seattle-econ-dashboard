@@ -105,8 +105,8 @@ function bzpAreasFor(zip) {
 // ── hero tiles ───────────────────────────────────────────────────────────────
 function bzpHero(d) {
   const tiles = [
-    ['Sold Jul-26',    bzpNum(d.julSold),      ''],
-    ['Median Jul-26',  bzpK(d.julMed),         ''],
+    [`Sold ${BZP.month}`,    bzpNum(d.moSold),      ''],
+    [`Median ${BZP.month}`,  bzpK(d.moMed),         ''],
     ['Sold YTD-26',    bzpNum(d.ytdSold),      bzpChg(d.ytdSoldPct)],
     ['Median YTD-26',  bzpK(d.ytdMed),         bzpChg(d.ytdMedPct)],
     ['Median TTM',     bzpK(d.ttmMed),         ''],
@@ -123,14 +123,14 @@ function bzpHero(d) {
 // ── closings: the two windows the source actually supports a YoY on ──────────
 function bzpClosings(d) {
   const rows = [
-    ['Homes sold', bzpNum(d.julSold), bzpNum(d.ytdSold), bzpNum(d.ytd25Sold),
+    ['Homes sold', bzpNum(d.moSold), bzpNum(d.ytdSold), bzpNum(d.ytd25Sold),
       bzpChg(d.ytdSoldPct), bzpNum(d.ttmSold)],
-    ['Median price', bzpMoney(d.julMed), bzpMoney(d.ytdMed), bzpMoney(d.ytd25Med),
+    ['Median price', bzpMoney(d.moMed), bzpMoney(d.ytdMed), bzpMoney(d.ytd25Med),
       bzpChg(d.ytdMedPct), bzpMoney(d.ttmMed)],
   ];
   return `<div class="blk"><h2>Closings <span class="n">&mdash; single family</span></h2>
     <table><colgroup><col style="width:22%">${'<col>'.repeat(5)}</colgroup>
-    <thead><tr><th class="lab">Metric</th><th>Jul-26</th><th>YTD-26</th><th>YTD-25</th>
+    <thead><tr><th class="lab">Metric</th><th>${BZP.month}</th><th>YTD-26</th><th>YTD-25</th>
       <th>YTD % Chg</th><th>Trailing<br>12 Mths</th></tr></thead>
     <tbody>${rows.map(([a, ...c], i) =>
       `<tr${i % 2 ? ' class="alt"' : ''}><td class="lab">${a}</td>
@@ -222,7 +222,7 @@ function bzpPeers(zip) {
     const p = BOISE_ZIP_METRICS[z], m = IMLS_ZIP_META[z];
     const cls = z === zip ? ' class="me"' : (i % 2 ? ' class="alt"' : '');
     return `<tr${cls}><td><b>${z}</b></td><td class="lab">${m.city} &middot; ${m.label}</td>
-      <td>${bzpNum(p.julSold)}</td><td>${bzpK(p.julMed)}</td>
+      <td>${bzpNum(p.moSold)}</td><td>${bzpK(p.moMed)}</td>
       <td>${bzpK(p.ttmMed)}</td><td>${bzpK(p.ttmResaleMed)}</td>
       <td>${p.ttmPpsf == null ? '&ndash;' : '$' + p.ttmPpsf}</td>
       <td>${bzpNum(p.ttmDom)}</td><td>${bzpPct(p.newSharePct)}</td>
@@ -235,7 +235,7 @@ function bzpPeers(zip) {
       (${zip} ranks ${rank} of ${peers.length})</span></h2>
     <table><colgroup><col style="width:8%"><col style="width:24%">${'<col>'.repeat(8)}</colgroup>
     <thead><tr><th>ZIP</th><th class="lab">City &middot; Neighborhood</th>
-      <th>Sold<br>Jul-26</th><th>Median<br>Jul-26</th><th>Median<br>TTM</th>
+      <th>Sold<br>${BZP.month}</th><th>Median<br>${BZP.month}</th><th>Median<br>TTM</th>
       <th>Resale<br>Med TTM</th><th>$/SqFt</th><th>DOM</th><th>New %</th>
       <th>Active</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
@@ -254,9 +254,9 @@ function bzpDocument(zip, scope) {
   const scoped = scope && scope !== 'all';
   const scopeLabel = scope === 'new' ? 'New Construction'
                    : scope === 'existing' ? 'Existing Homes' : 'All Product';
-  const thin = d.julSold != null && d.julSold < 15;
+  const thin = d.moSold != null && d.moSold < 15;
   const generated = typeof ADA_REPORT !== 'undefined' ? ADA_REPORT.generated : '';
-  const period = typeof ADA_REPORT !== 'undefined' ? ADA_REPORT.period : 'Jul-26';
+  const period = typeof ADA_REPORT !== 'undefined' ? ADA_REPORT.period : BZP.month;
 
   return `<!doctype html><html><head><meta charset="utf-8">
 <title>ZIP Market Dynamics — ${zip} ${meta.city}, ${period}</title>
@@ -295,12 +295,12 @@ ${bzpHero(d)}
     <div class="duo duo-stack">
       <div class="crit"><b>Report criteria.</b> Single-family residential closings in ZIP ${zip},
         pulled directly from <i>main.gold_mls.search_listings</i> &mdash; not apportioned from the
-        area report. Price = close price where recorded, otherwise current price. Jul-26 = calendar
-        July; YTD = Jan 1 &ndash; Jul 31; trailing 12 months = Aug 1 2025 &ndash; Jul 31 2026.
+        area report. Price = close price where recorded, otherwise current price. ${BZP.month} =
+        calendar ${BZP.monthLong}; YTD = ${BZP.ytd}; trailing 12 months = ${BZP.ttm}.
         Active and under-contract are live counts at pull time, not period figures.</div>
       ${thin
         ? `<div class="warn"><b>Thin market &mdash; read the monthly figures loosely.</b>
-            ZIP ${zip} closed ${d.julSold} single-family sales in July 2026. At that volume a
+            ZIP ${zip} closed ${d.moSold} single-family sales in ${BZP.monthLong}. At that volume a
             single high or low sale moves the median several percent, so month-to-month swings
             here are mostly composition, not price movement. The trailing-12-month column
             (${bzpNum(d.ttmSold)} sales) is the one to quote.</div>`

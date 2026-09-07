@@ -1,8 +1,22 @@
 // ── Ada County Single-Family Residential Market Report ───────────────────────
-// Renders the July 2026 IMLS-style breakdown inside the Boise MSA section.
-// Data comes from js/ada-report-data.js (ADA_REPORT), which is generated from
-// data_science.compass_db.ada_county_report_csv plus the trailing-12-month
-// new-construction tier cut. Do not hand-edit the numbers here.
+// Renders the IMLS-style breakdown inside the Boise MSA section for whatever
+// month js/ada-report-data.js (ADA_REPORT) currently carries. That file is
+// generated from data_science.compass_db.ada_canyon_county_report_csv plus the
+// trailing-12-month new-construction tier cut. Do not hand-edit the numbers
+// here, and do not hard-code a month name — read AR_P below.
+
+// Period labels, all from the data file so a monthly refresh touches no string
+// in this file. ADA_REPORT is loaded by the preceding <script>; the fallback
+// only keeps the module parseable if that file ever fails to load, in which
+// case every render already bails on its own `typeof ADA_REPORT` guard.
+const AR_P = typeof ADA_REPORT !== 'undefined' ? {
+  long:  ADA_REPORT.period,        // "August 2026"
+  mo:    ADA_REPORT.periodShort,   // "Aug-26"
+  prior: ADA_REPORT.periodPrior,   // "Aug-25"
+  ttm:   ADA_REPORT.periodTtm,     // "Sep 1 2025 – Aug 31 2026"
+  ytd:   ADA_REPORT.periodYtd,     // "Jan 1 – Aug 31 2026"
+  month: ADA_REPORT.period.split(' ')[0],  // "August"
+} : { long: '', mo: '', prior: '', ttm: '', ytd: '', month: '' };
 
 // Market Research palette. Assigned by the job each colour does, not by rank:
 //   blue  = New Construction   slate = Existing   purple = Total / all product
@@ -190,8 +204,8 @@ function arZipPanel(zip) {
   }
 
   const tiles = [
-    ['Sold · Jul-26',   arNum(d.julSold),  null],
-    ['Median · Jul-26', arMoneyK(d.julMed), null],
+    [`Sold · ${BZP.month}`,   arNum(d.moSold),  null],
+    [`Median · ${BZP.month}`, arMoneyK(d.moMed), null],
     ['Sold · YTD-26',   arNum(d.ytdSold),  d.ytdSoldPct],
     ['Median · YTD-26', arMoneyK(d.ytdMed), d.ytdMedPct],
     ['Median · TTM',    arMoneyK(d.ttmMed), null],
@@ -206,9 +220,9 @@ function arZipPanel(zip) {
       <div class="ar-ziptile-d">${chg == null ? '&nbsp;' : arDelta(chg) + ' YoY'}</div>
     </div>`).join('');
 
-  const thin = d.julSold != null && d.julSold < 15;
+  const thin = d.moSold != null && d.moSold < 15;
   const caution = thin
-    ? `<b>Thin market.</b> ${zip} closed ${d.julSold} single-family sales in July 2026 — at that
+    ? `<b>Thin market.</b> ${zip} closed ${d.moSold} single-family sales in ${BZP.monthLong} — at that
        volume one unusual sale moves the median several percent. Quote the trailing-12-month
        column (${arNum(d.ttmSold)} sales), not the month.`
     : `<b>Median is a mix statistic.</b> ${arNum(d.ttmSold)} trailing-12-month sales,
@@ -229,26 +243,26 @@ function arZipPanel(zip) {
 }
 
 // ── Section 1: summary statistics ────────────────────────────────────────────
-// The source report carries Jul-25 and YTD-25 columns, but 949 of the 991
-// July-2025 Ada closings have no close_price recorded (95.8%). Every 2025 price
+// The source report carries prior-August and YTD-25 columns, but 1,236 of the
+// 1,281 Aug-2025 closings have no close_price recorded (96.5%). Every 2025 price
 // and dollar-volume figure is therefore computed on a ~4% sample. Those columns
 // are rendered behind a toggle and marked, and the derived percent-change values
 // that depend on them are withheld rather than published.
 const AR_UNRELIABLE_2025 = true;
 
 // The source defines new construction as assessor year built >= 2025 — a FIXED
-// threshold, not a rolling one. So the Jul-26 / YTD-26 "new" bucket holds two
-// build vintages (2025 and 2026) while the Jul-25 / YTD-25 bucket holds one
+// threshold, not a rolling one. So the current-month / YTD-26 "new" bucket holds
+// two build vintages (2025 and 2026) while the prior-year columns hold one
 // (2025). Unit growth across those columns is therefore mostly definitional,
 // and the same reclassification drains the existing bucket by the same homes.
 //
 // Checked against main.gold_mls.search_listings (Ada + Canyon, SOLD, single
-// family, 25 ZIPs, recomputed 2026-08-21 for the Ada+Canyon report): of the
-// 3,501 YTD-26 sales built >= 2025, 2,206 were built in 2025 — 63% of the
+// family, 25 ZIPs, recomputed 2026-09-07 for the August report): of the
+// 4,009 YTD-26 sales built >= 2025, 2,295 were built in 2025 — 57% of the
 // bucket is prior-vintage carryover the 2025 column cannot contain.
-// Like-for-like current-vintage sales went 1,426 -> 1,295 (-9.2%); on a rolling
-// "built this year or last" definition, 3,183 -> 3,501 (+10.0%) against a total
-// market of +13.1%. The source's +153.4% is an artifact of the fixed threshold.
+// Like-for-like current-vintage sales went 1,803 -> 1,714 (-4.9%); on a rolling
+// "built this year or last" definition, 3,650 -> 4,009 (+9.8%) against a total
+// market of +13.1%. The source's +127.4% is an artifact of the fixed threshold.
 const AR_VINTAGE_SHIFT = true;
 const AR_VINTAGE_TITLE =
   'Not comparable: the source defines new construction as year built >= 2025, a fixed '
@@ -309,10 +323,10 @@ function arSummaryTable(key) {
     <div class="ar-scroll">
     <table class="data-table ar-table">
       <thead><tr>
-        <th>Metric</th><th class="ar-figure">Jul-26</th><th>vs Jul-25</th>
+        <th>Metric</th><th class="ar-figure">${AR_P.mo}</th><th>vs ${AR_P.prior}</th>
         <th class="ar-figure">YTD 26</th><th>vs YTD 25</th>
         <th class="ar-figure ar-prev12">Prev 12 Mths</th>
-        <th class="ar-figure ar-y2025">Jul-25</th><th class="ar-figure ar-y2025">YTD 25</th>
+        <th class="ar-figure ar-y2025">${AR_P.prior}</th><th class="ar-figure ar-y2025">YTD 25</th>
       </tr></thead>
       <tbody>${body}</tbody>
     </table>
@@ -337,10 +351,10 @@ function arKpiRow() {
     const s = AR_SERIES[key], m = pick(key);
     return `<div class="ar-kpi ar-seg" data-seg="${key}" style="--ar-accent:${s.color}">
       <div class="ar-kpi-label"><span class="ar-swatch" style="background:${s.color}"></span>${s.label}</div>
-      <div class="ar-kpi-value">${arNum(m.sold.vals[0])}<span class="ar-kpi-unit">sold · Jul-26</span></div>
+      <div class="ar-kpi-value">${arNum(m.sold.vals[0])}<span class="ar-kpi-unit">sold · ${AR_P.mo}</span></div>
       <div class="ar-kpi-delta">${arCountNotComparable(key, m.sold.label)
-        ? `<span class="ar-notcomp" title="${AR_VINTAGE_TITLE}">not comparable vs Jul-25</span>`
-        : `${arDelta(m.sold.pct ? m.sold.pct[0] : null)} vs Jul-25 units`}</div>
+        ? `<span class="ar-notcomp" title="${AR_VINTAGE_TITLE}">not comparable vs ${AR_P.prior}</span>`
+        : `${arDelta(m.sold.pct ? m.sold.pct[0] : null)} vs ${AR_P.prior} units`}</div>
       <div class="ar-kpi-grid">
         <div><span>Median</span><b>${arMoney(m.median.vals[0])}</b></div>
         <div><span>DOM</span><b>${arNum(m.dom.vals[0], 1)}</b></div>
@@ -690,7 +704,7 @@ function arNcTierSection() {
     <div class="ar-tablecard-head">
       <span class="ar-swatch" style="background:${MR.blue}"></span>
       <span class="ar-tablecard-title">New Construction Market Dynamics — by price tier</span>
-      <span class="ar-tablecard-note">Trailing 12 months · Aug 1 2025 – Jul 31 2026</span>
+      <span class="ar-tablecard-note">Trailing 12 months · Aug 1 2025 – Jul 31 2026 (${ADA_REPORT.ncPeriod} vintage)</span>
     </div>
     <div class="ar-scroll">
     <table class="data-table ar-table">
@@ -849,8 +863,8 @@ function buildAdaMarketReport() {
     </div>
 
     <div class="ar-callout ar-callout-warn">
-      <b>Read the 2025 comparisons with care.</b> ${cov.jul25MissingClosePrice} of the
-      ${cov.jul25Sold.toLocaleString()} July-2025 Ada + Canyon closings (${missPct}%) have no close
+      <b>Read the 2025 comparisons with care.</b> ${cov.jul25MissingClosePrice.toLocaleString()} of the
+      ${cov.jul25Sold.toLocaleString()} ${AR_P.month}-2025 Ada + Canyon closings (${missPct}%) have no close
       price recorded, so every 2025 price and dollar-volume figure in the source report is
       computed on a ~4% sample. Unit counts for 2025 are sound; prices are not. Price and volume changes against
       2025 are withheld below, and the 2025 columns are hidden by default.
@@ -862,16 +876,16 @@ function buildAdaMarketReport() {
       The source classifies new construction by assessor year built <b>≥ 2025</b> — a fixed
       threshold, not a rolling one. The 2026 columns therefore span two build vintages
       (2025 and 2026) while the 2025 columns span one, and the same reclassification moves
-      homes out of the existing bucket. A house built in 2025 and resold in July 2026 counts
+      homes out of the existing bucket. A house built in 2025 and resold in ${AR_P.long} counts
       as new construction.
       <br><br>
       Cross-checked against <code>main.gold_mls.search_listings</code> (Ada + Canyon, sold,
-      single family, 25 ZIPs): of the 3,501 YTD-26 sales built ≥ 2025, <b>2,206 were built in
-      2025</b> — 63% of the bucket is carryover the 2025 column cannot contain. Comparing like
-      with like, current-vintage sales went <b>1,426 → 1,295 (−9.2%)</b>; on a rolling “built
-      this year or last” definition, <b>3,183 → 3,501 (+10.0%)</b>, against a total market of
+      single family, 25 ZIPs): of the 4,009 YTD-26 sales built ≥ 2025, <b>2,295 were built in
+      2025</b> — 57% of the bucket is carryover the 2025 column cannot contain. Comparing like
+      with like, current-vintage sales went <b>1,803 → 1,714 (−4.9%)</b>; on a rolling “built
+      this year or last” definition, <b>3,650 → 4,009 (+9.8%)</b>, against a total market of
       +13.1%. New construction has held a steady <b>~38% share both years</b> — it did not
-      climb from 16.6% to 37.3%. Unit-count changes for the new and existing bands are marked
+      climb from 18.2% to 36.8%. Unit-count changes for the new and existing bands are marked
       <span class="ar-notcomp">not comparable</span> below; the county total is unaffected,
       because the threshold only moves sales between buckets.
     </div>
@@ -933,7 +947,9 @@ function buildAdaMarketReport() {
       <code>dim_listing</code> stores one list price, so SP/LP is not a true
       sold-to-original-list ratio. Distressed share is not carried in these tables. Counts differ
       slightly between sections because Section 4 uses a 12-month close window while Sections 1–3
-      use calendar July and YTD. Generated ${ADA_REPORT.generated}.
+      use calendar ${AR_P.month} and YTD. Section 4 is <b>${ADA_REPORT.ncScope}</b> and was not
+      refreshed with this report — it still carries the ${ADA_REPORT.ncPeriod} tier cut.
+      Generated ${ADA_REPORT.generated}.
     </div>
   `;
 

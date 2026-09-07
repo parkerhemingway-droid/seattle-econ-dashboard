@@ -158,7 +158,7 @@ function arPdfSummaryRows(key) {
     const fmt = v => v == null ? '&ndash;'
       : isVol ? arpVol(v) : isPrice ? arpMoney(v) : isDom ? Math.round(v) : arpNum(v);
 
-    // 949 of 991 Jul-25 closings have no close price, so the 2025 price and
+    // 1,236 of 1,281 prior-August closings have no close price, so the 2025 price and
     // volume base is a ~4% sample. Counts survive; prices are withheld.
     const cells = r.vals.map((v, j) =>
       `<td>${isPrice && (j === 2 || j === 3) ? AR_PDF_WITHHELD : fmt(v)}</td>`).join('');
@@ -182,7 +182,7 @@ function arPdfSummary(scope) {
     <table><colgroup><col style="width:23%">
       ${'<col>'.repeat(5)}<col style="width:8%"><col style="width:8%"></colgroup>
     <thead><tr><th class="lab">Metric</th>${hdr}
-      <th>% Chg Jul</th><th>% Chg YTD</th></tr></thead>
+      <th>% Chg ${AR_P.mo}</th><th>% Chg YTD</th></tr></thead>
     <tbody>${arPdfKeys(scope).map(arPdfSummaryRows).join('')}</tbody></table></div>`;
 }
 
@@ -300,7 +300,7 @@ function arPdfNcTable() {
 
   const T = ADA_REPORT.ncTotals;
   return `<div class="blk">
-    <h2>New Construction Market Dynamics <span class="n">&mdash; trailing 12 months, Aug 1 2025 &ndash; Jul 31 2026</span></h2>
+    <h2>New Construction Market Dynamics <span class="n">&mdash; trailing 12 months, Aug 1 2025 &ndash; Jul 31 2026 (${ADA_REPORT.ncPeriod} vintage)</span></h2>
     <table><colgroup><col style="width:13%">${'<col>'.repeat(10)}</colgroup><thead>
       <tr><th class="lab" rowspan="2">Price Tier</th><th colspan="2">Current</th>
         <th>12 Mths</th><th rowspan="2">Mos.<br>Inv.</th>
@@ -420,15 +420,15 @@ function arPdfDocument(scope) {
     <div class="duo">
       <div class="warn"><b>2025 price and volume figures are withheld.</b>
         ${cov.jul25MissingClosePrice.toLocaleString()} of ${cov.jul25Sold.toLocaleString()}
-        July-2025 closings (${missPct}%) carry no close price, so the Jul-25 and YTD-25
+        ${AR_P.month}-2025 closings (${missPct}%) carry no close price, so the ${AR_P.prior} and YTD-25
         base is roughly a 4% sample. Counts are sound; median, average and dollar volume
         for those two columns &mdash; and every % change against them &mdash; are
         suppressed rather than published.</div>
       <div class="crit"><b>Report criteria.</b>
         Single-Family Residential &mdash; Ada &amp; Canyon County, ID, all ${ADA_REPORT.areas.length} IMLS areas.
         New Construction = assessor year built &ge; 2025 (not the IMLS flag &mdash; see note).
-        Reporting month ${ADA_REPORT.period}; YTD = Jan 1 &ndash; Jul 31;
-        Previous 12 Months = Aug 1, 2025 &ndash; Jul 31, 2026.${scoped
+        Reporting month ${ADA_REPORT.period}; YTD = ${AR_P.ytd};
+        Previous 12 Months = ${AR_P.ttm}.${scoped
           ? ` <b>Filtered to ${label}</b> &mdash; the Total Market band is kept as the
               county baseline this segment is measured against.` : ''}</div>
     </div>
