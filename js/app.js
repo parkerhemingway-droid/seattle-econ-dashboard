@@ -3124,7 +3124,7 @@ function renderZip(zip) {
 
   el.innerHTML = `
     <div class="section-title">Zip ${zip}</div>
-    <div class="section-subtitle">${d.name} · ${d.county} County · Data as of Apr 2026</div>
+    <div class="section-subtitle">${d.name} · ${d.county} County · Data as of Aug 2026</div>
     <div class="zip-actions">
       <div class="zip-neighborhood-badge">📍 ${d.name}, ${d.county} County</div>
       <button class="ar-pdf-btn zip-pdf-btn" type="button">

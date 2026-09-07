@@ -169,7 +169,7 @@ function zpDocument(zip, today) {
   <div class="titles">
     <div class="sub">Zip ${zip} &mdash; ${d.name}</div>
     <div class="meta"><b>County:</b> ${d.county} &nbsp;&nbsp;
-      <b>Data as of:</b> Apr 2026 &nbsp;&nbsp; <b>Report date:</b> ${today}</div>
+      <b>Data as of:</b> Aug 2026 &nbsp;&nbsp; <b>Report date:</b> ${today}</div>
   </div>
   <div style="text-align:right"><h1>Zip Snapshot</h1>
     <div class="accentbar">
