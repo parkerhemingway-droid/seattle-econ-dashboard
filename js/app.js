@@ -2466,10 +2466,11 @@ function renderBoise() {
     </table>`;
     el.appendChild(table);
 
-    // Absorption chart sits directly under its table, before the note, so the
-    // caveat about dashed-out months reads as covering both.
-    if (typeof renderBoiseAbsorption === 'function') {
-      renderBoiseAbsorption(el, c.name, median.monthlyHistory);
+    // Median price and absorption charts sit directly under the table and
+    // before the note, so the caveat about dashed-out months reads as covering
+    // the charts too.
+    if (typeof renderBoiseFlourishCharts === 'function') {
+      renderBoiseFlourishCharts(el, c.name, median.monthlyHistory);
     }
 
     if (median.absorptionNote) {

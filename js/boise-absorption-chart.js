@@ -1,5 +1,9 @@
-// Absorption charts for the Boise-area counties, drawn under each county's
-// historical table in the Boise section.
+// Local Chart.js rendering of a county's absorption series.
+//
+// This is the fallback behind the Flourish absorption embed: when a chart has
+// not been published yet, boise-flourish-charts.js calls this so the page
+// still carries the series instead of a gap. It draws only the chart — the
+// caller owns the heading and the download controls.
 //
 // The series is whatever the table already shows — same monthlyHistory rows,
 // same reconstructed inventory, same nulls. Nothing is recomputed here, so the
@@ -28,63 +32,10 @@ function bacUsableRows(history) {
   return history.filter(m => m.absorption != null);
 }
 
-function bacCsvRows(county, history) {
-  const rows = [['county', 'month', 'closed_sf', 'on_market_month_end', 'absorption_pct', 'months_supply']];
-  history.forEach(m => {
-    rows.push([
-      county,
-      m.month,
-      m.sf,
-      m.inventory == null ? '' : m.inventory,
-      m.absorption == null ? '' : m.absorption.toFixed(1),
-      m.monthsSupply == null ? '' : m.monthsSupply.toFixed(1),
-    ]);
-  });
-  return rows;
-}
-
-// data: URL rather than a blob: URL — blob downloads are dropped in the
-// wrapped/in-app browsers this dashboard gets opened in, the same reason the
-// IMLS area export at the bottom of this section uses one.
-function bacDownloadCsv(county, history) {
-  const csv = bacCsvRows(county, history).map(r => r.map(v => {
-    const s = v === null || v === undefined ? '' : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  }).join(',')).join('\n');
-
-  const a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = `${county.toLowerCase()}-county-absorption-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
-// Chart.js renders onto a transparent canvas, so a straight toDataURL gives a
-// PNG that is invisible against anything pale. Repaint onto an opaque copy at
-// 2x for a slide-usable export.
-function bacDownloadPng(county, canvas) {
-  const scale = 2;
-  const out = document.createElement('canvas');
-  out.width = canvas.width * scale;
-  out.height = canvas.height * scale;
-  const ctx = out.getContext('2d');
-  ctx.fillStyle = bacVar('--surface', '#1a1d27');
-  ctx.fillRect(0, 0, out.width, out.height);
-  ctx.drawImage(canvas, 0, 0, out.width, out.height);
-
-  const a = document.createElement('a');
-  a.href = out.toDataURL('image/png');
-  a.download = `${county.toLowerCase()}-county-absorption-${new Date().toISOString().slice(0, 10)}.png`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
-// Appends the header row, canvas and download buttons for one county to `el`.
-// Returns silently when the county has no plottable month, so a county whose
-// inventory reconstruction was rejected outright gets no empty frame.
-function renderBoiseAbsorption(el, county, history) {
+// Appends the chart card for one county to `el`. Returns silently when the
+// county has no plottable month, so a county whose inventory reconstruction
+// was rejected outright gets no empty frame.
+function renderBoiseAbsorptionChart(el, county, history) {
   const usable = bacUsableRows(history);
   if (usable.length < 2) return;
 
@@ -92,24 +43,6 @@ function renderBoiseAbsorption(el, county, history) {
   const muted = bacVar('--text-muted', '#8892aa');
   const border = bacVar('--border', '#2e3250');
   const accent = bacVar('--accent', '#4f8ef7');
-
-  const head = document.createElement('div');
-  head.style.cssText = 'display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:28px;';
-  head.innerHTML = `<div class="subsection-title" style="margin:0;">${county} County Absorption Rate</div>`;
-
-  const actions = document.createElement('div');
-  actions.style.cssText = 'display:flex;gap:6px;';
-  const csvBtn = document.createElement('button');
-  csvBtn.className = 'btn-icon';
-  csvBtn.title = `Download ${county} County absorption data as CSV`;
-  csvBtn.textContent = 'CSV';
-  const pngBtn = document.createElement('button');
-  pngBtn.className = 'btn-icon';
-  pngBtn.title = `Download ${county} County absorption chart as PNG`;
-  pngBtn.textContent = 'PNG';
-  actions.append(csvBtn, pngBtn);
-  head.appendChild(actions);
-  el.appendChild(head);
 
   const wrap = document.createElement('div');
   wrap.style.cssText = `background:var(--surface);border:1px solid var(--border);border-radius:var(--card-radius);padding:14px 16px 10px;margin-bottom:${history.some(m => m.absorption == null) ? '8px' : '32px'};`;
@@ -125,9 +58,6 @@ function renderBoiseAbsorption(el, county, history) {
   // line quietly closing over it.
   const labels = history.map(m => m.month);
   const values = history.map(m => m.absorption);
-
-  csvBtn.addEventListener('click', e => { e.stopPropagation(); bacDownloadCsv(county, history); });
-  pngBtn.addEventListener('click', e => { e.stopPropagation(); bacDownloadPng(county, canvas); });
 
   const id = `abs_${county.toLowerCase()}`;
   if (BOISE_ABS_CHARTS[id]) BOISE_ABS_CHARTS[id].destroy();
