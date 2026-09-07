@@ -2410,6 +2410,30 @@ function renderBoise() {
     el.appendChild(grid);
   });
 
+  // Cross-check for the absorption methodology note: the IMLS report publishes its
+  // own active and pending counts for Ada + Canyon, which is an independent check on
+  // the inventory reconstruction and lets the note quantify the basis difference
+  // instead of asserting it. Read from ADA_REPORT so it tracks the monthly refresh.
+  const imlsRow = label => {
+    const r = (((ADA_REPORT.summary || {}).total || {}).rows || []).find(x => x.label === label);
+    return r && r.vals[0] ? r.vals[0] : 0;
+  };
+  const imlsActive  = imlsRow('Total Single-Family Active Residential Listings');
+  const imlsPending = imlsRow('Total Single-Family Pending Residential Listings');
+  const imlsSold    = imlsRow('Total Single-Family Homes Sold');
+  const lastInv = p => (ALL_METRICS[p + 'MedianPrice'].monthlyHistory.slice(-1)[0].inventory) || 0;
+  const absReconAdaCanyon = lastInv('boise') + lastInv('canyon');
+
+  // Inventory / absorption / months-of-supply cells. Absorption is closings in the
+  // month over listings on market at month end; months of supply is its reciprocal.
+  // Any month whose reconstructed inventory is untrustworthy carries null and is
+  // dashed out rather than shown as a number — see the methodology note below.
+  const absorptionCells = m => m.absorption == null
+    ? '<td>—</td><td>—</td><td>—</td>'
+    : `<td>${m.inventory.toLocaleString()}</td>` +
+      `<td>${m.absorption.toFixed(1)}%</td>` +
+      `<td>${m.monthsSupply.toFixed(1)}</td>`;
+
   // Historical median tables, one per county that carries a monthly history.
   BOISE_COUNTIES.forEach(c => {
     const median = ALL_METRICS[c.prefix + 'MedianPrice'];
@@ -2423,9 +2447,10 @@ function renderBoise() {
 
     const table = document.createElement('div');
     table.style.overflowX = 'auto';
-    table.innerHTML = `<table class="data-table" style="margin-bottom: 32px;">
+    table.innerHTML = `<table class="data-table" style="margin-bottom: ${median.absorptionNote ? '8px' : '32px'};">
       <thead><tr>
-        <th>Month</th><th>Median</th><th>Average</th><th>DOM</th><th>Closed</th><th>Volume</th>
+        <th>Month</th><th>Median</th><th>Average</th><th>DOM</th><th>Closed</th>
+        <th>On Mkt</th><th>Absorption</th><th>Mo. Supply</th><th>Volume</th>
       </tr></thead>
       <tbody>
         ${median.monthlyHistory.map(m => `<tr>
@@ -2434,11 +2459,19 @@ function renderBoise() {
           <td>$${m.avgPrice.toLocaleString()}</td>
           <td>${m.dom}</td>
           <td>${m.sf.toLocaleString()}</td>
+          ${absorptionCells(m)}
           <td>$${(m.volumeM * 1000000).toLocaleString()}</td>
         </tr>`).join('')}
       </tbody>
     </table>`;
     el.appendChild(table);
+
+    if (median.absorptionNote) {
+      const n = document.createElement('p');
+      n.style.cssText = 'margin: 0 0 32px; max-width: 90ch; color: var(--yellow); font-size: 0.8rem;';
+      n.innerHTML = median.absorptionNote;
+      el.appendChild(n);
+    }
   });
 
   // Derived from BOISE_MARKETS rather than hardcoded, so these tables can never
@@ -2466,13 +2499,15 @@ function renderBoise() {
   snapTable.innerHTML = `<table class="data-table" style="margin-bottom: 12px;">
     <thead><tr>
       <th>County</th><th>Median</th><th>YoY Median</th><th>Average</th>
-      <th>Closed</th><th>YoY Closed</th><th>DOM</th><th>Volume</th>
+      <th>Closed</th><th>YoY Closed</th><th>DOM</th>
+      <th>On Mkt</th><th>Absorption</th><th>Mo. Supply</th><th>Volume</th>
     </tr></thead>
     <tbody>
       ${BOISE_COUNTIES.map(c => {
         const medYoY = yoyPct(c.prefix + 'MedianPrice');
         const cntYoY = yoyPct(c.prefix + 'SingleFamilyClosed');
         const pct = v => `<td class="${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '+' : ''}${v.toFixed(1)}%</td>`;
+        const latest = ALL_METRICS[c.prefix + 'MedianPrice'].monthlyHistory.slice(-1)[0];
         return `<tr>
           <td><strong>${c.name}</strong>${c.note ? ' <span style="color:var(--yellow)" title="Thin market — see methodology">†</span>' : ''}</td>
           <td>${money(val(c.prefix + 'MedianPrice'))}</td>
@@ -2481,6 +2516,7 @@ function renderBoise() {
           <td>${num(val(c.prefix + 'SingleFamilyClosed'))}</td>
           ${pct(cntYoY)}
           <td>${num(val(c.prefix + 'Dom'))}</td>
+          ${absorptionCells(latest)}
           <td>${moneyM(val(c.prefix + 'DollarVolume'))}</td>
         </tr>`;
       }).join('')}
@@ -2593,6 +2629,8 @@ function renderBoise() {
     <p><strong>Added:</strong> Gem and Valley counties were added Sep 7 2026. They are computed directly from <code>search_listings</code> on the same methodology as Ada and Canyon; the IMLS area↔ZIP crosswalk below does not cover them, because the published area list stops at Canyon County Rural (area 1500).</p>
     <p style="color:var(--yellow)"><strong>Correction (Jul 2026):</strong> an earlier version of this note listed ZIPs 83634, 83642 and 83646 under Canyon County. Kuna and Meridian are in <strong>Ada</strong> County — the county roll-ups above were always computed from the MLS county field and are unaffected, but the ZIP list was wrong and has been fixed.</p>
     <p><strong>Calculation Method:</strong> DOM = days from listing date to pending status (Intermountain MLS standard)</p>
+    <p><strong>Absorption rate:</strong> closings in the month ÷ listings on market at month end, as a percent per month. <strong>Months of supply</strong> is its reciprocal — how long the standing inventory would last at that month's pace. Inventory is not stored historically, so it is reconstructed from <code>date_enter_market</code> and <code>date_exit_market</code>: a listing counts at month end if it entered on or before that date and had not yet exited. Two independent checks: reconstructing <em>today</em> returns 3,295 on-market listings for Ada against 3,332 actually on market (98.9%), 1,922 vs 1,941 for Canyon (99.0%) and 165 vs 170 for Gem (97.1%); and for ${BP.month} the reconstruction puts Ada + Canyon at ${absReconAdaCanyon.toLocaleString()} against the ${(imlsActive + imlsPending).toLocaleString()} the IMLS report itself publishes (${imlsActive.toLocaleString()} active + ${imlsPending.toLocaleString()} pending), a ${(100 * (absReconAdaCanyon / (imlsActive + imlsPending) - 1)).toFixed(1)}% difference.</p>
+    <p style="color:var(--yellow)"><strong>Absorption caveat — read the denominator:</strong> "On Mkt" counts <em>active plus under-contract</em> listings, not active alone, so these figures are <strong>not</strong> comparable to a published IMLS absorption rate. For ${BP.month}, Ada + Canyon absorb at ${(100 * imlsSold / absReconAdaCanyon).toFixed(1)}%/mo on this page's basis (${(absReconAdaCanyon / imlsSold).toFixed(1)} months of supply) versus ${(100 * imlsSold / imlsActive).toFixed(1)}%/mo on the active-only basis IMLS uses (${(imlsActive / imlsSold).toFixed(1)} months) — pendings are ${(100 * imlsPending / (imlsActive + imlsPending)).toFixed(0)}% of on-market inventory, so the gap is large. The active-only basis is not reproducible as a time series here: excluding anything with a <code>contract_date</code> on or before month end is not time-consistent, because <code>contract_date</code> is set for every currently-pending listing but overwritten with the close date on older records. That strips an outsized slice off the newest month — cutting ${BP.month} inventory 23% for Ada, 20% for Canyon and 17% for Gem, against a 4–5% decline on the stable basis. The on-market series is therefore used throughout: consistent month to month, and directionally right, but a level shift below the IMLS convention.</p>
     <p><a href="#help">See Help & Sources</a> for full IMLS data documentation and methodology.</p>`;
   el.appendChild(note);
 
