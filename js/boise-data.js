@@ -333,19 +333,14 @@ const BOISE_MARKETS = {
     sparkline: [775000, 860000, 743600, 835000, 805518, 849000, 850000, 685000, 744000, 899000, 797500, 875000, 694900, 695000, 825000, 715000, 700000, 840000, 899000, 788000, 730000, 950000, 790000, 762500],
     category: 'Valley County Market',
     local: true,
-    // Valley's reconstructed inventory has two step-cliffs — -66% in Oct 2025 and
-    // -63% in Jan 2026 — where stale listings were bulk-purged from the feed, on
-    // top of an implausible ~3,400 level before that against ~36 sales a month.
-    // Only Feb 2026 onward is usable, so earlier months carry null.
-    absorptionNote: 'Absorption is unavailable before Feb 2026: the reconstructed on-market count for Valley County collapses -66% in Oct 2025 and again -63% in Jan 2026 as stale listings were purged from the feed, and sat near 3,400 before that against roughly 36 sales a month. Those are feed-cleanup artifacts, not market moves, so the months are left blank rather than filled with numbers that would imply 90+ months of supply.',
     monthlyHistory: [
-      { month: 'Jul 25', medianPrice: 797500, avgPrice: 954261, dom: 71, volumeM: 39.1, closed: 41, sf: 41, inventory: null, absorption: null, monthsSupply: null },
-      { month: 'Aug 25', medianPrice: 875000, avgPrice: 1287893, dom: 76, volumeM: 78.6, closed: 61, sf: 61, inventory: null, absorption: null, monthsSupply: null },
-      { month: 'Sep 25', medianPrice: 694900, avgPrice: 797145, dom: 95, volumeM: 59.0, closed: 74, sf: 74, inventory: null, absorption: null, monthsSupply: null },
-      { month: 'Oct 25', medianPrice: 695000, avgPrice: 1003408, dom: 130, volumeM: 62.2, closed: 62, sf: 62, inventory: null, absorption: null, monthsSupply: null },
-      { month: 'Nov 25', medianPrice: 825000, avgPrice: 826450, dom: 135, volumeM: 22.3, closed: 27, sf: 27, inventory: null, absorption: null, monthsSupply: null },
-      { month: 'Dec 25', medianPrice: 715000, avgPrice: 1133823, dom: 129, volumeM: 44.2, closed: 39, sf: 39, inventory: null, absorption: null, monthsSupply: null },
-      { month: 'Jan 26', medianPrice: 700000, avgPrice: 873838, dom: 157, volumeM: 28.0, closed: 32, sf: 32, inventory: null, absorption: null, monthsSupply: null },
+      { month: 'Jul 25', medianPrice: 797500, avgPrice: 954261, dom: 71, volumeM: 39.1, closed: 41, sf: 41, inventory: 1614, absorption: 2.5, monthsSupply: 39.4 },
+      { month: 'Aug 25', medianPrice: 875000, avgPrice: 1287893, dom: 76, volumeM: 78.6, closed: 61, sf: 61, inventory: 1638, absorption: 3.7, monthsSupply: 26.9 },
+      { month: 'Sep 25', medianPrice: 694900, avgPrice: 797145, dom: 95, volumeM: 59.0, closed: 74, sf: 74, inventory: 1597, absorption: 4.6, monthsSupply: 21.6 },
+      { month: 'Oct 25', medianPrice: 695000, avgPrice: 1003408, dom: 130, volumeM: 62.2, closed: 62, sf: 62, inventory: 1014, absorption: 6.1, monthsSupply: 16.4 },
+      { month: 'Nov 25', medianPrice: 825000, avgPrice: 826450, dom: 135, volumeM: 22.3, closed: 27, sf: 27, inventory: 959, absorption: 2.8, monthsSupply: 35.5 },
+      { month: 'Dec 25', medianPrice: 715000, avgPrice: 1133823, dom: 129, volumeM: 44.2, closed: 39, sf: 39, inventory: 899, absorption: 4.3, monthsSupply: 23.1 },
+      { month: 'Jan 26', medianPrice: 700000, avgPrice: 873838, dom: 157, volumeM: 28.0, closed: 32, sf: 32, inventory: 351, absorption: 9.1, monthsSupply: 11.0 },
       { month: 'Feb 26', medianPrice: 840000, avgPrice: 1207947, dom: 135, volumeM: 23.0, closed: 19, sf: 19, inventory: 385, absorption: 4.9, monthsSupply: 20.3 },
       { month: 'Mar 26', medianPrice: 899000, avgPrice: 1122827, dom: 58, volumeM: 16.8, closed: 15, sf: 15, inventory: 410, absorption: 3.7, monthsSupply: 27.3 },
       { month: 'Apr 26', medianPrice: 788000, avgPrice: 998661, dom: 66, volumeM: 18.0, closed: 18, sf: 18, inventory: 456, absorption: 3.9, monthsSupply: 25.3 },
