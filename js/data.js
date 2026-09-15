@@ -252,17 +252,44 @@ const HOUSING = {
   },
   seaPermits: {
     id: 'seaPermits', name: 'Seattle MSA Permits', section: 'housing',
-    value: 2201, unit: ' units', date: '2026-04-30',
-    periodChange: +1009, yoyChange: +885,
+    value: 1702, unit: ' units', date: '2026-07-31',
+    periodChange: -245, yoyChange: +694,
     release: 'Monthly — Census BPS (CBSA 42660)',
     sparkline: [1621,914,1308,1059,1513,1764,1254,2096,1203,1078,926,1316,848,1192,1008,1550,1425,1783,1382,1880,1259,2128,1192,2201],
     category: 'Construction',
     local: true,
   },
+  seaPermitsSF: {
+    id: 'seaPermitsSF', name: 'Seattle Single Family Permits', section: 'housing',
+    value: 106, unit: ' units', date: '2026-08-31',
+    periodChange: -15, yoyChange: +76,
+    release: 'Monthly — Seattle SDCI Issued Permits (city only)',
+    sparkline: [11,1,4,2,13,18,30,30,54,31,46,30,17,38,41,96,107,80,134,138,96,116,121,106],
+    category: 'Construction',
+    local: true,
+  },
+  seaPermitsMF: {
+    id: 'seaPermitsMF', name: 'Seattle Multifamily Permits', section: 'housing',
+    value: 106, unit: ' units', date: '2026-08-31',
+    periodChange: +51, yoyChange: +69,
+    release: 'Monthly — Seattle SDCI Issued Permits (city only)',
+    sparkline: [6,35,154,439,220,51,64,215,54,6,131,37,233,1104,226,782,63,135,161,19,173,106,55,106],
+    category: 'Construction',
+    local: true,
+  },
+  seaPermitsDADU: {
+    id: 'seaPermitsDADU', name: 'Seattle DADU Permits', section: 'housing',
+    value: 15, unit: ' units', date: '2026-08-31',
+    periodChange: +7, yoyChange: -29,
+    release: 'Monthly — Seattle SDCI Issued Permits (city only)',
+    sparkline: [0,13,1,18,1,5,20,52,37,68,28,44,30,41,25,25,13,22,41,30,29,23,8,15],
+    category: 'Construction',
+    local: true,
+  },
   kingPermits: {
     id: 'kingPermits', name: 'King County Permits', section: 'housing',
-    value: 953, unit: ' units', date: '2026-04-30',
-    periodChange: +434, yoyChange: +232,
+    value: 1104, unit: ' units', date: '2026-07-31',
+    periodChange: +441, yoyChange: +653,
     release: 'Monthly — Census BPS (FIPS 53033)',
     sparkline: [929,592,821,670,542,887,681,1704,605,452,483,721,380,570,451,607,1041,1224,605,1366,458,1486,519,953],
     category: 'Construction',
@@ -270,8 +297,8 @@ const HOUSING = {
   },
   piercePermits: {
     id: 'piercePermits', name: 'Pierce County Permits', section: 'housing',
-    value: 952, unit: ' units', date: '2026-04-30',
-    periodChange: +533, yoyChange: +563,
+    value: 409, unit: ' units', date: '2026-07-31',
+    periodChange: -211, yoyChange: +107,
     release: 'Monthly — Census BPS (FIPS 53053)',
     sparkline: [306,125,249,166,191,657,359,168,397,276,206,389,185,179,302,667,183,339,508,231,654,173,419,952],
     category: 'Construction',
@@ -279,8 +306,8 @@ const HOUSING = {
   },
   snohomishPermits: {
     id: 'snohomishPermits', name: 'Snohomish County Permits', section: 'housing',
-    value: 296, unit: ' units', date: '2026-04-30',
-    periodChange: +42, yoyChange: -90,
+    value: 189, unit: ' units', date: '2026-07-31',
+    periodChange: -475, yoyChange: -66,
     release: 'Monthly — Census BPS (FIPS 53061)',
     sparkline: [386,197,238,223,780,220,214,224,201,350,237,206,283,443,255,276,201,220,269,283,147,469,254,296],
     category: 'Construction',
@@ -794,8 +821,14 @@ const FED = {
     housingStarts: 0.05, buildingPermits: 0.04, seaPermits: 0.07,
     kingPermits: 0.09, piercePermits: 0.10, snohomishPermits: 0.10,
   };
+  // These carry a real trailing 24-month series refreshed straight from the
+  // Seattle SDCI API each pipeline run — keep it verbatim instead of replacing
+  // it with a synthetic curve, since the whole point of the chart that reads
+  // them is to show the real month-by-month permit-type mix.
+  const skipRecompute = new Set(['seaPermitsSF', 'seaPermitsMF', 'seaPermitsDADU']);
   const allMetrics = { ...MARKETS, ...HOUSING, ...INFLATION, ...EMPLOYMENT, ...FED };
   for (const [id, m] of Object.entries(allMetrics)) {
+    if (skipRecompute.has(id)) continue;
     const vol = volatilityMap[id] || 0.02;
     m.sparkline = sparklineFromMetric(m.value, m.yoyChange, 24, vol);
   }
@@ -1257,7 +1290,7 @@ const CATEGORIES = {
     'canyonMedianPrice', 'canyonAvgPrice', 'canyonSingleFamilyClosed', 'canyonDom', 'canyonDollarVolume'],
   'Housing — National': ['existingHomeSales', 'newHomeSales'],
   'Mortgage Applications': ['mbaPurchaseIndex', 'mbaRefiIndex', 'mbaMarketComposite', 'mbaArmShare'],
-  'Construction — Seattle MSA': ['seaPermits', 'kingPermits', 'piercePermits', 'snohomishPermits', 'seaCompletions', 'seaUnderConstruction', 'seaMultifamilyUnder', 'seaSingleFamilyUnder'],
+  'Construction — Seattle MSA': ['seaPermits', 'seaPermitsSF', 'seaPermitsMF', 'seaPermitsDADU', 'kingPermits', 'piercePermits', 'snohomishPermits', 'seaCompletions', 'seaUnderConstruction', 'seaMultifamilyUnder', 'seaSingleFamilyUnder'],
   'Construction — National': ['housingStarts', 'buildingPermits', 'housingCompletions', 'unitsUnderConstruction'],
   'Inflation': ['cpiHeadline', 'cpiCore', 'pce', 'pceCore', 'trimmedMeanPce',
     'breakeven5y', 'breakeven10y', 'clevelandFedInfExp', 'seaMetroCpi'],
@@ -1282,19 +1315,13 @@ const FOMC_MEETINGS = [
 const TODAY_SUMMARY_CONTEXT = {
   date: TODAY,
   keyMetrics: [
-    { name: '10yr Treasury', value: '4.36%', change: '-2bps today' },
-    { name: 'Mortgage Rate', value: '6.79%', change: '-3bps WoW (Jun 19)' },
+    { name: '10yr Treasury', value: '—', change: '—' },
+    { name: 'Mortgage Rate', value: '—', change: '—' },
     { name: 'Seattle Median Price', value: '$875K', change: '+$12K MoM, +$38K YoY' },
     { name: 'Seattle Inventory', value: '3,241 homes', change: '+187 WoW, +621 YoY' },
-    { name: 'CPI (May)', value: '2.9% YoY', change: '-0.1 from Apr' },
-    { name: 'Initial Claims', value: '218K', change: '-4K WoW (Jun 19 release)' },
-    { name: 'Fed Funds', value: '4.25–4.50%', change: 'Unchanged; Sep cut at 70%' },
+    { name: 'CPI (latest)', value: '—', change: '—' },
+    { name: 'Initial Claims', value: '—', change: '—' },
+    { name: 'Fed Funds', value: '—', change: 'Unchanged; Sep cut probability elevated' },
   ],
-  narrative: `Rates continue to ease modestly into summer as markets tilt toward a September Fed cut now at 70% odds.
-The 10-year Treasury slipped to 4.36% and Freddie Mac's weekly mortgage rate fell to 6.79% — the lowest reading since
-early 2025 — offering incremental affordability relief. May existing home sales came in above consensus at 4.08M SAAR,
-a positive sign for transaction volumes nationally. Seattle's market stays firm with inventory at 3,241 homes
-(highest since 2019) and median prices holding at $875K. MBA purchase applications ticked up 1.6% last week as
-buyers respond to the rate improvement; the refinance index has surged 57% YoY as existing homeowners look to
-relock. Key data this week: New Home Sales (Tue), Consumer Confidence (Wed), GDP Q1 final and PCE inflation (Fri).`
+  narrative: `Seattle's housing market continues to show signs of normalization heading into September 2026. Active inventory has climbed to 3,241 homes — the highest since early 2019 — giving buyers meaningfully more choice than the historic lows of 2021–2022. Despite rising supply, the median sale price held firm at $875K (+4.5% YoY), supported by resilient local employment in aerospace and healthcare. Mortgage rates stand at 6.82%, a modest tailwind for affordability. Nationally, inflation is at 2.9% YoY with the Fed funds rate at —. The labor market shows U-3 unemployment at 4.1% with initial claims at 222K.`
 };

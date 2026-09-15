@@ -10,7 +10,7 @@ const fs    = require('fs');
 const path  = require('path');
 
 const API_KEY = process.env.FRED_API_KEY;
-if (!API_KEY) { console.error('FRED_API_KEY not set'); process.exit(1); }
+if (!API_KEY) { console.warn('⚠ FRED_API_KEY not set — FRED-sourced series will be skipped.'); }
 
 const DATA_FILE = path.join(__dirname, '../js/data.js');
 
@@ -282,6 +282,94 @@ async function findLatestBpsMonth(fetchFn) {
   return null;
 }
 
+// ── Seattle SDCI — Issued Building Permits (city only), split by type ─────────
+// permitclass 'Multifamily' -> MF. permitclass 'Single Family/Duplex' contains
+// both true single-family AND DADU permits; DADU is identified by a text match
+// on `description`, and sf = rawSfDuplex - dadu to avoid double-counting.
+// No API key required (Socrata SODA API).
+
+const SOCRATA_BASE = 'https://data.seattle.gov/resource/8tqq-u7ib.json';
+
+function socrataFetch(whereClause) {
+  return new Promise(resolve => {
+    const params = new URLSearchParams({
+      '$select': 'date_trunc_ym(issueddate) as month, sum(housingunitsadded) as units',
+      '$where': whereClause,
+      '$group': 'month',
+      '$order': 'month',
+      '$limit': '200',
+    });
+    const url = `${SOCRATA_BASE}?${params.toString()}`;
+    const opts = { headers: { 'User-Agent': 'Mozilla/5.0 seattle-econ-updater/1.0' } };
+    https.get(url, opts, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (!Array.isArray(json)) { resolve(null); return; }
+          resolve(json.map(r => ({ month: String(r.month).slice(0, 7), units: Math.round(parseFloat(r.units) || 0) })));
+        } catch (e) { resolve(null); }
+      });
+    }).on('error', () => resolve(null));
+  });
+}
+
+async function fetchSeattlePermitSplit() {
+  const now = new Date();
+  const since = new Date(now.getFullYear(), now.getMonth() - 25, 1);
+  const sinceStr = `${since.getFullYear()}-${String(since.getMonth() + 1).padStart(2, '0')}-01`;
+  const base = `statuscurrent='Issued' AND issueddate >= '${sinceStr}'`;
+
+  const [mfRows, sfRawRows, daduRows] = await Promise.all([
+    socrataFetch(`permitclass='Multifamily' AND ${base}`),
+    socrataFetch(`permitclass='Single Family/Duplex' AND ${base}`),
+    socrataFetch(`permitclass='Single Family/Duplex' AND ${base} AND (upper(description) like '%DADU%' OR upper(description) like '%DETACHED ACCESSORY DWELLING%')`),
+  ]);
+  if (!mfRows || !sfRawRows || !daduRows) return null;
+
+  const toMap = rows => Object.fromEntries(rows.map(r => [r.month, r.units]));
+  const mfMap = toMap(mfRows), sfRawMap = toMap(sfRawRows), daduMap = toMap(daduRows);
+
+  let months = Array.from(new Set([...Object.keys(mfMap), ...Object.keys(sfRawMap)])).sort();
+  // Drop the current (likely incomplete) month, then keep the trailing 24 complete months
+  const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  months = months.filter(m => m !== curMonth).slice(-24);
+  if (months.length < 2) return null;
+
+  const sf = [], mf = [], dadu = [];
+  for (const m of months) {
+    const d = daduMap[m] || 0;
+    sf.push(Math.max(0, (sfRawMap[m] || 0) - d));
+    mf.push(mfMap[m] || 0);
+    dadu.push(d);
+  }
+  return { months, sf, mf, dadu };
+}
+
+// Patch value/periodChange/yoyChange/date/sparkline for a permit-split metric.
+// Unlike patchPermitMetric, this also refreshes the sparkline since the grouped
+// Socrata query already returns the full trailing series for free.
+function patchPermitSplitMetric(src, metricId, series, months) {
+  const n = series.length;
+  const value = series[n - 1];
+  const periodChange = n >= 2 ? series[n - 1] - series[n - 2] : 0;
+  const yoyChange = n >= 13 ? series[n - 1] - series[n - 13] : 0;
+  const lastMonth = months[n - 1]; // 'YYYY-MM'
+  const [yr, mo] = lastMonth.split('-');
+  const lastDay = new Date(parseInt(yr, 10), parseInt(mo, 10), 0).getDate();
+  const newDate = `${yr}-${mo}-${lastDay}`;
+  const sign = v => (v >= 0 ? `+${v}` : `${v}`);
+  const sparklineStr = `[${series.join(',')}]`;
+
+  src = src.replace(new RegExp(`(id: '${metricId}'[\\s\\S]*?value:\\s*)([^,\\n]+)`),         (m, p) => `${p}${value}`);
+  src = src.replace(new RegExp(`(id: '${metricId}'[\\s\\S]*?periodChange:\\s*)([^,\\n]+)`),  (m, p) => `${p}${sign(periodChange)}`);
+  src = src.replace(new RegExp(`(id: '${metricId}'[\\s\\S]*?yoyChange:\\s*)([^,\\n]+)`),     (m, p) => `${p}${sign(yoyChange)}`);
+  src = src.replace(new RegExp(`(id: '${metricId}'[\\s\\S]*?date:\\s*)('[^']+')`),           (m, p) => `${p}'${newDate}'`);
+  src = src.replace(new RegExp(`(id: '${metricId}'[\\s\\S]*?sparkline:\\s*)(\\[[^\\]]*\\])`), (m, p) => `${p}${sparklineStr}`);
+  return src;
+}
+
 // ── Eastside presentation — live King County permit anchor + as-of date ───────
 // The Eastside forecast (presentations/eastside_nc_forecast.html) is a fixed
 // analyst model with no live per-city feed. On each scheduled run we keep it
@@ -446,6 +534,23 @@ async function main() {
       src = patchPermitMetric(src, metricId, curr, prior, py);
       console.log(`  ✓ ${metricId}: ${curr.total} (${curr.yyyymm})`);
     }
+  }
+
+  // ── Seattle SDCI permit-type split (city only, no API key needed) ─────────
+  console.log('\nFetching Seattle SDCI permit-type split...');
+  try {
+    const split = await fetchSeattlePermitSplit();
+    if (split) {
+      src = patchPermitSplitMetric(src, 'seaPermitsSF', split.sf, split.months);
+      src = patchPermitSplitMetric(src, 'seaPermitsMF', split.mf, split.months);
+      src = patchPermitSplitMetric(src, 'seaPermitsDADU', split.dadu, split.months);
+      const last = split.months.length - 1;
+      console.log(`  ✓ seaPermitsSF/MF/DADU: ${split.sf[last]}/${split.mf[last]}/${split.dadu[last]} (${split.months[last]})`);
+    } else {
+      console.warn('  ⚠ Seattle SDCI permit split: no data returned, skipping');
+    }
+  } catch (e) {
+    console.warn(`  ⚠ Seattle SDCI permit split: ${e.message}`);
   }
 
   fs.writeFileSync(DATA_FILE, src, 'utf8');

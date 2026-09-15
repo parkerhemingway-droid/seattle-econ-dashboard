@@ -703,6 +703,117 @@ function buildPipelineForecast() {
   return wrap;
 }
 
+function buildPermitTypeSplit() {
+  const wrap = document.createElement('div');
+
+  const sfM = ALL_METRICS.seaPermitsSF;
+  const mfM = ALL_METRICS.seaPermitsMF;
+  const daduM = ALL_METRICS.seaPermitsDADU;
+  if (!sfM || !mfM || !daduM) return wrap;
+
+  const SF_COLOR = '#1baf7a';
+  const MF_COLOR = '#4f8ef7';
+  const DADU_COLOR = '#e34948';
+
+  const sf = sfM.sparkline;
+  const mf = mfM.sparkline;
+  const dadu = daduM.sparkline;
+  const n = sf.length;
+  const labels = Array.from({ length: n }, (_, i) => {
+    const d = new Date(sfM.date);
+    d.setMonth(d.getMonth() - (n - 1 - i));
+    return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+  });
+
+  const latestTotal = sf[n - 1] + mf[n - 1] + dadu[n - 1];
+  const daduShare = latestTotal ? Math.round((dadu[n - 1] / latestTotal) * 1000) / 10 : 0;
+
+  const callouts = document.createElement('div');
+  callouts.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:20px;';
+  [
+    { label: 'Single Family — Latest', value: sf[n - 1].toLocaleString(), sub: sfM.date, color: SF_COLOR },
+    { label: 'Multifamily — Latest', value: mf[n - 1].toLocaleString(), sub: mfM.date, color: MF_COLOR },
+    { label: 'DADU — Latest', value: dadu[n - 1].toLocaleString(), sub: daduM.date, color: DADU_COLOR },
+    { label: 'DADU Share of Total', value: `${daduShare}%`, sub: 'of all issued permits' },
+  ].forEach(c => {
+    callouts.innerHTML += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center">
+      <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">${c.label}</div>
+      <div style="font-size:1.3rem;font-weight:800;color:${c.color || 'var(--text)'}">${c.value}</div>
+      <div style="font-size:.72rem;color:var(--text-muted);margin-top:2px">${c.sub}</div>
+    </div>`;
+  });
+  wrap.appendChild(callouts);
+
+  const legend = document.createElement('div');
+  legend.style.cssText = 'display:flex;gap:16px;font-size:.72rem;color:var(--text-muted);margin-bottom:12px;flex-wrap:wrap;';
+  legend.innerHTML = `
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${SF_COLOR};margin-right:4px"></span>Single Family</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${MF_COLOR};margin-right:4px"></span>Multifamily</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${DADU_COLOR};margin-right:4px"></span>DADU</span>`;
+  wrap.appendChild(legend);
+
+  const panel = document.createElement('div');
+  panel.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;';
+  const cw = document.createElement('div');
+  cw.style.cssText = 'position:relative;height:280px;';
+  const canvas = document.createElement('canvas');
+  canvas.id = 'permit-type-split-chart';
+  cw.appendChild(canvas);
+  panel.appendChild(cw);
+  wrap.appendChild(panel);
+
+  const note = document.createElement('div');
+  note.style.cssText = 'font-size:.72rem;color:var(--text-muted);margin-top:10px;line-height:1.6;';
+  note.innerHTML = `Source: Seattle SDCI Issued Building Permits (city only — a narrower geography than the MSA/county permit figures above). DADU permits are filed under the "Single Family/Duplex" permit class; single-family here excludes DADU-matched permits to avoid double-counting.`;
+  wrap.appendChild(note);
+
+  setTimeout(() => {
+    const canvasEl = document.getElementById('permit-type-split-chart');
+    if (!canvasEl) return;
+    destroyChart('permit-type-split-chart');
+    chartRegistry['permit-type-split-chart'] = new Chart(canvasEl, {
+      data: {
+        labels,
+        datasets: [
+          { type: 'bar', label: 'Single Family', data: sf, backgroundColor: SF_COLOR, stack: 'vals', borderRadius: 2 },
+          { type: 'bar', label: 'Multifamily', data: mf, backgroundColor: MF_COLOR, stack: 'vals', borderRadius: 2 },
+          { type: 'bar', label: 'DADU', data: dadu, backgroundColor: DADU_COLOR, stack: 'vals', borderRadius: 2 },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1a1d27', borderColor: '#2e3250', borderWidth: 1,
+            titleColor: '#e2e8f0', bodyColor: '#8892aa',
+          },
+        },
+        scales: {
+          x: {
+            stacked: true,
+            ticks: {
+              color: '#8892aa', font: { size: 9 },
+              callback(val, i) { return i % 3 === 0 ? labels[i] : ''; },
+            },
+            grid: { color: '#2e3250' },
+          },
+          y: {
+            stacked: true,
+            ticks: { color: '#8892aa', font: { size: 10 } },
+            grid: { color: '#2e3250' },
+            title: { display: true, text: 'Units', color: '#8892aa', font: { size: 10 } },
+          },
+        },
+      },
+    });
+  }, 80);
+
+  return wrap;
+}
+
 // ── Section: Housing ─────────────────────────────────────────────────────────
 
 // ── Seattle vs Eastside market breakout ──────────────────────────────────────
@@ -816,6 +927,7 @@ function renderHousing() {
     { title: 'Home Prices', ids: ['seaCaseShiller', 'seaMedianPrice', 'existingHomeSales', 'newHomeSales'] },
     { title: 'Affordability', ids: ['seaAffordabilityRatio', 'kingCountyHomeowners', 'mortgageRate', 'mortgageSpread'] },
     { title: 'Mortgage Applications (Weekly — MBA)', ids: ['mbaPurchaseIndex', 'mbaRefiIndex', 'mbaMarketComposite', 'mbaArmShare'] },
+    { title: 'Seattle Permits by Type (City — SDCI)', ids: ['seaPermitsSF', 'seaPermitsMF', 'seaPermitsDADU'] },
     { title: 'Seattle Construction Pipeline', ids: ['seaPermits', 'kingPermits', 'piercePermits', 'snohomishPermits', 'seaUnderConstruction', 'seaMultifamilyUnder', 'seaSingleFamilyUnder', 'seaCompletions'] },
     { title: 'National Construction Context', ids: ['housingStarts', 'buildingPermits', 'housingCompletions', 'unitsUnderConstruction'] },
     { title: 'National Context', ids: ['existingHomeSales', 'newHomeSales'] },
@@ -832,6 +944,10 @@ function renderHousing() {
     });
     el.appendChild(grid);
   });
+
+  // ── Permit Mix by Type (SF/MF/DADU) ──
+  el.innerHTML += `<div class="subsection-title">Permit Mix — Single Family vs Multifamily vs DADU (24-Month, City of Seattle)</div>`;
+  el.appendChild(buildPermitTypeSplit());
 
   // ── Construction Pipeline Forecast ──
   el.innerHTML += `<div class="subsection-title">Construction Completion Forecast — 18-Month Pipeline</div>`;
