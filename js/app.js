@@ -744,13 +744,33 @@ function buildPermitTypeSplit() {
   });
   wrap.appendChild(callouts);
 
+  const legendRow = document.createElement('div');
+  legendRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;';
   const legend = document.createElement('div');
-  legend.style.cssText = 'display:flex;gap:16px;font-size:.72rem;color:var(--text-muted);margin-bottom:12px;flex-wrap:wrap;';
+  legend.style.cssText = 'display:flex;gap:16px;font-size:.72rem;color:var(--text-muted);flex-wrap:wrap;';
   legend.innerHTML = `
     <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${SF_COLOR};margin-right:4px"></span>Single Family</span>
     <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${MF_COLOR};margin-right:4px"></span>Multifamily</span>
     <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${DADU_COLOR};margin-right:4px"></span>DADU</span>`;
-  wrap.appendChild(legend);
+  legendRow.appendChild(legend);
+
+  const csvBtn = document.createElement('button');
+  csvBtn.className = 'btn-icon';
+  csvBtn.textContent = '⬇ CSV';
+  csvBtn.title = 'Download the 24-month Single Family / Multifamily / DADU permit mix as CSV';
+  csvBtn.addEventListener('click', () => {
+    const rows = [['month', 'single_family_units', 'multifamily_units', 'dadu_units', 'total_units']];
+    for (let i = 0; i < n; i++) {
+      const d = new Date(sfM.date);
+      d.setMonth(d.getMonth() - (n - 1 - i));
+      const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      rows.push([month, sf[i], mf[i], dadu[i], sf[i] + mf[i] + dadu[i]]);
+    }
+    const stamp = new Date().toISOString().slice(0, 10);
+    bfcSaveCsv(rows, `seattle-permit-mix-sf-mf-dadu-${stamp}.csv`);
+  });
+  legendRow.appendChild(csvBtn);
+  wrap.appendChild(legendRow);
 
   const panel = document.createElement('div');
   panel.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;';
