@@ -2617,6 +2617,16 @@ function renderBoise() {
     }
   });
 
+  // Quarterly comparison charts (Ada & Canyon)
+  if (typeof renderBoiseQuarterlyCharts === 'function') {
+    const title = document.createElement('div');
+    title.className = 'subsection-title';
+    title.style.marginTop = '40px';
+    title.textContent = 'Quarterly Comparison (Ada & Canyon)';
+    el.appendChild(title);
+    renderBoiseQuarterlyCharts(el);
+  }
+
   // Derived from BOISE_MARKETS rather than hardcoded, so these tables can never
   // drift out of sync with the metric cards above when the data is refreshed.
   const money  = v => '$' + Math.round(v).toLocaleString();

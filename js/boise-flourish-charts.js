@@ -25,6 +25,12 @@ const BOISE_FLOURISH = {
   Valley: { median: 30181846, absorption: 30182182 },
 };
 
+// Quarterly charts (Ada & Canyon combined)
+const BOISE_QUARTERLY = {
+  avgSalePrice: 30581667,    // Ada & Canyon - Quarterly Average Sale Price
+  monthsOfSupply: 30582119,  // Ada & Canyon - Quarterly Months of Supply
+};
+
 const BFC_EMBED_BASE = 'https://flo.uri.sh/visualisation/';
 const BFC_PUBLIC_BASE = 'https://public.flourish.studio/visualisation/';
 
@@ -176,6 +182,35 @@ function bfcUnpublishedNote(el, id, label, marginBottom) {
     `<a href="https://app.flourish.studio/visualisation/${id}/edit" target="_blank" rel="noopener" style="color:var(--accent)">Open it and hit Publish</a>` +
     ` and it will appear here on the next load.`;
   el.appendChild(p);
+}
+
+// Render quarterly comparison charts (Ada & Canyon side-by-side)
+function renderBoiseQuarterlyCharts(el) {
+  const stamp = new Date().toISOString().slice(0, 10);
+
+  // ── Quarterly Average Sale Price ──
+  bfcHeader(el, 'Quarterly Average Sale Price (Ada & Canyon)', [
+    { label: 'Open ↗', title: 'Open the interactive chart on Flourish',
+      onClick: () => window.open(`${BFC_PUBLIC_BASE}${BOISE_QUARTERLY.avgSalePrice}/`, '_blank', 'noopener') },
+  ]);
+  const avgSlot = document.createElement('div');
+  el.appendChild(avgSlot);
+  bfcIsPublished(BOISE_QUARTERLY.avgSalePrice).then(ok => {
+    if (ok) bfcMountFrame(avgSlot, BOISE_QUARTERLY.avgSalePrice, '8px');
+    else bfcUnpublishedNote(avgSlot, BOISE_QUARTERLY.avgSalePrice, 'Quarterly Average Sale Price', '8px');
+  });
+
+  // ── Quarterly Months of Supply ──
+  bfcHeader(el, 'Quarterly Months of Supply (Ada & Canyon)', [
+    { label: 'Open ↗', title: 'Open the interactive chart on Flourish',
+      onClick: () => window.open(`${BFC_PUBLIC_BASE}${BOISE_QUARTERLY.monthsOfSupply}/`, '_blank', 'noopener') },
+  ]);
+  const mosSlot = document.createElement('div');
+  el.appendChild(mosSlot);
+  bfcIsPublished(BOISE_QUARTERLY.monthsOfSupply).then(ok => {
+    if (ok) bfcMountFrame(mosSlot, BOISE_QUARTERLY.monthsOfSupply, '32px');
+    else bfcUnpublishedNote(mosSlot, BOISE_QUARTERLY.monthsOfSupply, 'Quarterly Months of Supply', '32px');
+  });
 }
 
 // Appends both charts for one county. `history` is the same monthlyHistory the
