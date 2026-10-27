@@ -288,8 +288,8 @@ const HOUSING = {
   },
   kingPermits: {
     id: 'kingPermits', name: 'King County Permits', section: 'housing',
-    value: 666, unit: ' units', date: '2026-08-31',
-    periodChange: -438, yoyChange: +59,
+    value: 339, unit: ' units', date: '2026-09-30',
+    periodChange: -327, yoyChange: -702,
     release: 'Monthly — Census BPS (FIPS 53033)',
     sparkline: [929,592,821,670,542,887,681,1704,605,452,483,721,380,570,451,607,1041,1224,605,1366,458,1486,519,953],
     category: 'Construction',
@@ -297,8 +297,8 @@ const HOUSING = {
   },
   piercePermits: {
     id: 'piercePermits', name: 'Pierce County Permits', section: 'housing',
-    value: 189, unit: ' units', date: '2026-08-31',
-    periodChange: -220, yoyChange: -478,
+    value: 221, unit: ' units', date: '2026-09-30',
+    periodChange: +32, yoyChange: +38,
     release: 'Monthly — Census BPS (FIPS 53053)',
     sparkline: [306,125,249,166,191,657,359,168,397,276,206,389,185,179,302,667,183,339,508,231,654,173,419,952],
     category: 'Construction',
@@ -306,8 +306,8 @@ const HOUSING = {
   },
   snohomishPermits: {
     id: 'snohomishPermits', name: 'Snohomish County Permits', section: 'housing',
-    value: 135, unit: ' units', date: '2026-08-31',
-    periodChange: -54, yoyChange: -141,
+    value: 190, unit: ' units', date: '2026-09-30',
+    periodChange: +55, yoyChange: -11,
     release: 'Monthly — Census BPS (FIPS 53061)',
     sparkline: [386,197,238,223,780,220,214,224,201,350,237,206,283,443,255,276,201,220,269,283,147,469,254,296],
     category: 'Construction',
