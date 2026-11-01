@@ -1,7 +1,7 @@
 // Mock data — Seattle-localized where applicable, national where metro data unavailable.
 // Replace sparkline arrays with real API calls to wire up live data.
 
-const TODAY = '2026-10-31';
+const TODAY = '2026-11-01';
 
 // trend: total fractional change over the full series (e.g. +0.15 = +15% over count periods)
 // The last value will land approximately at base*(1+trend) before noise.
@@ -261,28 +261,28 @@ const HOUSING = {
   },
   seaPermitsSF: {
     id: 'seaPermitsSF', name: 'Seattle Single Family Permits', section: 'housing',
-    value: 117, unit: ' units', date: '2026-09-30',
-    periodChange: +7, yoyChange: +101,
+    value: 99, unit: ' units', date: '2026-10-31',
+    periodChange: -18, yoyChange: +61,
     release: 'Monthly — Seattle SDCI Issued Permits (city only)',
-    sparkline: [1,4,2,13,28,9,14,53,31,43,27,16,38,39,84,99,79,133,136,96,116,124,110,117],
+    sparkline: [4,2,13,28,9,14,53,31,43,27,16,38,39,84,99,79,133,136,96,116,124,110,117,99],
     category: 'Construction',
     local: true,
   },
   seaPermitsMF: {
     id: 'seaPermitsMF', name: 'Seattle Multifamily Permits', section: 'housing',
-    value: 26, unit: ' units', date: '2026-09-30',
-    periodChange: -80, yoyChange: -207,
+    value: 142, unit: ' units', date: '2026-10-31',
+    periodChange: +116, yoyChange: -954,
     release: 'Monthly — Seattle SDCI Issued Permits (city only)',
-    sparkline: [35,150,244,204,60,32,215,50,0,131,30,233,1096,226,984,63,135,161,19,169,106,55,106,26],
+    sparkline: [150,244,204,60,32,215,50,0,131,30,233,1096,226,984,63,135,161,19,169,106,55,106,26,142],
     category: 'Construction',
     local: true,
   },
   seaPermitsDADU: {
     id: 'seaPermitsDADU', name: 'Seattle DADU Permits', section: 'housing',
-    value: 13, unit: ' units', date: '2026-09-30',
-    periodChange: -2, yoyChange: -14,
+    value: 11, unit: ' units', date: '2026-10-31',
+    periodChange: -2, yoyChange: -19,
     release: 'Monthly — Seattle SDCI Issued Permits (city only)',
-    sparkline: [13,0,18,1,5,1,13,11,51,24,33,27,30,18,25,11,17,41,30,29,23,8,15,13],
+    sparkline: [0,18,1,5,1,11,11,51,24,33,27,30,18,25,11,17,41,30,29,23,8,15,13,11],
     category: 'Construction',
     local: true,
   },
@@ -1323,5 +1323,5 @@ const TODAY_SUMMARY_CONTEXT = {
     { name: 'Initial Claims', value: '—', change: '—' },
     { name: 'Fed Funds', value: '—', change: 'Unchanged; Sep cut probability elevated' },
   ],
-  narrative: `Seattle's housing market continues to show signs of normalization heading into October 2026. Active inventory has climbed to 3,241 homes — the highest since early 2019 — giving buyers meaningfully more choice than the historic lows of 2021–2022. Despite rising supply, the median sale price held firm at $875K (+4.5% YoY), supported by resilient local employment in aerospace and healthcare. Mortgage rates stand at 6.82%, a modest tailwind for affordability. Nationally, inflation is at 2.9% YoY with the Fed funds rate at —. The labor market shows U-3 unemployment at 4.1% with initial claims at 222K.`
+  narrative: `Seattle's housing market continues to show signs of normalization heading into November 2026. Active inventory has climbed to 3,241 homes — the highest since early 2019 — giving buyers meaningfully more choice than the historic lows of 2021–2022. Despite rising supply, the median sale price held firm at $875K (+4.5% YoY), supported by resilient local employment in aerospace and healthcare. Mortgage rates stand at 6.82%, a modest tailwind for affordability. Nationally, inflation is at 2.9% YoY with the Fed funds rate at —. The labor market shows U-3 unemployment at 4.1% with initial claims at 222K.`
 };
