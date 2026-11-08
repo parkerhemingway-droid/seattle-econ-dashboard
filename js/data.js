@@ -1,7 +1,7 @@
 // Mock data — Seattle-localized where applicable, national where metro data unavailable.
 // Replace sparkline arrays with real API calls to wire up live data.
 
-const TODAY = '2026-11-07';
+const TODAY = '2026-11-08';
 
 // trend: total fractional change over the full series (e.g. +0.15 = +15% over count periods)
 // The last value will land approximately at base*(1+trend) before noise.
@@ -282,7 +282,7 @@ const HOUSING = {
     value: 11, unit: ' units', date: '2026-10-31',
     periodChange: -2, yoyChange: -19,
     release: 'Monthly — Seattle SDCI Issued Permits (city only)',
-    sparkline: [0,18,1,5,1,10,11,51,23,33,23,30,15,25,11,15,41,30,29,23,8,15,13,11],
+    sparkline: [0,18,1,5,1,10,10,51,23,33,23,30,15,25,11,15,41,30,29,23,8,15,13,11],
     category: 'Construction',
     local: true,
   },
