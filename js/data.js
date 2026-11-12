@@ -264,7 +264,7 @@ const HOUSING = {
     value: 99, unit: ' units', date: '2026-10-31',
     periodChange: -18, yoyChange: +61,
     release: 'Monthly — Seattle SDCI Issued Permits (city only)',
-    sparkline: [4,2,13,28,9,10,39,31,43,27,14,38,39,84,95,79,130,136,96,116,124,110,117,99],
+    sparkline: [4,2,13,25,9,10,39,31,43,27,14,38,39,84,95,79,130,133,96,116,124,110,117,99],
     category: 'Construction',
     local: true,
   },
